@@ -58,8 +58,13 @@ const NODE_SHAPES = '[class*="nodesGroup"] path'
  * The y axis points up in FusionCharts and down in the layout, hence the flip.
  */
 function axisBox(points, width, height) {
-  const xs = points.map(p => p.x)
-  const ys = points.map(p => -p.y)
+  // An empty graph is a legitimate state — the size dials go down to zero — and
+  // `Math.min()` of nothing is `Infinity`, which makes every number below NaN.
+  // One point at the origin costs nothing and lets the MIN_SPAN path below do
+  // exactly what it already does for a single unexpanded node.
+  const at = points.length ? points : [{ x: 0, y: 0 }]
+  const xs = at.map(p => p.x)
+  const ys = at.map(p => -p.y)
   let minX = Math.min(...xs) - PAD
   let maxX = Math.max(...xs) + PAD
   let minY = Math.min(...ys) - PAD
@@ -82,7 +87,7 @@ function axisBox(points, width, height) {
   return { minX, maxX, minY, maxY }
 }
 
-function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVersion, onNodeClick, onNodeHover, onBackgroundClick }) {
+function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVersion, onNodeClick, onNodeHover, onBackgroundClick, onStat, onViewport }) {
   const frame = useRef(null)
   const chart = useRef(null)
 
@@ -191,6 +196,16 @@ function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVe
     })
     observer.observe(el)
 
+    // Publishing *nothing* is the honest answer here, and it is a result.
+    //
+    // PowerCharts DragNode has no pan, no zoom and no viewport of any kind. The
+    // nearest equivalent would be narrowing the axis bounds in `build` and
+    // calling `setJSONData` again — which is a full chart rebuild per frame, not
+    // a viewport transform, and reporting that as this engine's zoom cost would
+    // be comparing a re-render against seven transforms. The benchmark records
+    // "unsupported" instead.
+    if (onViewport) onViewport(null)
+
     return () => {
       observer.disconnect()
       el.removeEventListener('click', onClick)
@@ -203,6 +218,8 @@ function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVe
 
   useEffect(() => {
     if (!chart.current) return
+    // The update cost, reported to App for the pane header.
+    const started = performance.now()
 
     // Positions come from App — the same object the ECharts tab is handed, so
     // the two tabs stay comparable, and incremental, so an expansion leaves the
@@ -358,7 +375,9 @@ function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVe
     // draw was already synchronous and the event fired before order.current
     // matched the shapes on screen.
     requestAnimationFrame(markFlagged)
-  }, [graph, positions, hidden, statusVersion, isExpanded, isPending])
+
+    if (onStat) onStat(Math.round(performance.now() - started))
+  }, [graph, positions, hidden, statusVersion, isExpanded, isPending, onStat])
 
   return <div className="canvas" ref={frame} />
 }

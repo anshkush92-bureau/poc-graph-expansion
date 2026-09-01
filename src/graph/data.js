@@ -41,8 +41,10 @@ const RELATION = {
 export const MAX_DEPTH = 4
 
 // Deterministic hash so the same node always has the same neighbours — the
-// graph is stable across reloads and screenshots.
-function hash(str) {
+// graph is stable across reloads and screenshots. Exported because `synth.js`
+// builds its stress graphs off the same one, so a given size always draws the
+// same graph and two benchmark runs are comparable.
+export function hash(str) {
   let h = 2166136261
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i)

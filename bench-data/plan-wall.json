@@ -1,0 +1,182 @@
+[
+ {
+  "label": "wall/1000/nvl",
+  "engine": "nvl",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/1000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/1000/vis",
+  "engine": "vis",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/1000/echarts",
+  "engine": "echarts",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/1000/flow",
+  "engine": "flow",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/5000/nvl",
+  "engine": "nvl",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/5000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/5000/vis",
+  "engine": "vis",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/5000/echarts",
+  "engine": "echarts",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/5000/flow",
+  "engine": "flow",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/20000/nvl",
+  "engine": "nvl",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/20000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/20000/vis",
+  "engine": "vis",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/20000/echarts",
+  "engine": "echarts",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/20000/flow",
+  "engine": "flow",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/50000/nvl",
+  "engine": "nvl",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 50000,
+   "Edges": 75000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/50000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 50000,
+   "Edges": 75000
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "wall/50000/vis",
+  "engine": "vis",
+  "scenario": "hairball",
+  "knobs": {
+   "Nodes": 50000,
+   "Edges": 75000
+  },
+  "timeoutMs": 300000
+ }
+]

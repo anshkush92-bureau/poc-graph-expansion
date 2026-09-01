@@ -1,0 +1,220 @@
+{
+  "wallgl/5000/cytoscape-webgl": {
+    "label": "wallgl/5000/cytoscape-webgl",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168516441,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 6,
+      "layoutMs": 8,
+      "updateMs": 700,
+      "ttfrMs": 1039,
+      "heapMB": 104.2,
+      "blockedMs": 1035,
+      "longestTaskMs": 700
+    },
+    "renderer": "webgl"
+  },
+  "wallgl/20000/cytoscape-webgl": {
+    "label": "wallgl/20000/cytoscape-webgl",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000
+    },
+    "at": 1788168519556,
+    "metrics": {
+      "nodes": 20000,
+      "edges": 29995,
+      "synthMs": 16,
+      "layoutMs": 26,
+      "updateMs": 2820,
+      "ttfrMs": 3948,
+      "heapMB": 365.13,
+      "blockedMs": 3936,
+      "longestTaskMs": 2819
+    },
+    "renderer": "webgl"
+  },
+  "wallgl/50000/cytoscape-webgl": {
+    "label": "wallgl/50000/cytoscape-webgl",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 50000,
+      "edges": 75000
+    },
+    "at": 1788168532898,
+    "metrics": {
+      "nodes": 50000,
+      "edges": 74996,
+      "synthMs": 141,
+      "layoutMs": 69,
+      "updateMs": 6962,
+      "ttfrMs": 10813,
+      "heapMB": 966.37,
+      "blockedMs": 11017,
+      "longestTaskMs": 6962
+    },
+    "renderer": "webgl"
+  },
+  "wallgl/5000/nvl-webgl": {
+    "label": "wallgl/5000/nvl-webgl",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168557107,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 5,
+      "layoutMs": 6,
+      "updateMs": 152,
+      "ttfrMs": 203,
+      "heapMB": 90.68,
+      "blockedMs": 152,
+      "longestTaskMs": 152
+    },
+    "renderer": "webgl"
+  },
+  "wallgl/20000/nvl-webgl": {
+    "label": "wallgl/20000/nvl-webgl",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000
+    },
+    "at": 1788168559008,
+    "metrics": {
+      "nodes": 20000,
+      "edges": 29995,
+      "synthMs": 20,
+      "layoutMs": 25,
+      "updateMs": 345,
+      "ttfrMs": 480,
+      "heapMB": 80.13,
+      "blockedMs": 466,
+      "longestTaskMs": 345
+    },
+    "renderer": "webgl"
+  },
+  "wallgl/50000/nvl-webgl": {
+    "label": "wallgl/50000/nvl-webgl",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 50000,
+      "edges": 75000
+    },
+    "at": 1788168563692,
+    "metrics": {
+      "nodes": 50000,
+      "edges": 74996,
+      "synthMs": 41,
+      "layoutMs": 54,
+      "updateMs": 826,
+      "ttfrMs": 1196,
+      "heapMB": 102.83,
+      "blockedMs": 1256,
+      "longestTaskMs": 826
+    },
+    "renderer": "webgl"
+  },
+  "expandgl/20000/cytoscape-webgl": {
+    "label": "expandgl/20000/cytoscape-webgl",
+    "driverError": "TimeoutError: locator.isDisabled: Timeout 30000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Run', exact: true })\n"
+  },
+  "expandgl/20000/nvl-webgl": {
+    "label": "expandgl/20000/nvl-webgl",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n    - waiting for \"http://localhost:4173/\" navigation to finish...\n"
+  },
+  "leakfix/r1/nvl": {
+    "label": "leakfix/r1/nvl",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r1/cytoscape": {
+    "label": "leakfix/r1/cytoscape",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r1/vis": {
+    "label": "leakfix/r1/vis",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r1/echarts": {
+    "label": "leakfix/r1/echarts",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r2/nvl": {
+    "label": "leakfix/r2/nvl",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r2/cytoscape": {
+    "label": "leakfix/r2/cytoscape",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r2/vis": {
+    "label": "leakfix/r2/vis",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r2/echarts": {
+    "label": "leakfix/r2/echarts",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r3/nvl": {
+    "label": "leakfix/r3/nvl",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r3/cytoscape": {
+    "label": "leakfix/r3/cytoscape",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r3/vis": {
+    "label": "leakfix/r3/vis",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "leakfix/r3/echarts": {
+    "label": "leakfix/r3/echarts",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "lod-off/echarts": {
+    "label": "lod-off/echarts",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "wall/50000/nvl": {
+    "label": "wall/50000/nvl",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "wall/50000/cytoscape": {
+    "label": "wall/50000/cytoscape",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "wall/50000/vis": {
+    "label": "wall/50000/vis",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "expand/10000/flow": {
+    "label": "expand/10000/flow",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  },
+  "expand/20000/flow": {
+    "label": "expand/20000/flow",
+    "driverError": "Error: locator.selectOption: Target page, context or browser has been closed"
+  }
+}

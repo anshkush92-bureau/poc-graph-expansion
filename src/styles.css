@@ -38,12 +38,13 @@ button, select { font: inherit; color: inherit; }
 
 .shell {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  /* masthead · strip · rig · stage */
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   grid-template-columns: minmax(0, 1fr) auto;
   height: 100%;
 }
 
-.masthead, .strip { grid-column: 1 / -1; }
+.masthead, .strip, .rig { grid-column: 1 / -1; }
 
 .masthead {
   display: flex;
@@ -68,19 +69,30 @@ button, select { font: inherit; color: inherit; }
   letter-spacing: -0.02em;
 }
 
-.engines { display: flex; gap: 2px; padding: 3px; background: var(--slate); border: 1px solid var(--line); }
+/* Eight engines, any combination of them on screen at once — so these are
+   toggles that wrap, not a single-choice tab row. */
+.engines {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+  padding: 3px;
+  background: var(--slate);
+  border: 1px solid var(--line);
+}
 
 .engines__tab {
-  padding: 8px 16px;
+  padding: 7px 11px;
   border: 0;
   background: none;
   color: var(--mute);
-  font: 500 12px/1 var(--display);
+  font: 500 11px/1 var(--display);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   cursor: pointer;
 }
 
+.engines__tab:hover { color: var(--bone); }
 .engines__tab.is-on { background: var(--bone); color: var(--ink); }
 
 /* ---------- strip ---------- */
@@ -128,22 +140,127 @@ select {
 .btn--danger { color: var(--flare); border-color: #3a2226; }
 .btn--danger:hover:not(:disabled) { background: #2a171a; border-color: var(--flare); }
 
+/* ---------- rig (the stress dial) ---------- */
+
+.rig {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 9px 24px;
+  border-bottom: 1px solid var(--line);
+  background: var(--ink);
+}
+
+.dial { display: flex; align-items: center; gap: 10px; }
+.dial__label { font: var(--eyebrow); letter-spacing: var(--tracking); text-transform: uppercase; color: var(--mute); }
+.dial__slide { width: clamp(90px, 16vw, 220px); accent-color: var(--bone); }
+
+.dial__value {
+  width: 68px;
+  padding: 5px 6px;
+  border: 1px solid var(--line);
+  background: var(--slate);
+  color: inherit;
+  font: 400 12px/1 var(--mono);
+}
+
+.rig__check { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--mute); }
+.rig__check input { accent-color: var(--bone); }
+
+.rig__note {
+  margin: 0 0 0 auto;
+  max-width: 46ch;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--mute);
+  text-align: right;
+}
+
 /* ---------- stage ---------- */
 
-.stage { position: relative; grid-column: 1; min-width: 0; }
+.stage {
+  position: relative;
+  grid-row: 4;
+  grid-column: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* One cell per selected engine. The column count is set inline from the number
+   of panes, so they tile rather than leaving dead cells; `minmax(0, 1fr)` rows
+   make them divide the height instead of overflowing it. */
+.panes {
+  flex: 1;
+  display: grid;
+  grid-auto-rows: minmax(0, 1fr);
+  min-height: 0;
+  background: var(--ink);
+}
+
+.pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.pane__bar {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--slate);
+}
+
+.pane__name { font: 500 11px/1 var(--display); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+.pane__lib { font: 400 10px/1 var(--mono); color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* The update cost, in milliseconds — the number that actually separates these
+   libraries once the graph is large. */
+.pane__stat { margin-left: auto; font: 700 11px/1 var(--mono); color: var(--bone); white-space: nowrap; }
+.pane__drop { padding: 0 4px; border: 0; background: none; color: var(--mute); font-size: 14px; line-height: 1; cursor: pointer; }
+.pane__drop:hover { color: var(--flare); }
+
+.pane__body { position: relative; flex: 1; min-height: 0; }
+.pane__wait { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; margin: 0; font: 400 11px/1 var(--mono); color: var(--mute); }
+
 .canvas { position: absolute; inset: 0; }
+/* v-network-graph mounts a Vue app in here and sizes its SVG to the host. */
+.canvas--vng, .canvas--vng > * { width: 100%; height: 100%; }
+
+/* A pane declining to draw a graph this size, rather than locking the tab. */
+.refusal {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 0 12%;
+  background: var(--ink);
+  color: var(--mute);
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.refusal b { color: var(--flare); font: 700 15px/1 var(--mono); }
 
 .legend {
-  position: absolute;
-  left: 20px;
-  bottom: 18px;
+  position: static;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px 16px;
-  max-width: min(560px, 70%);
   margin: 0;
-  padding: 0;
+  padding: 10px 20px;
+  border-top: 1px solid var(--line);
+  background: var(--ink);
   list-style: none;
   pointer-events: none;
 }
@@ -245,6 +362,7 @@ select {
 
 .panel {
   grid-column: 2;
+  grid-row: 4;
   display: flex;
   flex-direction: column;
   width: 356px;
@@ -410,6 +528,98 @@ select {
   56% { transform: scale(1); opacity: 0.95; }
 }
 
+/* ---------- jsPlumb: nodes are HTML, the viewport is a transform ----------
+   jsPlumb Community draws connectors between DOM elements and provides no
+   layout and no viewport, so both live here: the surface carries the fit as a
+   CSS transform, and every node is an absolutely positioned div. */
+
+.plumb { overflow: hidden; }
+.plumb__surface { position: absolute; inset: 0; transform-origin: 0 0; }
+
+.plumb__node {
+  position: absolute;
+  border: 1px solid;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.plumb__label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  /* Counter-scaled inline against the surface transform, so captions stay
+     legible however far the fit zooms out. */
+  transform-origin: top center;
+  margin-top: 3px;
+  padding: 0 2px;
+  background: var(--ink);
+  color: var(--bone);
+  font: 400 10px/1.3 var(--ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.plumb__node.is-flagged { animation: flag-glow 1.6s cubic-bezier(0.25, 0.6, 0.3, 1) infinite; }
+
+/* ---------- React Flow: nodes are React components ----------
+   The one engine where a node is ordinary markup, which is the whole reason to
+   pick it — the disc, the risk number and the hidden-count badge below are all
+   plain HTML and CSS, and reproducing them on a canvas means drawing code. */
+
+.flow-node {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Sized from CSS, never inline: an inline width/height makes v9 skip
+     measuring the DOM, after which it cannot resolve edge handles. */
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--ring);
+  border-radius: 50%;
+  background: var(--disc);
+  cursor: pointer;
+}
+
+/* v9's root needs an explicit box; `.canvas` is the wrapper around it. */
+.canvas > .react-flow { width: 100%; height: 100%; }
+
+.flow-node__handle { opacity: 0; pointer-events: none; }
+.flow-node__risk { font: 700 11px/1 var(--mono); color: var(--ink); }
+
+.flow-node__badge {
+  position: absolute;
+  top: -5px;
+  right: -9px;
+  padding: 1px 4px;
+  border-radius: 7px;
+  background: var(--bone);
+  color: var(--ink);
+  font: 700 9px/1.3 var(--mono);
+}
+
+.flow-node__label {
+  position: absolute;
+  top: 100%;
+  margin-top: 4px;
+  padding: 0 2px;
+  background: var(--ink);
+  font: 400 10px/1.3 var(--ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.flow-node.is-flagged { animation: flag-glow 1.6s cubic-bezier(0.25, 0.6, 0.3, 1) infinite; }
+
+/* Same shape as the FusionCharts stroke pulse and the ECharts ring overlay,
+   expressed as a box-shadow because these two engines' nodes are real elements
+   and a shadow costs no layout. */
+@keyframes flag-glow {
+  0%, 100% { box-shadow: 0 0 0 2px var(--flare); }
+  55% { box-shadow: 0 0 0 12px rgb(229 72 77 / 0); }
+  56% { box-shadow: 0 0 0 2px var(--flare); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .peek, .panel { animation: none; }
   /* Both rings stop breathing but stay visible, so flagged still reads. */
@@ -419,14 +629,311 @@ select {
     stroke-opacity: 0.9;
   }
   .ring { animation: none; opacity: 0.9; }
+  .plumb__node.is-flagged, .flow-node.is-flagged {
+    animation: none;
+    box-shadow: 0 0 0 2px var(--flare);
+  }
 }
 
 @media (max-width: 900px) {
   .shell { grid-template-columns: minmax(0, 1fr); }
-  .panel { grid-column: 1; grid-row: 3; width: 100%; border-left: 0; border-top: 1px solid var(--line); }
-  .stage { grid-row: 3; }
+  .panel { grid-column: 1; grid-row: 4; width: 100%; border-left: 0; border-top: 1px solid var(--line); }
   .shell--panelled .stage { display: none; }
   .masthead { flex-direction: column; align-items: flex-start; }
-  .strip { flex-wrap: wrap; gap: 12px 20px; }
+  .engines { justify-content: flex-start; }
+  .strip, .rig { flex-wrap: wrap; gap: 12px 20px; }
   .strip__tools { margin-left: 0; }
+  .rig__note { margin-left: 0; text-align: left; max-width: none; }
+  /* One pane at a time on a phone: eight 300px columns is not a comparison,
+     it is eight illegible squares. */
+  .panes { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* ---------- modes (explore / bench / compare) ---------- */
+
+.modes {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--slate);
+  border: 1px solid var(--line);
+}
+
+.modes__tab {
+  padding: 7px 14px;
+  border: 0;
+  background: none;
+  color: var(--mute);
+  font: 600 11px/1 var(--display);
+  letter-spacing: var(--tracking);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.modes__tab:hover { color: var(--bone); }
+.modes__tab.is-on { background: var(--bone); color: var(--ink); }
+
+/* ---------- bench ---------- */
+
+/* The bench and compare views scroll as documents. The explore stage does not —
+   it tiles panes into a fixed viewport — so the scrolling lives on this
+   modifier rather than on `.stage`. */
+.stage--bench { overflow: auto; }
+
+.bench, .compare, .lab {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 18px 24px 40px;
+}
+
+.bench__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: var(--slate);
+}
+
+.bench__row { display: flex; align-items: center; flex-wrap: wrap; gap: 14px; }
+.bench__knobs { display: flex; align-items: center; flex-wrap: wrap; gap: 18px; }
+
+.bench__blurb {
+  margin: 0;
+  max-width: 92ch;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mute);
+}
+
+.bench__status {
+  margin-left: auto;
+  font: 400 11px/1 var(--mono);
+  color: var(--bone);
+}
+
+.bench__count { margin: 0 auto 0 0; font: 400 12px/1 var(--mono); color: var(--mute); }
+.bench__empty { margin: 0; font-size: 12px; color: var(--mute); }
+.bench__note { margin: 0; max-width: 92ch; font-size: 11px; line-height: 1.5; color: var(--mute); }
+
+/* A definite height, because `.canvas` inside a pane is absolutely positioned
+   and would collapse to nothing in a flowing document. */
+.pane--bench { height: 460px; border: 1px solid var(--line); }
+
+/* ---------- result tables ---------- */
+
+/* Wide tables scroll inside their own box rather than widening the page — a
+   scenario can report a dozen metrics and the columns must not push the
+   controls off screen. */
+.bench__results { overflow-x: auto; }
+
+.grid {
+  width: 100%;
+  border-collapse: collapse;
+  font: 400 12px/1.4 var(--mono);
+  white-space: nowrap;
+}
+
+.grid th, .grid td {
+  padding: 7px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: right;
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  background: var(--slate);
+  font: 600 10px/1.3 var(--display);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.grid thead th small {
+  display: block;
+  margin-top: 3px;
+  font: 400 9px/1.3 var(--ui);
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.grid tbody th[scope='row'], .grid thead th:first-child {
+  text-align: left;
+  font-family: var(--ui);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--bone);
+}
+
+.grid tbody tr:hover { background: var(--raise); }
+.grid__soft { color: var(--mute); }
+.grid__note { text-align: left; color: var(--mute); font-family: var(--ui); white-space: normal; }
+
+/* The winner on a scenario's headline metric. Weight and a rule rather than a
+   colour fill: eight rows of highlighted cells would read as a heat map, which
+   is not what a single best value is. */
+.grid td.is-best { color: var(--bone); font-weight: 700; box-shadow: inset 2px 0 0 var(--bone); }
+.grid td.is-failed, .grid tr.is-failed th[scope='row'] { color: var(--flare); }
+.grid td.is-na, .grid tr.is-na th[scope='row'] { color: var(--mute); }
+
+/* The capability grid is prose, not numbers — it wraps and reads left to
+   right, where the measurement tables are columns of figures and do not. */
+.grid--caps { white-space: normal; font: 400 11px/1.45 var(--ui); }
+.grid--caps td { text-align: left; vertical-align: top; min-width: 130px; }
+
+/* ---------- compare ---------- */
+
+.compare__block { display: flex; flex-direction: column; gap: 10px; }
+
+.compare__block h2 {
+  margin: 0;
+  font: 700 15px/1 var(--display);
+  letter-spacing: 0.02em;
+}
+
+.compare__sub {
+  margin: 0;
+  max-width: 92ch;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--mute);
+}
+
+/* ---------- lab ---------- */
+
+.lab__nav { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.lab__nav .btn { margin-right: 10px; text-decoration: none; }
+.lab__nav .engines__tab { text-decoration: none; }
+
+.lab__head { display: flex; align-items: baseline; flex-wrap: wrap; gap: 12px; }
+.lab__head h2 { margin: 0; font: 700 20px/1 var(--display); letter-spacing: 0.01em; }
+.lab__note { flex: 1 0 100%; margin: 0; font-size: 12px; color: var(--mute); }
+
+/* Surface is the single most predictive fact about a graph library, so it gets
+   a badge rather than a table cell. Colour carries no meaning beyond "these
+   three are different things" — it is not a ranking. */
+.lab__surface {
+  padding: 3px 8px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font: 600 9px/1 var(--display);
+  letter-spacing: var(--tracking);
+  text-transform: uppercase;
+}
+
+.lab__surface--canvas { color: #7ea6ff; }
+.lab__surface--svg { color: #9ad48a; }
+.lab__surface--dom { color: #e2b357; }
+
+/* ---------- the live gauge ---------- */
+
+.lab__hud {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  background: var(--slate);
+}
+
+/* Paused rather than hidden: a gauge that vanishes while a scenario runs reads
+   as a crash, and a gauge that keeps updating invites quoting it over the row
+   the scenario is about to write. */
+.lab__hud.is-paused { opacity: 0.45; }
+
+.lab__cell { display: flex; flex-direction: column; gap: 4px; cursor: help; }
+
+.lab__cell dt {
+  font: 600 9px/1 var(--display);
+  letter-spacing: var(--tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.lab__cell dd { margin: 0; font: 400 18px/1 var(--mono); }
+.lab__hud .btn { margin-left: auto; }
+
+.lab__live { margin-left: auto; font: 400 11px/1 var(--mono); color: var(--flare); }
+
+/* ---------- the controls ---------- */
+
+/* Two columns at most. Three fits on a wide screen and reads as a settings
+   page; two keeps each group's hint on the same line of sight as its dials. */
+.lab__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 14px;
+}
+
+.lab__group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  background: var(--slate);
+}
+
+.lab__group h3, .lab__report h3, .lab__scripted h3, .lab__caps h3 {
+  margin: 0;
+  font: 700 12px/1 var(--display);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.lab__controls { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; }
+/* A hint sitting among the knobs rather than under them — the running node
+   count, the "no viewport here" note. Its own row, or it reads as a label for
+   whichever control it happens to land beside. */
+.lab__controls > .lab__hint { flex-basis: 100%; }
+.lab__hint { margin: 0; font-size: 11px; line-height: 1.5; color: var(--mute); }
+
+.lab__report, .lab__scripted, .lab__caps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lab__caps .grid { max-width: 70ch; white-space: normal; }
+.lab__caps .grid td { text-align: left; font-family: var(--ui); }
+
+.lab__stats { display: flex; flex-wrap: wrap; gap: 6px 26px; margin: 0; }
+.lab__stats div { display: flex; flex-direction: column; gap: 3px; }
+
+.lab__stats dt {
+  font: 600 9px/1 var(--display);
+  letter-spacing: var(--tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+.lab__stats dd { margin: 0; font: 400 13px/1 var(--mono); }
+
+/* ---------- the index ---------- */
+
+.lab__cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.lab__card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: var(--slate);
+  color: inherit;
+  text-decoration: none;
+}
+
+.lab__card:hover { border-color: var(--bone); background: var(--raise); }
+.lab__card b { font: 700 15px/1.2 var(--display); }
+.lab__card-lib { font: 400 11px/1 var(--mono); color: var(--mute); }
+.lab__card-note { font-size: 11px; line-height: 1.5; color: var(--mute); }

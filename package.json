@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "version": "1.0.0",
-  "description": "React 16 POC comparing Neo4j NVL and React Flow v9 for recursive graph expansion",
+  "description": "React 16 POC comparing eight graph rendering libraries side by side on one shared graph",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -11,10 +11,19 @@
     "test": "node --test \"src/**/*.test.js\""
   },
   "dependencies": {
+    "@jsplumb/browser-ui": "^6.2.10",
+    "@neo4j-nvl/base": "^1.2.1",
+    "@neo4j-nvl/interaction-handlers": "^1.2.1",
+    "cytoscape": "^3.34.2",
+    "d3-force": "^3.0.0",
     "echarts": "^6.1.0",
     "fusioncharts": "^4.2.2",
     "react": "16.14.0",
-    "react-dom": "16.14.0"
+    "react-dom": "16.14.0",
+    "react-flow-renderer": "^9.7.4",
+    "v-network-graph": "^0.9.23",
+    "vis-network": "^10.1.2",
+    "vue": "^3.5.42"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "4.3.4",

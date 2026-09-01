@@ -1,0 +1,1631 @@
+{
+  "lod-off/echarts": {
+    "label": "lod-off/echarts",
+    "missing": true
+  },
+  "lod-off/fusion": {
+    "label": "lod-off/fusion",
+    "backend": null,
+    "engine": "fusion",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167031366,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 615,
+      "updateMs": 16,
+      "fps": 119.4,
+      "frameP95": 9.2,
+      "worstFrameMs": 81.3,
+      "dropped": 4,
+      "blockedMs": 72
+    },
+    "note": "No viewport on this engine — frame numbers here are the idle cost of holding the graph, not of moving it.",
+    "renderer": "svg"
+  },
+  "lod-off/cytoscape": {
+    "label": "lod-off/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167044193,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 156,
+      "updateMs": 111,
+      "fps": 119.6,
+      "frameP95": 9,
+      "worstFrameMs": 17.5,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-off/vis": {
+    "label": "lod-off/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167055939,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 85,
+      "updateMs": 57,
+      "fps": 120,
+      "frameP95": 8.7,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-off/vng": {
+    "label": "lod-off/vng",
+    "backend": null,
+    "engine": "vng",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167067547,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 15,
+      "updateMs": 0,
+      "fps": 120,
+      "frameP95": 9,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "svg"
+  },
+  "lod-off/jsplumb": {
+    "label": "lod-off/jsplumb",
+    "backend": null,
+    "engine": "jsplumb",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167085401,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 6589,
+      "updateMs": 444,
+      "fps": 1.9,
+      "frameP95": 600.9,
+      "worstFrameMs": 600.9,
+      "dropped": 601,
+      "blockedMs": 10240
+    },
+    "renderer": "dom+svg"
+  },
+  "lod-off/nvl": {
+    "label": "lod-off/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167105273,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 127,
+      "updateMs": 85,
+      "fps": 120,
+      "frameP95": 8.8,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-off/flow": {
+    "label": "lod-off/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167117206,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 297,
+      "updateMs": 1,
+      "fps": 13.5,
+      "frameP95": 108.3,
+      "worstFrameMs": 141.8,
+      "dropped": 464,
+      "blockedMs": 8981
+    },
+    "renderer": "dom+svg"
+  },
+  "lod-only/echarts": {
+    "label": "lod-only/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167129558,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": true,
+      "cull": false,
+      "ttfrMs": 100,
+      "updateMs": 68,
+      "fps": 114.4,
+      "frameP95": 9.4,
+      "worstFrameMs": 33.5,
+      "dropped": 2,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-only/cytoscape": {
+    "label": "lod-only/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167141413,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": true,
+      "cull": false,
+      "ttfrMs": 130,
+      "updateMs": 92,
+      "fps": 119.6,
+      "frameP95": 9,
+      "worstFrameMs": 25,
+      "dropped": 1,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-only/vis": {
+    "label": "lod-only/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167153185,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": true,
+      "cull": false,
+      "ttfrMs": 77,
+      "updateMs": 49,
+      "fps": 120,
+      "frameP95": 9.2,
+      "worstFrameMs": 16.7,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-only/nvl": {
+    "label": "lod-only/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167165222,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": true,
+      "cull": false,
+      "ttfrMs": 107,
+      "updateMs": 81,
+      "fps": 120,
+      "frameP95": 9.2,
+      "worstFrameMs": 9.5,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "lod-only/flow": {
+    "label": "lod-only/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788167177247,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": true,
+      "cull": false,
+      "ttfrMs": 315,
+      "updateMs": 1,
+      "fps": 20.2,
+      "frameP95": 75.7,
+      "worstFrameMs": 116.7,
+      "dropped": 410,
+      "blockedMs": 6006
+    },
+    "renderer": "dom+svg"
+  },
+  "backend/echarts-canvas/hairball": {
+    "label": "backend/echarts-canvas/hairball",
+    "backend": "canvas",
+    "engine": "echarts",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788167189249,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 1,
+      "updateMs": 131,
+      "ttfrMs": 181,
+      "heapMB": 30.5,
+      "blockedMs": 130,
+      "longestTaskMs": 130
+    },
+    "renderer": "canvas"
+  },
+  "backend/echarts-canvas/expand": {
+    "label": "backend/echarts-canvas/expand",
+    "backend": "canvas",
+    "engine": "echarts",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167190795,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 209.3,
+      "p95Ms": 309.8,
+      "worstMs": 309.8,
+      "firstMs": 309.8,
+      "lastMs": 235.8,
+      "layoutP95Ms": 2.4,
+      "updateP95Ms": 140,
+      "blockedMs": 2899,
+      "longestTaskMs": 139,
+      "heapMB": 37.84
+    },
+    "renderer": "canvas"
+  },
+  "backend/echarts-canvas/zoompan": {
+    "label": "backend/echarts-canvas/zoompan",
+    "backend": "canvas",
+    "engine": "echarts",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788167199035,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 52.9,
+      "frameP50": 16.7,
+      "frameP95": 25.2,
+      "worstFrameMs": 41.7,
+      "dropped": 95,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "backend/echarts-canvas/stream": {
+    "label": "backend/echarts-canvas/stream",
+    "backend": "canvas",
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167210725,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 146,
+      "pushedPerSec": 365,
+      "fps": 14.1,
+      "frameP95": 124.2,
+      "worstFrameMs": 158.5,
+      "dropped": 914,
+      "updateMs": 10,
+      "blockedMs": 13866,
+      "heapMB": 100.07,
+      "heapSlopeMBs": 1.897,
+      "leakMB": -25.76
+    },
+    "renderer": "canvas"
+  },
+  "backend/echarts-svg/hairball": {
+    "label": "backend/echarts-svg/hairball",
+    "backend": "svg",
+    "engine": "echarts",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788167232845,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 163,
+      "ttfrMs": 382,
+      "heapMB": 57.08,
+      "blockedMs": 317,
+      "longestTaskMs": 163
+    },
+    "renderer": "svg"
+  },
+  "backend/echarts-svg/expand": {
+    "label": "backend/echarts-svg/expand",
+    "backend": "svg",
+    "engine": "echarts",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167234424,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 280.7,
+      "p95Ms": 461.7,
+      "worstMs": 461.7,
+      "firstMs": 225.1,
+      "lastMs": 376.5,
+      "layoutP95Ms": 17.6,
+      "updateP95Ms": 179,
+      "blockedMs": 7093,
+      "longestTaskMs": 179,
+      "heapMB": 108.89
+    },
+    "renderer": "svg"
+  },
+  "backend/echarts-svg/zoompan": {
+    "label": "backend/echarts-svg/zoompan",
+    "backend": "svg",
+    "engine": "echarts",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788167246501,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 13.6,
+      "frameP50": 74.8,
+      "frameP95": 91.7,
+      "worstFrameMs": 117.5,
+      "dropped": 476,
+      "blockedMs": 9714
+    },
+    "renderer": "svg"
+  },
+  "backend/echarts-svg/stream": {
+    "label": "backend/echarts-svg/stream",
+    "backend": "svg",
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167258766,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 171,
+      "pushedPerSec": 428,
+      "fps": 15.2,
+      "frameP95": 109.2,
+      "worstFrameMs": 141.7,
+      "dropped": 907,
+      "updateMs": 16,
+      "blockedMs": 14706,
+      "heapMB": 47.66,
+      "heapSlopeMBs": -1.171,
+      "leakMB": 5.61
+    },
+    "renderer": "svg"
+  },
+  "backend/cytoscape-canvas/hairball": {
+    "label": "backend/cytoscape-canvas/hairball",
+    "backend": "canvas",
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788167281615,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 170,
+      "ttfrMs": 220,
+      "heapMB": 38.23,
+      "blockedMs": 169,
+      "longestTaskMs": 169
+    },
+    "renderer": "canvas"
+  },
+  "backend/cytoscape-canvas/expand": {
+    "label": "backend/cytoscape-canvas/expand",
+    "backend": "canvas",
+    "engine": "cytoscape",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167283161,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 66.8,
+      "p95Ms": 77.5,
+      "worstMs": 77.5,
+      "firstMs": 77.5,
+      "lastMs": 71.4,
+      "layoutP95Ms": 1.9,
+      "updateP95Ms": 42,
+      "blockedMs": 0,
+      "longestTaskMs": 0,
+      "heapMB": 125.61
+    },
+    "renderer": "canvas"
+  },
+  "backend/cytoscape-canvas/zoompan": {
+    "label": "backend/cytoscape-canvas/zoompan",
+    "backend": "canvas",
+    "engine": "cytoscape",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788167287750,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 119.6,
+      "frameP50": 8.3,
+      "frameP95": 9,
+      "worstFrameMs": 16.8,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "backend/cytoscape-canvas/stream": {
+    "label": "backend/cytoscape-canvas/stream",
+    "backend": "canvas",
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167299323,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 92.8,
+      "frameP95": 33.3,
+      "worstFrameMs": 41,
+      "dropped": 180,
+      "updateMs": 20,
+      "blockedMs": 0,
+      "heapMB": 39.5,
+      "heapSlopeMBs": -0.201,
+      "leakMB": -0.82
+    },
+    "renderer": "canvas"
+  },
+  "backend/cytoscape-webgl/hairball": {
+    "label": "backend/cytoscape-webgl/hairball",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788167321228,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 149,
+      "ttfrMs": 219,
+      "heapMB": 33.27,
+      "blockedMs": 217,
+      "longestTaskMs": 148
+    },
+    "renderer": "webgl"
+  },
+  "backend/cytoscape-webgl/expand": {
+    "label": "backend/cytoscape-webgl/expand",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167322793,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 80.2,
+      "p95Ms": 90.9,
+      "worstMs": 90.9,
+      "firstMs": 83.3,
+      "lastMs": 90.9,
+      "layoutP95Ms": 2.8,
+      "updateP95Ms": 44,
+      "blockedMs": 0,
+      "longestTaskMs": 0,
+      "heapMB": 18.06
+    },
+    "renderer": "webgl"
+  },
+  "backend/cytoscape-webgl/zoompan": {
+    "label": "backend/cytoscape-webgl/zoompan",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788167327488,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 120,
+      "frameP50": 8.3,
+      "frameP95": 8.8,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "webgl"
+  },
+  "backend/cytoscape-webgl/stream": {
+    "label": "backend/cytoscape-webgl/stream",
+    "backend": "webgl",
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167339063,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 93.1,
+      "frameP95": 33.3,
+      "worstFrameMs": 41.7,
+      "dropped": 183,
+      "updateMs": 20,
+      "blockedMs": 0,
+      "heapMB": 21.86,
+      "heapSlopeMBs": 0.603,
+      "leakMB": -1.19
+    },
+    "renderer": "webgl"
+  },
+  "backend/nvl-canvas/hairball": {
+    "label": "backend/nvl-canvas/hairball",
+    "backend": "canvas",
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788167360986,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 84,
+      "ttfrMs": 113,
+      "heapMB": 96.14,
+      "blockedMs": 84,
+      "longestTaskMs": 84
+    },
+    "renderer": "canvas"
+  },
+  "backend/nvl-canvas/expand": {
+    "label": "backend/nvl-canvas/expand",
+    "backend": "canvas",
+    "engine": "nvl",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167362718,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 126.5,
+      "p95Ms": 194.5,
+      "worstMs": 194.5,
+      "firstMs": 129.7,
+      "lastMs": 128.6,
+      "layoutP95Ms": 2.6,
+      "updateP95Ms": 150,
+      "blockedMs": 1878,
+      "longestTaskMs": 149,
+      "heapMB": 139.5
+    },
+    "renderer": "canvas"
+  },
+  "backend/nvl-canvas/zoompan": {
+    "label": "backend/nvl-canvas/zoompan",
+    "backend": "canvas",
+    "engine": "nvl",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788167368571,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 86.2,
+      "frameP50": 8.4,
+      "frameP95": 17.7,
+      "worstFrameMs": 333.3,
+      "dropped": 76,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "backend/nvl-canvas/stream": {
+    "label": "backend/nvl-canvas/stream",
+    "backend": "canvas",
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167380558,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 111.3,
+      "frameP95": 16.6,
+      "worstFrameMs": 25.7,
+      "dropped": 9,
+      "updateMs": 249,
+      "blockedMs": 0,
+      "heapMB": -121.21,
+      "heapSlopeMBs": 0.324,
+      "leakMB": -72.85
+    },
+    "renderer": "canvas"
+  },
+  "backend/nvl-webgl/hairball": {
+    "label": "backend/nvl-webgl/hairball",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788167403261,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 88,
+      "ttfrMs": 98,
+      "heapMB": 80.11,
+      "blockedMs": 88,
+      "longestTaskMs": 88
+    },
+    "renderer": "webgl"
+  },
+  "backend/nvl-webgl/expand": {
+    "label": "backend/nvl-webgl/expand",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167404974,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 96,
+      "p95Ms": 104.1,
+      "worstMs": 104.1,
+      "firstMs": 96,
+      "lastMs": 98.9,
+      "layoutP95Ms": 2.6,
+      "updateP95Ms": 95,
+      "blockedMs": 1734,
+      "longestTaskMs": 94,
+      "heapMB": 6.07
+    },
+    "renderer": "webgl"
+  },
+  "backend/nvl-webgl/zoompan": {
+    "label": "backend/nvl-webgl/zoompan",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788167409628,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 120.2,
+      "frameP50": 8.3,
+      "frameP95": 9.2,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "renderer": "webgl"
+  },
+  "backend/nvl-webgl/stream": {
+    "label": "backend/nvl-webgl/stream",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167421173,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 120,
+      "frameP95": 8.9,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "updateMs": 160,
+      "blockedMs": 0,
+      "heapMB": -121.59,
+      "heapSlopeMBs": -0.633,
+      "leakMB": -72.49
+    },
+    "renderer": "webgl"
+  },
+  "expand/1000/echarts": {
+    "label": "expand/1000/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167442657,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 192,
+      "p95Ms": 232.2,
+      "worstMs": 232.2,
+      "firstMs": 184,
+      "lastMs": 217.9,
+      "layoutP95Ms": 4,
+      "updateP95Ms": 154,
+      "blockedMs": 2446,
+      "longestTaskMs": 154,
+      "heapMB": 144.98
+    },
+    "renderer": "canvas"
+  },
+  "expand/1000/cytoscape": {
+    "label": "expand/1000/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167450894,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 71.2,
+      "p95Ms": 82,
+      "worstMs": 82,
+      "firstMs": 82,
+      "lastMs": 73.7,
+      "layoutP95Ms": 1.9,
+      "updateP95Ms": 45,
+      "blockedMs": 0,
+      "longestTaskMs": 0,
+      "heapMB": 111.99
+    },
+    "renderer": "canvas"
+  },
+  "expand/1000/vis": {
+    "label": "expand/1000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167455765,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 125.2,
+      "p95Ms": 141.7,
+      "worstMs": 141.7,
+      "firstMs": 123.8,
+      "lastMs": 141.7,
+      "layoutP95Ms": 1.8,
+      "updateP95Ms": 97,
+      "blockedMs": 1685,
+      "longestTaskMs": 97,
+      "heapMB": 31.6
+    },
+    "renderer": "canvas"
+  },
+  "expand/1000/nvl": {
+    "label": "expand/1000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167461907,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 97.3,
+      "p95Ms": 109.7,
+      "worstMs": 109.7,
+      "firstMs": 91.7,
+      "lastMs": 100.9,
+      "layoutP95Ms": 2,
+      "updateP95Ms": 98,
+      "blockedMs": 1755,
+      "longestTaskMs": 97,
+      "heapMB": -53.57
+    },
+    "renderer": "webgl"
+  },
+  "expand/1000/flow": {
+    "label": "expand/1000/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167467114,
+    "metrics": {
+      "nodes": 1500,
+      "edges": 1999,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 71.9,
+      "p95Ms": 97.9,
+      "worstMs": 97.9,
+      "firstMs": 97.9,
+      "lastMs": 64,
+      "layoutP95Ms": 1.5,
+      "updateP95Ms": 1,
+      "blockedMs": 1189,
+      "longestTaskMs": 98,
+      "heapMB": 48.47
+    },
+    "renderer": "dom+svg"
+  },
+  "expand/5000/echarts": {
+    "label": "expand/5000/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167472131,
+    "metrics": {
+      "nodes": 5500,
+      "edges": 8000,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 460.2,
+      "p95Ms": 524.3,
+      "worstMs": 524.3,
+      "firstMs": 524.3,
+      "lastMs": 466.1,
+      "layoutP95Ms": 6.8,
+      "updateP95Ms": 503,
+      "blockedMs": 8907,
+      "longestTaskMs": 503,
+      "heapMB": 313.21
+    },
+    "renderer": "canvas"
+  },
+  "expand/5000/cytoscape": {
+    "label": "expand/5000/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167485661,
+    "metrics": {
+      "nodes": 5500,
+      "edges": 8000,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 291.6,
+      "p95Ms": 366.4,
+      "worstMs": 366.4,
+      "firstMs": 314.2,
+      "lastMs": 292.8,
+      "layoutP95Ms": 6.8,
+      "updateP95Ms": 173,
+      "blockedMs": 5806,
+      "longestTaskMs": 192,
+      "heapMB": 247.54
+    },
+    "renderer": "canvas"
+  },
+  "expand/5000/vis": {
+    "label": "expand/5000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167495611,
+    "metrics": {
+      "nodes": 5500,
+      "edges": 8000,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 550.6,
+      "p95Ms": 578.1,
+      "worstMs": 578.1,
+      "firstMs": 568.8,
+      "lastMs": 572.9,
+      "layoutP95Ms": 7.3,
+      "updateP95Ms": 397,
+      "blockedMs": 10905,
+      "longestTaskMs": 396,
+      "heapMB": 3.41
+    },
+    "renderer": "canvas"
+  },
+  "expand/5000/nvl": {
+    "label": "expand/5000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167511124,
+    "metrics": {
+      "nodes": 5500,
+      "edges": 8000,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 205.1,
+      "p95Ms": 263.5,
+      "worstMs": 263.5,
+      "firstMs": 262.2,
+      "lastMs": 196.3,
+      "layoutP95Ms": 7.7,
+      "updateP95Ms": 230,
+      "blockedMs": 3752,
+      "longestTaskMs": 230,
+      "heapMB": 166.41
+    },
+    "renderer": "webgl"
+  },
+  "expand/5000/flow": {
+    "label": "expand/5000/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167530748,
+    "metrics": {
+      "nodes": 5500,
+      "edges": 8000,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 467.3,
+      "p95Ms": 1272.5,
+      "worstMs": 1272.5,
+      "firstMs": 1272.5,
+      "lastMs": 467.3,
+      "layoutP95Ms": 6.1,
+      "updateP95Ms": 5,
+      "blockedMs": 13678,
+      "longestTaskMs": 937,
+      "heapMB": 188.75
+    },
+    "renderer": "dom+svg"
+  },
+  "expand/20000/echarts": {
+    "label": "expand/20000/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167555560,
+    "metrics": {
+      "nodes": 20500,
+      "edges": 30495,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 1958.9,
+      "p95Ms": 2140.8,
+      "worstMs": 2140.8,
+      "firstMs": 1957.5,
+      "lastMs": 1955.5,
+      "layoutP95Ms": 22.9,
+      "updateP95Ms": 2091,
+      "blockedMs": 38468,
+      "longestTaskMs": 2090,
+      "heapMB": 518.51
+    },
+    "renderer": "canvas"
+  },
+  "expand/20000/cytoscape": {
+    "label": "expand/20000/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167609363,
+    "metrics": {
+      "nodes": 20500,
+      "edges": 30495,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 1193.7,
+      "p95Ms": 1283.9,
+      "worstMs": 1283.9,
+      "firstMs": 1234.7,
+      "lastMs": 1202.1,
+      "layoutP95Ms": 25.1,
+      "updateP95Ms": 611,
+      "blockedMs": 23844,
+      "longestTaskMs": 687,
+      "heapMB": 380.13
+    },
+    "renderer": "canvas"
+  },
+  "expand/20000/vis": {
+    "label": "expand/20000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167642241,
+    "metrics": {
+      "nodes": 20500,
+      "edges": 30495,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 2615,
+      "p95Ms": 2834.6,
+      "worstMs": 2834.6,
+      "firstMs": 2659.6,
+      "lastMs": 2549.5,
+      "layoutP95Ms": 23.4,
+      "updateP95Ms": 1749,
+      "blockedMs": 52347,
+      "longestTaskMs": 1749,
+      "heapMB": 57.89
+    },
+    "renderer": "canvas"
+  },
+  "expand/20000/nvl": {
+    "label": "expand/20000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788167703018,
+    "metrics": {
+      "nodes": 20500,
+      "edges": 30495,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 1045,
+      "p95Ms": 1085.2,
+      "worstMs": 1085.2,
+      "firstMs": 1085.2,
+      "lastMs": 1050.8,
+      "layoutP95Ms": 24.6,
+      "updateP95Ms": 927,
+      "blockedMs": 20071,
+      "longestTaskMs": 926,
+      "heapMB": 244.6
+    },
+    "renderer": "webgl"
+  },
+  "expand/20000/flow": {
+    "label": "expand/20000/flow",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n    - locator resolved to <select>…</select>\n  - attempting select option action\n    - waiting for element to be vis"
+  },
+  "leak/r1/nvl": {
+    "label": "leak/r1/nvl",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n"
+  },
+  "leak/r1/cytoscape": {
+    "label": "leak/r1/cytoscape",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n"
+  },
+  "leak/r1/vis": {
+    "label": "leak/r1/vis",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n"
+  },
+  "leak/r1/echarts": {
+    "label": "leak/r1/echarts",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n"
+  },
+  "leak/r2/nvl": {
+    "label": "leak/r2/nvl",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n"
+  },
+  "leak/r2/cytoscape": {
+    "label": "leak/r2/cytoscape",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n"
+  },
+  "leak/r2/vis": {
+    "label": "leak/r2/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167959245,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 57.9,
+      "frameP95": 58.4,
+      "worstFrameMs": 91.7,
+      "dropped": 508,
+      "updateMs": 2,
+      "blockedMs": 7385,
+      "heapMB": -12.32,
+      "heapSlopeMBs": -4.449,
+      "leakMB": -75.17
+    },
+    "renderer": "canvas"
+  },
+  "leak/r2/echarts": {
+    "label": "leak/r2/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788167980994,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 119,
+      "pushedPerSec": 298,
+      "fps": 12.1,
+      "frameP95": 142.6,
+      "worstFrameMs": 158,
+      "dropped": 977,
+      "updateMs": 12,
+      "blockedMs": 13253,
+      "heapMB": 139.67,
+      "heapSlopeMBs": 0.452,
+      "leakMB": -4.84
+    },
+    "renderer": "canvas"
+  },
+  "leak/r3/nvl": {
+    "label": "leak/r3/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168003628,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 199,
+      "pushedPerSec": 498,
+      "fps": 119.9,
+      "frameP95": 9,
+      "worstFrameMs": 16.8,
+      "dropped": 0,
+      "updateMs": 253,
+      "blockedMs": 0,
+      "heapMB": -65.88,
+      "heapSlopeMBs": 7.326,
+      "leakMB": -151.35
+    },
+    "renderer": "webgl"
+  },
+  "leak/r3/cytoscape": {
+    "label": "leak/r3/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168025277,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 90.2,
+      "frameP95": 33.3,
+      "worstFrameMs": 50.1,
+      "dropped": 202,
+      "updateMs": 27,
+      "blockedMs": 0,
+      "heapMB": 95.64,
+      "heapSlopeMBs": 0.02,
+      "leakMB": -9.62
+    },
+    "renderer": "canvas"
+  },
+  "leak/r3/vis": {
+    "label": "leak/r3/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168046910,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 47.1,
+      "frameP95": 74.9,
+      "worstFrameMs": 109.2,
+      "dropped": 632,
+      "updateMs": 2,
+      "blockedMs": 11200,
+      "heapMB": 65.03,
+      "heapSlopeMBs": 1.383,
+      "leakMB": -5.22
+    },
+    "renderer": "canvas"
+  },
+  "leak/r3/echarts": {
+    "label": "leak/r3/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168068802,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 112,
+      "pushedPerSec": 280,
+      "fps": 11.4,
+      "frameP95": 159.1,
+      "worstFrameMs": 200.5,
+      "dropped": 986,
+      "updateMs": 14,
+      "blockedMs": 12968,
+      "heapMB": 180.58,
+      "heapSlopeMBs": 3.103,
+      "leakMB": -2.23
+    },
+    "renderer": "canvas"
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "hover4px/echarts": {
+    "label": "hover4px/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788169851590,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0%",
+      "pointerMoves": 988,
+      "hoverCallbacks": 1,
+      "callbacksPerMove": 0,
+      "fps": 61.6,
+      "frameP95": 25.8,
+      "worstFrameMs": 66.6,
+      "dropped": 141,
+      "blockedMs": 16406
+    },
+    "renderer": "canvas"
+  },
+  "hover4px/fusion": {
+    "label": "hover4px/fusion",
+    "backend": null,
+    "engine": "fusion",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788169878093,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0.5%",
+      "pointerMoves": 1900,
+      "hoverCallbacks": 0,
+      "callbacksPerMove": 0,
+      "fps": 118.5,
+      "frameP95": 9.2,
+      "worstFrameMs": 109.2,
+      "dropped": 6,
+      "blockedMs": 13838
+    },
+    "renderer": "svg"
+  },
+  "hover4px/cytoscape": {
+    "label": "hover4px/cytoscape",
+    "driverError": "TimeoutError: locator.isDisabled: Timeout 120000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Run', exact: true })\n"
+  },
+  "hover4px/vis": {
+    "label": "hover4px/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788170078007,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0%",
+      "pointerMoves": 1760,
+      "hoverCallbacks": 1760,
+      "callbacksPerMove": 1,
+      "fps": 109.8,
+      "frameP95": 16.7,
+      "worstFrameMs": 25.1,
+      "dropped": 1,
+      "blockedMs": 7105
+    },
+    "renderer": "canvas"
+  },
+  "hover4px/vng": {
+    "label": "hover4px/vng",
+    "backend": null,
+    "engine": "vng",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788170094883,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 42292
+    },
+    "renderer": "svg"
+  },
+  "hover4px/jsplumb": {
+    "label": "hover4px/jsplumb",
+    "backend": null,
+    "engine": "jsplumb",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788170104369,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0.2%",
+      "pointerMoves": 1368,
+      "hoverCallbacks": 1368,
+      "callbacksPerMove": 1,
+      "fps": 85.4,
+      "frameP95": 17.1,
+      "worstFrameMs": 33.4,
+      "dropped": 14,
+      "blockedMs": 70137
+    },
+    "renderer": "dom+svg"
+  },
+  "hover4px/nvl": {
+    "label": "hover4px/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788170192931,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0%",
+      "pointerMoves": 1852,
+      "hoverCallbacks": 2,
+      "callbacksPerMove": 0,
+      "fps": 115.5,
+      "frameP95": 9.2,
+      "worstFrameMs": 33.3,
+      "dropped": 12,
+      "blockedMs": 54969
+    },
+    "renderer": "canvas"
+  },
+  "hover4px/flow": {
+    "label": "hover4px/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788170258431,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0%",
+      "pointerMoves": 1658,
+      "hoverCallbacks": 0,
+      "callbacksPerMove": 0,
+      "fps": 107.1,
+      "frameP95": 16.7,
+      "worstFrameMs": 25.8,
+      "dropped": 2,
+      "blockedMs": 3157
+    },
+    "renderer": "dom+svg"
+  }
+}

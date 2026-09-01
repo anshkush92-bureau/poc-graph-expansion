@@ -133,22 +133,47 @@ export function layoutRadial(graph, prev) {
   const known = new Set(graph.nodes.map(n => n.id))
   const roots = graph.nodes.filter(n => !hasParent.has(n.id)).map(n => n.id)
 
-  // Walk the tree once to fix each node's depth and its child list.
+  // Walk the graph once to fix each node's ring and its child list.
+  //
+  // Breadth-first, which matters as soon as the graph is not a pure tree. A
+  // depth-first walk gives each node the depth of whichever path happened to
+  // reach it first, so one cross-link can drag a node several rings outward and
+  // hand it a parent on the far side of the circle. Its slot then lands next to
+  // an unrelated node, and since a ring's radius is sized off its *tightest*
+  // pair, one such collision inflates the whole ring: a 100-node graph with
+  // cross-links came out 9,373px across, against the 1,719px this is supposed
+  // to bound it to. Breadth-first gives every node its shortest-path depth, so
+  // rings stay shallow and slots stay even.
+  //
+  // It also removes a recursion limit. The depth-first version called itself
+  // once per node, which a few thousand nodes in a chain would overflow.
   const depth = new Map()
   const kidsOf = new Map()
   const seen = new Set()
 
-  function measure(id, d) {
-    if (seen.has(id) || !known.has(id)) return
-    seen.add(id)
-    depth.set(id, d)
-    const kids = (children.get(id) || []).filter(k => known.has(k) && !seen.has(k))
-    kidsOf.set(id, kids)
-    kids.forEach(k => measure(k, d + 1))
+  function measure(start) {
+    if (seen.has(start) || !known.has(start)) return
+    seen.add(start)
+    depth.set(start, 0)
+    // A cursor rather than `shift()`, which is O(n) per call and would make
+    // this quadratic on a large graph.
+    const queue = [start]
+    for (let at = 0; at < queue.length; at++) {
+      const id = queue[at]
+      const kids = []
+      ;(children.get(id) || []).forEach(kid => {
+        if (!known.has(kid) || seen.has(kid)) return
+        seen.add(kid)
+        depth.set(kid, depth.get(id) + 1)
+        kids.push(kid)
+        queue.push(kid)
+      })
+      kidsOf.set(id, kids)
+    }
   }
-  roots.forEach(r => measure(r, 0))
+  roots.forEach(measure)
   // Anything unreachable from a root still needs a place.
-  graph.nodes.forEach(n => { if (!seen.has(n.id)) { roots.push(n.id); measure(n.id, 0) } })
+  graph.nodes.forEach(n => { if (!seen.has(n.id)) { roots.push(n.id); measure(n.id) } })
 
   const byDepth = new Map()
   depth.forEach((d, id) => {

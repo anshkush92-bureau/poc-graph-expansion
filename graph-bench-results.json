@@ -1,0 +1,1334 @@
+{
+  "echarts::hairball": {
+    "engine": "echarts",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160096584,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 3,
+      "layoutMs": 2,
+      "updateMs": 153,
+      "ttfrMs": 238,
+      "heapMB": 35.2,
+      "blockedMs": 152,
+      "longestTaskMs": 152
+    }
+  },
+  "echarts::stream": {
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160097253,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 32.1,
+      "frameP95": 83.5,
+      "worstFrameMs": 92.5,
+      "dropped": 786,
+      "updateMs": 9,
+      "blockedMs": 16825,
+      "heapMB": 18.52,
+      "heapSlopeMBs": -0.449,
+      "leakMB": 15.83
+    }
+  },
+  "echarts::zoompan": {
+    "engine": "echarts",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160118124,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 62.3,
+      "frameP50": 16.7,
+      "frameP95": 17.6,
+      "worstFrameMs": 38.2,
+      "dropped": 16,
+      "blockedMs": 0
+    }
+  },
+  "echarts::layout": {
+    "engine": "echarts",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160128651,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 384,
+      "transferMs": 0,
+      "totalMs": 385,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 383.3,
+      "blockedMs": 385,
+      "drawMs": 88
+    }
+  },
+  "echarts::optimise": {
+    "engine": "echarts",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160129722,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 34,
+      "updateMs": 12,
+      "fps": 120.1,
+      "frameP95": 9.3,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "echarts::hover": {
+    "engine": "echarts",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160140071,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "0.2%",
+      "pointerMoves": 1784,
+      "hoverCallbacks": 1192,
+      "callbacksPerMove": 0.67,
+      "fps": 111.3,
+      "frameP95": 9.3,
+      "worstFrameMs": 250,
+      "dropped": 22,
+      "blockedMs": 1001
+    }
+  },
+  "fusion::hairball": {
+    "engine": "fusion",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160150224,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 1,
+      "updateMs": 19,
+      "ttfrMs": 20,
+      "heapMB": 16.88,
+      "blockedMs": 0,
+      "longestTaskMs": 0
+    }
+  },
+  "fusion::stream": {
+    "engine": "fusion",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160150916,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 41,
+      "pushedPerSec": 103,
+      "fps": 6.2,
+      "frameP95": 533.3,
+      "worstFrameMs": 566.7,
+      "dropped": 1125,
+      "updateMs": 1,
+      "blockedMs": 19203,
+      "heapMB": -12.3,
+      "heapSlopeMBs": 1.475,
+      "leakMB": 9.78
+    }
+  },
+  "fusion::zoompan": {
+    "engine": "fusion",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160172360,
+    "unsupported": "No viewport. This engine has no pan/zoom of its own, so there is nothing to drive — a viewport here has to be hand-built, and that is the finding.",
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499
+    }
+  },
+  "fusion::layout": {
+    "engine": "fusion",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160172916,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 372,
+      "transferMs": 0,
+      "totalMs": 372,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 366.7,
+      "blockedMs": 372,
+      "drawMs": 13
+    }
+  },
+  "fusion::optimise": {
+    "engine": "fusion",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160174371,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 70,
+      "updateMs": 18,
+      "fps": 120,
+      "frameP95": 9.1,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    },
+    "note": "No viewport on this engine — frame numbers here are the idle cost of holding the graph, not of moving it."
+  },
+  "fusion::hover": {
+    "engine": "fusion",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160184749,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 1568
+    }
+  },
+  "cytoscape::hairball": {
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160186772,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 1,
+      "updateMs": 204,
+      "ttfrMs": 260,
+      "heapMB": 71.76,
+      "blockedMs": 258,
+      "longestTaskMs": 204
+    }
+  },
+  "cytoscape::stream": {
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160187463,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 90.5,
+      "frameP95": 33.3,
+      "worstFrameMs": 49.1,
+      "dropped": 197,
+      "updateMs": 20,
+      "blockedMs": 50,
+      "heapMB": 90.46,
+      "heapSlopeMBs": 0.221,
+      "leakMB": 67.5
+    }
+  },
+  "cytoscape::zoompan": {
+    "engine": "cytoscape",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160208043,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 119.5,
+      "frameP50": 8.3,
+      "frameP95": 9.3,
+      "worstFrameMs": 24.2,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "cytoscape::layout": {
+    "engine": "cytoscape",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160218590,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 393,
+      "transferMs": 0,
+      "totalMs": 394,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 391.9,
+      "blockedMs": 393,
+      "drawMs": 3
+    }
+  },
+  "cytoscape::optimise": {
+    "engine": "cytoscape",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160219524,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 34,
+      "updateMs": 28,
+      "fps": 120,
+      "frameP95": 9,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "cytoscape::hover": {
+    "engine": "cytoscape",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160229871,
+    "metrics": {
+      "nodes": 1000,
+      "debounceMs": 0,
+      "hitArea": "2.2%",
+      "pointerMoves": 1922,
+      "hoverCallbacks": 1922,
+      "callbacksPerMove": 1,
+      "fps": 119.9,
+      "frameP95": 8.4,
+      "worstFrameMs": 16.6,
+      "dropped": 0,
+      "blockedMs": 5152
+    }
+  },
+  "vis::hairball": {
+    "engine": "vis",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160243965,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 85,
+      "ttfrMs": 122,
+      "heapMB": 22.66,
+      "blockedMs": 86,
+      "longestTaskMs": 86
+    }
+  },
+  "vis::stream": {
+    "engine": "vis",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160244481,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 72.4,
+      "frameP95": 50,
+      "worstFrameMs": 74.4,
+      "dropped": 369,
+      "updateMs": 2,
+      "blockedMs": 110,
+      "heapMB": -64.81,
+      "heapSlopeMBs": -0.03,
+      "leakMB": -53.33
+    }
+  },
+  "vis::zoompan": {
+    "engine": "vis",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160265099,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 120.2,
+      "frameP50": 8.3,
+      "frameP95": 9.2,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "vis::layout": {
+    "engine": "vis",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160275515,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 383,
+      "transferMs": 0,
+      "totalMs": 383,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 383.3,
+      "blockedMs": 383,
+      "drawMs": 38
+    }
+  },
+  "vis::optimise": {
+    "engine": "vis",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160276462,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 18,
+      "updateMs": 7,
+      "fps": 120.3,
+      "frameP95": 9.3,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "vis::hover": {
+    "engine": "vis",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160286799,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 1568
+    }
+  },
+  "vng::hairball": {
+    "engine": "vng",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160287865,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 0,
+      "ttfrMs": 11,
+      "heapMB": 1.46,
+      "blockedMs": 0,
+      "longestTaskMs": 0
+    }
+  },
+  "vng::stream": {
+    "engine": "vng",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160288272,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 120,
+      "frameP95": 8.9,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "updateMs": 0,
+      "blockedMs": 0,
+      "heapMB": -6.19,
+      "heapSlopeMBs": -1.421,
+      "leakMB": -6.03
+    }
+  },
+  "vng::zoompan": {
+    "engine": "vng",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160308777,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 120,
+      "frameP50": 8.3,
+      "frameP95": 8.9,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "vng::layout": {
+    "engine": "vng",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160319108,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 411,
+      "transferMs": 0,
+      "totalMs": 413,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 408.3,
+      "blockedMs": 413,
+      "drawMs": 0
+    }
+  },
+  "vng::optimise": {
+    "engine": "vng",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160319990,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 210,
+      "updateMs": 0,
+      "fps": 120,
+      "frameP95": 8.8,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "vng::hover": {
+    "engine": "vng",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160330519,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 1568
+    }
+  },
+  "jsplumb::hairball": {
+    "engine": "jsplumb",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160331291,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 2,
+      "layoutMs": 2,
+      "updateMs": 485,
+      "ttfrMs": 6594,
+      "heapMB": 71.24,
+      "blockedMs": 6573,
+      "longestTaskMs": 3928
+    }
+  },
+  "jsplumb::stream": {
+    "engine": "jsplumb",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160338282,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 41,
+      "pushedPerSec": 103,
+      "fps": 2.8,
+      "frameP95": 516.6,
+      "worstFrameMs": 516.8,
+      "dropped": 1156,
+      "updateMs": 2,
+      "blockedMs": 18953,
+      "heapMB": 52.58,
+      "heapSlopeMBs": -14.844,
+      "leakMB": 43.51
+    }
+  },
+  "jsplumb::zoompan": {
+    "engine": "jsplumb",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160359900,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 2,
+      "frameP50": 500.1,
+      "frameP95": 541.7,
+      "worstFrameMs": 541.7,
+      "dropped": 589,
+      "blockedMs": 10093
+    }
+  },
+  "jsplumb::layout": {
+    "engine": "jsplumb",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160377755,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 366,
+      "transferMs": 0,
+      "totalMs": 366,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 375.1,
+      "blockedMs": 376,
+      "drawMs": 423
+    }
+  },
+  "jsplumb::optimise": {
+    "engine": "jsplumb",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160380053,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 70,
+      "updateMs": 16,
+      "fps": 60,
+      "frameP95": 25,
+      "worstFrameMs": 33.4,
+      "dropped": 44,
+      "blockedMs": 0
+    }
+  },
+  "jsplumb::hover": {
+    "engine": "jsplumb",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160390474,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 1568
+    }
+  },
+  "nvl::hairball": {
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160400423,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 1,
+      "updateMs": 90,
+      "ttfrMs": 129,
+      "heapMB": 101.35,
+      "blockedMs": 90,
+      "longestTaskMs": 90
+    }
+  },
+  "nvl::stream": {
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160401014,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 199,
+      "pushedPerSec": 498,
+      "fps": 109.3,
+      "frameP95": 16.7,
+      "worstFrameMs": 25.8,
+      "dropped": 8,
+      "updateMs": 199,
+      "blockedMs": 0,
+      "heapMB": -6.71,
+      "heapSlopeMBs": -0.995,
+      "leakMB": 118.05
+    }
+  },
+  "nvl::zoompan": {
+    "engine": "nvl",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160421747,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 120,
+      "frameP50": 8.3,
+      "frameP95": 9.2,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "nvl::layout": {
+    "engine": "nvl",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160432192,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 369,
+      "transferMs": 0,
+      "totalMs": 369,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 366.7,
+      "blockedMs": 369,
+      "drawMs": 5
+    }
+  },
+  "nvl::optimise": {
+    "engine": "nvl",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160433077,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 183,
+      "updateMs": 176,
+      "fps": 120,
+      "frameP95": 9.3,
+      "worstFrameMs": 9.4,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "nvl::hover": {
+    "engine": "nvl",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160443575,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 1568
+    }
+  },
+  "flow::hairball": {
+    "engine": "flow",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788160446092,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 2,
+      "ttfrMs": 293,
+      "heapMB": -89.53,
+      "blockedMs": 283,
+      "longestTaskMs": 283
+    }
+  },
+  "flow::stream": {
+    "engine": "flow",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788160446786,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 80.8,
+      "frameP95": 41.7,
+      "worstFrameMs": 58.3,
+      "dropped": 283,
+      "updateMs": 0,
+      "blockedMs": 409,
+      "heapMB": 69.83,
+      "heapSlopeMBs": 1.692,
+      "leakMB": 55.95
+    }
+  },
+  "flow::zoompan": {
+    "engine": "flow",
+    "scenario": "zoompan",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "seconds": 10
+    },
+    "at": 1788160467374,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "fps": 14,
+      "frameP50": 74.9,
+      "frameP95": 100,
+      "worstFrameMs": 125,
+      "dropped": 454,
+      "blockedMs": 8983
+    }
+  },
+  "flow::layout": {
+    "engine": "flow",
+    "scenario": "layout",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": false,
+      "alphaMin": 0.02
+    },
+    "at": 1788160478113,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "main",
+      "solveMs": 371,
+      "transferMs": 0,
+      "totalMs": 371,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 3,
+      "worstFrameMs": 375,
+      "blockedMs": 375,
+      "drawMs": 1
+    }
+  },
+  "flow::optimise": {
+    "engine": "flow",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": true,
+      "cull": true,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788160479313,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 46,
+      "drawnEdges": 47,
+      "kept": "4.6%",
+      "lod": true,
+      "cull": true,
+      "ttfrMs": 30,
+      "updateMs": 0,
+      "fps": 120,
+      "frameP95": 8.9,
+      "worstFrameMs": 9.5,
+      "dropped": 0,
+      "blockedMs": 0
+    }
+  },
+  "flow::hover": {
+    "engine": "flow",
+    "scenario": "hover",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "debounce": 0,
+      "seconds": 8
+    },
+    "at": 1788160489657,
+    "unsupported": "No hover callbacks anywhere on the pane. This engine either reports no node hover at all, or does not hit-test synthetic pointer events.",
+    "metrics": {
+      "nodes": 1000,
+      "probePoints": 1568
+    }
+  },
+  "echarts::layout-worker": {
+    "engine": "echarts",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160563754,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 390,
+      "transferMs": 39,
+      "totalMs": 429,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 42,
+      "worstFrameMs": 49.9,
+      "blockedMs": 0,
+      "drawMs": 99
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "fusion::layout-worker": {
+    "engine": "fusion",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160565489,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 367,
+      "transferMs": 1,
+      "totalMs": 368,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 47,
+      "worstFrameMs": 9.1,
+      "blockedMs": 0,
+      "drawMs": 13
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "cytoscape::layout-worker": {
+    "engine": "cytoscape",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160567409,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 371,
+      "transferMs": 2,
+      "totalMs": 373,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 47,
+      "worstFrameMs": 8.9,
+      "blockedMs": 0,
+      "drawMs": 4
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "vis::layout-worker": {
+    "engine": "vis",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160568618,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 364,
+      "transferMs": 1,
+      "totalMs": 365,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 46,
+      "worstFrameMs": 8.6,
+      "blockedMs": 0,
+      "drawMs": 56
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "vng::layout-worker": {
+    "engine": "vng",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160569753,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 365,
+      "transferMs": 2,
+      "totalMs": 367,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 46,
+      "worstFrameMs": 9.3,
+      "blockedMs": 0,
+      "drawMs": 0
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "jsplumb::layout-worker": {
+    "engine": "jsplumb",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160570720,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 362,
+      "transferMs": 2,
+      "totalMs": 364,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 40,
+      "worstFrameMs": 17.3,
+      "blockedMs": 0,
+      "drawMs": 434
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "nvl::layout-worker": {
+    "engine": "nvl",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160579575,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 366,
+      "transferMs": 1,
+      "totalMs": 367,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 34,
+      "worstFrameMs": 24.3,
+      "blockedMs": 0,
+      "drawMs": 11
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  },
+  "flow::layout-worker": {
+    "engine": "flow",
+    "scenario": "layout-worker",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "mode": "force",
+      "worker": true,
+      "alphaMin": 0.02
+    },
+    "at": 1788160580711,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "where": "worker",
+      "solveMs": 369,
+      "transferMs": 2,
+      "totalMs": 371,
+      "ticks": 170,
+      "alpha": 0.02,
+      "converged": true,
+      "framesDuring": 47,
+      "worstFrameMs": 8.5,
+      "blockedMs": 0,
+      "drawMs": 1
+    },
+    "note": "transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes."
+  }
+}

@@ -1,0 +1,340 @@
+{
+  "wall/1000/nvl": {
+    "label": "wall/1000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788168099301,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 104,
+      "ttfrMs": 152,
+      "heapMB": 12.46,
+      "blockedMs": 104,
+      "longestTaskMs": 104
+    },
+    "renderer": "canvas"
+  },
+  "wall/1000/cytoscape": {
+    "label": "wall/1000/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788168101732,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 175,
+      "ttfrMs": 237,
+      "heapMB": 26.69,
+      "blockedMs": 227,
+      "longestTaskMs": 174
+    },
+    "renderer": "canvas"
+  },
+  "wall/1000/vis": {
+    "label": "wall/1000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788168103443,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 86,
+      "ttfrMs": 136,
+      "heapMB": 19.43,
+      "blockedMs": 85,
+      "longestTaskMs": 85
+    },
+    "renderer": "canvas"
+  },
+  "wall/1000/echarts": {
+    "label": "wall/1000/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788168105423,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 1,
+      "updateMs": 136,
+      "ttfrMs": 189,
+      "heapMB": 26.49,
+      "blockedMs": 136,
+      "longestTaskMs": 136
+    },
+    "renderer": "canvas"
+  },
+  "wall/1000/flow": {
+    "label": "wall/1000/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500
+    },
+    "at": 1788168107676,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "synthMs": 1,
+      "layoutMs": 2,
+      "updateMs": 1,
+      "ttfrMs": 353,
+      "heapMB": 32.6,
+      "blockedMs": 343,
+      "longestTaskMs": 343
+    },
+    "renderer": "dom+svg"
+  },
+  "wall/5000/nvl": {
+    "label": "wall/5000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168109792,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 5,
+      "layoutMs": 6,
+      "updateMs": 149,
+      "ttfrMs": 312,
+      "heapMB": 21.06,
+      "blockedMs": 264,
+      "longestTaskMs": 149
+    },
+    "renderer": "canvas"
+  },
+  "wall/5000/cytoscape": {
+    "label": "wall/5000/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168113483,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 4,
+      "layoutMs": 6,
+      "updateMs": 699,
+      "ttfrMs": 873,
+      "heapMB": 113.61,
+      "blockedMs": 870,
+      "longestTaskMs": 698
+    },
+    "renderer": "canvas"
+  },
+  "wall/5000/vis": {
+    "label": "wall/5000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168116743,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 4,
+      "layoutMs": 6,
+      "updateMs": 367,
+      "ttfrMs": 541,
+      "heapMB": 50.56,
+      "blockedMs": 539,
+      "longestTaskMs": 366
+    },
+    "renderer": "canvas"
+  },
+  "wall/5000/echarts": {
+    "label": "wall/5000/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168120714,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 4,
+      "layoutMs": 6,
+      "updateMs": 631,
+      "ttfrMs": 662,
+      "heapMB": 62.56,
+      "blockedMs": 630,
+      "longestTaskMs": 630
+    },
+    "renderer": "canvas"
+  },
+  "wall/5000/flow": {
+    "label": "wall/5000/flow",
+    "backend": null,
+    "engine": "flow",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 5000,
+      "edges": 7500
+    },
+    "at": 1788168132069,
+    "metrics": {
+      "nodes": 5000,
+      "edges": 7500,
+      "synthMs": 5,
+      "layoutMs": 6,
+      "updateMs": 4,
+      "ttfrMs": 10843,
+      "heapMB": 135.69,
+      "blockedMs": 10819,
+      "longestTaskMs": 10819
+    },
+    "renderer": "dom+svg"
+  },
+  "wall/20000/nvl": {
+    "label": "wall/20000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000
+    },
+    "at": 1788168145531,
+    "metrics": {
+      "nodes": 20000,
+      "edges": 29995,
+      "synthMs": 19,
+      "layoutMs": 23,
+      "updateMs": 361,
+      "ttfrMs": 1028,
+      "heapMB": 103.17,
+      "blockedMs": 849,
+      "longestTaskMs": 489
+    },
+    "renderer": "canvas"
+  },
+  "wall/20000/cytoscape": {
+    "label": "wall/20000/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000
+    },
+    "at": 1788168160789,
+    "metrics": {
+      "nodes": 20000,
+      "edges": 29995,
+      "synthMs": 18,
+      "layoutMs": 23,
+      "updateMs": 3480,
+      "ttfrMs": 4266,
+      "heapMB": 318.75,
+      "blockedMs": 4262,
+      "longestTaskMs": 3479
+    },
+    "renderer": "canvas"
+  },
+  "wall/20000/vis": {
+    "label": "wall/20000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000
+    },
+    "at": 1788168169896,
+    "metrics": {
+      "nodes": 20000,
+      "edges": 29995,
+      "synthMs": 15,
+      "layoutMs": 22,
+      "updateMs": 1273,
+      "ttfrMs": 2170,
+      "heapMB": 130.74,
+      "blockedMs": 2167,
+      "longestTaskMs": 1272
+    },
+    "renderer": "canvas"
+  },
+  "wall/20000/echarts": {
+    "label": "wall/20000/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000
+    },
+    "at": 1788168182465,
+    "metrics": {
+      "nodes": 20000,
+      "edges": 29995,
+      "synthMs": 18,
+      "layoutMs": 22,
+      "updateMs": 4082,
+      "ttfrMs": 4183,
+      "heapMB": 502.9,
+      "blockedMs": 4082,
+      "longestTaskMs": 4082
+    },
+    "renderer": "canvas"
+  },
+  "wall/20000/flow": {
+    "label": "wall/20000/flow",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n    - locator resolved to <select>…</select>\n  - attempting select option action\n    - waiting for element to be vis"
+  },
+  "wall/50000/nvl": {
+    "label": "wall/50000/nvl",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n    - waiting for \"http://localhost:4173/\" navigation to finish...\n"
+  },
+  "wall/50000/cytoscape": {
+    "label": "wall/50000/cytoscape",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n    - waiting for \"http://localhost:4173/\" navigation to finish...\n"
+  },
+  "wall/50000/vis": {
+    "label": "wall/50000/vis",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Engine/ }).first().locator('select')\n    - waiting for \"http://localhost:4173/\" navigation to finish...\n"
+  }
+}

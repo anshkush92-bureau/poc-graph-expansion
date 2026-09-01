@@ -5,9 +5,12 @@ import React, { useEffect, useRef } from 'react'
 // `layout: 'none'` uses no grid or axis components.
 import * as echarts from 'echarts/core'
 import { GraphChart } from 'echarts/charts'
-import { CanvasRenderer } from 'echarts/renderers'
+// Both backends, because the lab lets you switch between them. The SVG one is
+// ~15 KB on top of the canvas one, which is a fair price for being able to A/B
+// the two rendering families with everything else held identical.
+import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 
-echarts.use([GraphChart, CanvasRenderer])
+echarts.use([GraphChart, CanvasRenderer, SVGRenderer])
 import { ENTITY } from '../graph/data.js'
 import { withLoops } from '../graph/loops.js'
 import { BONE, FLARE, INK, nodeColor } from '../ui/theme.js'
@@ -136,7 +139,7 @@ const EDGE_LABEL = {
   padding: [2, 3, 1, 3]
 }
 
-function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusVersion, shapeSet, edgeStyle, edgeOverrides = NO_OVERRIDES, onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }) {
+function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusVersion, shapeSet, edgeStyle, edgeOverrides = NO_OVERRIDES, renderer = 'canvas', onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport }) {
   const frame = useRef(null)
   const chart = useRef(null)
   const layer = useRef(null)
@@ -166,7 +169,11 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
   // roam position, and re-binding listeners is how you end up firing a click
   // handler five times.
   useEffect(() => {
-    const instance = echarts.init(frame.current, null, { renderer: 'canvas' })
+    // Fixed for the instance's life — ECharts has no way to swap the backend on
+    // a live chart, so a caller that wants the other one has to remount this
+    // component. `renderer` is deliberately absent from the deps below for that
+    // reason: re-running here would rebuild the chart and throw the roam away.
+    const instance = echarts.init(frame.current, null, { renderer })
     chart.current = instance
 
     // `{ dataType: 'node' }` is what keeps these off the edges — without it the
@@ -212,11 +219,46 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
     const observer = new ResizeObserver(() => instance.resize())
     observer.observe(frame.current)
 
+    // The benchmark's handle.
+    //
+    // `graphRoam` is the action ECharts dispatches to itself when you scroll or
+    // drag the chart, so driving it is the same code path a wheel event takes —
+    // and, importantly, the path that does *not* re-derive the series. Sending
+    // `zoom` through `setOption` would work too and would look faster or slower
+    // depending on nothing but which of the two you picked, which is exactly the
+    // sort of choice a comparison must not make silently.
+    //
+    // `zoom` in the payload is a multiplier, which is why the shared contract is
+    // relative: this engine has no absolute form to convert from.
+    if (onViewport) {
+      onViewport({
+        zoomBy: factor => {
+          const box = frame.current ? frame.current.getBoundingClientRect() : { width: 0, height: 0 }
+          instance.dispatchAction({
+            type: 'graphRoam',
+            seriesId: 'graph',
+            zoom: factor,
+            originX: box.width / 2,
+            originY: box.height / 2
+          })
+        },
+        panBy: (dx, dy) => instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', dx, dy }),
+        // No fit action exists — the series fits its own bounding box whenever
+        // an option is pushed without a roam transform, and there is no way to
+        // ask for that without a `setOption`. Resetting the roam is the closest
+        // honest equivalent.
+        fit: () => instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', zoom: 1 })
+      })
+    }
+
     return () => {
+      if (onViewport) onViewport(null)
       observer.disconnect()
       instance.dispose()
       chart.current = null
     }
+    // Mount-only: `onViewport` is stable where it is passed at all, and
+    // re-running this effect would tear down the chart and lose the roam.
   }, [])
 
   // ══ STEPS 1–8 ════════════════════════════════════════════════════════════
@@ -226,6 +268,10 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
   useEffect(() => {
     const instance = chart.current
     if (!instance) return
+    // What this whole effect costs, reported to App for the pane header. It is
+    // the update cost — deriving the option and handing it over — which is the
+    // number that separates these libraries once the graph is large.
+    const started = performance.now()
 
     // ── STEP 1 · READ THE GRAPH ───────────────────────────────────────────
     // `graph` is the domain model and holds no visual information at all:
@@ -499,7 +545,9 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
       })
     }
     place.current()
-  }, [graph, positions, hidden, statusVersion, isExpanded, isPending, shapes, rule, edgeOverrides])
+
+    if (onStat) onStat(Math.round(performance.now() - started))
+  }, [graph, positions, hidden, statusVersion, isExpanded, isPending, shapes, rule, edgeOverrides, onStat])
 
   return (
     <React.Fragment>

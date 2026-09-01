@@ -1,0 +1,58 @@
+[
+ {
+  "label": "hover4px/echarts",
+  "engine": "echarts",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/fusion",
+  "engine": "fusion",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/vis",
+  "engine": "vis",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/vng",
+  "engine": "vng",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/jsplumb",
+  "engine": "jsplumb",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/nvl",
+  "engine": "nvl",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ },
+ {
+  "label": "hover4px/flow",
+  "engine": "flow",
+  "scenario": "hover",
+  "knobs": {},
+  "timeoutMs": 180000
+ }
+]

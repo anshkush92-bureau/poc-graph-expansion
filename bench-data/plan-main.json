@@ -1,0 +1,609 @@
+[
+ {
+  "label": "lod-off/echarts",
+  "engine": "echarts",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/fusion",
+  "engine": "fusion",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/vis",
+  "engine": "vis",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/vng",
+  "engine": "vng",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/jsplumb",
+  "engine": "jsplumb",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/nvl",
+  "engine": "nvl",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-off/flow",
+  "engine": "flow",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": false,
+   "Viewport culling": false,
+   "Visible fraction": 0.5,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-only/echarts",
+  "engine": "echarts",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": true,
+   "Viewport culling": false,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-only/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": true,
+   "Viewport culling": false,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-only/vis",
+  "engine": "vis",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": true,
+   "Viewport culling": false,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-only/nvl",
+  "engine": "nvl",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": true,
+   "Viewport culling": false,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "lod-only/flow",
+  "engine": "flow",
+  "scenario": "optimise",
+  "knobs": {
+   "Level of detail (drop labels)": true,
+   "Viewport culling": false,
+   "Nodes": 1000,
+   "Edges": 1500
+  }
+ },
+ {
+  "label": "backend/echarts-canvas/hairball",
+  "engine": "echarts",
+  "backend": "canvas",
+  "scenario": "hairball",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-canvas/expand",
+  "engine": "echarts",
+  "backend": "canvas",
+  "scenario": "expand",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-canvas/zoompan",
+  "engine": "echarts",
+  "backend": "canvas",
+  "scenario": "zoompan",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-canvas/stream",
+  "engine": "echarts",
+  "backend": "canvas",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-svg/hairball",
+  "engine": "echarts",
+  "backend": "svg",
+  "scenario": "hairball",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-svg/expand",
+  "engine": "echarts",
+  "backend": "svg",
+  "scenario": "expand",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-svg/zoompan",
+  "engine": "echarts",
+  "backend": "svg",
+  "scenario": "zoompan",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/echarts-svg/stream",
+  "engine": "echarts",
+  "backend": "svg",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-canvas/hairball",
+  "engine": "cytoscape",
+  "backend": "canvas",
+  "scenario": "hairball",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-canvas/expand",
+  "engine": "cytoscape",
+  "backend": "canvas",
+  "scenario": "expand",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-canvas/zoompan",
+  "engine": "cytoscape",
+  "backend": "canvas",
+  "scenario": "zoompan",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-canvas/stream",
+  "engine": "cytoscape",
+  "backend": "canvas",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-webgl/hairball",
+  "engine": "cytoscape",
+  "backend": "webgl",
+  "scenario": "hairball",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-webgl/expand",
+  "engine": "cytoscape",
+  "backend": "webgl",
+  "scenario": "expand",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-webgl/zoompan",
+  "engine": "cytoscape",
+  "backend": "webgl",
+  "scenario": "zoompan",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/cytoscape-webgl/stream",
+  "engine": "cytoscape",
+  "backend": "webgl",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-canvas/hairball",
+  "engine": "nvl",
+  "backend": "canvas",
+  "scenario": "hairball",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-canvas/expand",
+  "engine": "nvl",
+  "backend": "canvas",
+  "scenario": "expand",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-canvas/zoompan",
+  "engine": "nvl",
+  "backend": "canvas",
+  "scenario": "zoompan",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-canvas/stream",
+  "engine": "nvl",
+  "backend": "canvas",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-webgl/hairball",
+  "engine": "nvl",
+  "backend": "webgl",
+  "scenario": "hairball",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-webgl/expand",
+  "engine": "nvl",
+  "backend": "webgl",
+  "scenario": "expand",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-webgl/zoompan",
+  "engine": "nvl",
+  "backend": "webgl",
+  "scenario": "zoompan",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "backend/nvl-webgl/stream",
+  "engine": "nvl",
+  "backend": "webgl",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 240000
+ },
+ {
+  "label": "expand/1000/echarts",
+  "engine": "echarts",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/1000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/1000/vis",
+  "engine": "vis",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/1000/nvl",
+  "engine": "nvl",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/1000/flow",
+  "engine": "flow",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 1000,
+   "Edges": 1500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/5000/echarts",
+  "engine": "echarts",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/5000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/5000/vis",
+  "engine": "vis",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/5000/nvl",
+  "engine": "nvl",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/5000/flow",
+  "engine": "flow",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 5000,
+   "Edges": 7500,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/20000/echarts",
+  "engine": "echarts",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/20000/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/20000/vis",
+  "engine": "vis",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/20000/nvl",
+  "engine": "nvl",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "expand/20000/flow",
+  "engine": "flow",
+  "scenario": "expand",
+  "knobs": {
+   "Nodes": 20000,
+   "Edges": 30000,
+   "Nodes per click": 25,
+   "Expansions": 20
+  },
+  "timeoutMs": 300000
+ },
+ {
+  "label": "leak/r1/nvl",
+  "engine": "nvl",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r1/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r1/vis",
+  "engine": "vis",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r1/echarts",
+  "engine": "echarts",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r2/nvl",
+  "engine": "nvl",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r2/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r2/vis",
+  "engine": "vis",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r2/echarts",
+  "engine": "echarts",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r3/nvl",
+  "engine": "nvl",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r3/cytoscape",
+  "engine": "cytoscape",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r3/vis",
+  "engine": "vis",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ },
+ {
+  "label": "leak/r3/echarts",
+  "engine": "echarts",
+  "scenario": "stream",
+  "knobs": {},
+  "timeoutMs": 120000
+ }
+]

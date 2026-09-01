@@ -78,11 +78,24 @@ export function useGraph() {
     publish()
   }, [])
 
+  /**
+   * Replaces the whole graph — the stress dial's entry point.
+   *
+   * Expansion status is dropped with it, so the loaded nodes are all unexplored
+   * and stay clickable: a synthetic graph is still a live graph, and expanding a
+   * node inside one adds real neighbours on top of it.
+   */
+  const load = useCallback(next => {
+    setGraph(next)
+    status.current = new Map()
+    publish()
+  }, [])
+
   // Stable identities: both read a ref, so an empty dep list is safe. If these
   // were re-created each render, every consumer's useMemo would miss and the
   // React Flow layout would recompute on unrelated state changes like hover.
   const isExpanded = useCallback(id => status.current.get(id) === 'done', [])
   const isPending = useCallback(id => status.current.get(id) === 'pending', [])
 
-  return { graph, isExpanded, isPending, statusVersion, expand, addNode, deleteNode, reset }
+  return { graph, isExpanded, isPending, statusVersion, expand, addNode, deleteNode, reset, load }
 }

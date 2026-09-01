@@ -1,0 +1,466 @@
+{
+  "lod-off/echarts": {
+    "label": "lod-off/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "optimise",
+    "knobs": {
+      "nodes": 1000,
+      "edges": 1500,
+      "lod": false,
+      "cull": false,
+      "fraction": 0.5,
+      "seconds": 10
+    },
+    "at": 1788168888227,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "drawnNodes": 1000,
+      "drawnEdges": 1499,
+      "kept": "100%",
+      "lod": false,
+      "cull": false,
+      "ttfrMs": 238,
+      "updateMs": 164,
+      "fps": 49.1,
+      "frameP95": 25.3,
+      "worstFrameMs": 32.4,
+      "dropped": 126,
+      "blockedMs": 0
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r1/nvl": {
+    "label": "leakfix/r1/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168900394,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 109.6,
+      "frameP95": 16.7,
+      "worstFrameMs": 33.4,
+      "dropped": 4,
+      "updateMs": 227,
+      "blockedMs": 0,
+      "baseMB": 7.06,
+      "heapMB": 18.29,
+      "heapSlopeMBs": -0.867,
+      "leakMB": 69.88
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r1/cytoscape": {
+    "label": "leakfix/r1/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168922577,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 92.9,
+      "frameP95": 33.3,
+      "worstFrameMs": 49.9,
+      "dropped": 192,
+      "updateMs": 21,
+      "blockedMs": 0,
+      "baseMB": 13.26,
+      "heapMB": 48.86,
+      "heapSlopeMBs": -0.181,
+      "leakMB": 12.93
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r1/vis": {
+    "label": "leakfix/r1/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168944220,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 56.9,
+      "frameP95": 66.5,
+      "worstFrameMs": 82.6,
+      "dropped": 526,
+      "updateMs": 2,
+      "blockedMs": 7778,
+      "baseMB": 5.5,
+      "heapMB": 8.6,
+      "heapSlopeMBs": -0.112,
+      "leakMB": 1.19
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r1/echarts": {
+    "label": "leakfix/r1/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168965902,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 124,
+      "pushedPerSec": 310,
+      "fps": 12.6,
+      "frameP95": 141.8,
+      "worstFrameMs": 158.4,
+      "dropped": 964,
+      "updateMs": 12,
+      "blockedMs": 13064,
+      "baseMB": 47.59,
+      "heapMB": 88.23,
+      "heapSlopeMBs": -2.327,
+      "leakMB": 21.18
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r2/nvl": {
+    "label": "leakfix/r2/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788168988785,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 199,
+      "pushedPerSec": 498,
+      "fps": 107.4,
+      "frameP95": 16.7,
+      "worstFrameMs": 41.7,
+      "dropped": 28,
+      "updateMs": 181,
+      "blockedMs": 0,
+      "baseMB": 28.25,
+      "heapMB": -6.59,
+      "heapSlopeMBs": -0.285,
+      "leakMB": 68.7
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r2/cytoscape": {
+    "label": "leakfix/r2/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169010402,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 91.3,
+      "frameP95": 33.3,
+      "worstFrameMs": 50.1,
+      "dropped": 191,
+      "updateMs": 25,
+      "blockedMs": 0,
+      "baseMB": 12.42,
+      "heapMB": 38.05,
+      "heapSlopeMBs": -1.304,
+      "leakMB": 12.22
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r2/vis": {
+    "label": "leakfix/r2/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169032035,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 55.7,
+      "frameP95": 66.7,
+      "worstFrameMs": 91.7,
+      "dropped": 534,
+      "updateMs": 2,
+      "blockedMs": 7451,
+      "baseMB": 4.15,
+      "heapMB": 37.91,
+      "heapSlopeMBs": 0.321,
+      "leakMB": -0.28
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r2/echarts": {
+    "label": "leakfix/r2/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169053727,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 123,
+      "pushedPerSec": 308,
+      "fps": 12.4,
+      "frameP95": 141.8,
+      "worstFrameMs": 167,
+      "dropped": 974,
+      "updateMs": 12,
+      "blockedMs": 13086,
+      "baseMB": 44.12,
+      "heapMB": 79.03,
+      "heapSlopeMBs": -2.052,
+      "leakMB": 21.32
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r3/nvl": {
+    "label": "leakfix/r3/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169076760,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 107.9,
+      "frameP95": 16.7,
+      "worstFrameMs": 41.7,
+      "dropped": 17,
+      "updateMs": 209,
+      "blockedMs": 0,
+      "baseMB": 31.59,
+      "heapMB": -17.31,
+      "heapSlopeMBs": 0.362,
+      "leakMB": 68.63
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r3/cytoscape": {
+    "label": "leakfix/r3/cytoscape",
+    "backend": null,
+    "engine": "cytoscape",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169098402,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 90.2,
+      "frameP95": 33.3,
+      "worstFrameMs": 58.3,
+      "dropped": 199,
+      "updateMs": 26,
+      "blockedMs": 55,
+      "baseMB": 12.33,
+      "heapMB": 39.97,
+      "heapSlopeMBs": -1.201,
+      "leakMB": 12.26
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r3/vis": {
+    "label": "leakfix/r3/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169119993,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 200,
+      "pushedPerSec": 500,
+      "fps": 56,
+      "frameP95": 66.7,
+      "worstFrameMs": 84.1,
+      "dropped": 532,
+      "updateMs": 2,
+      "blockedMs": 8208,
+      "baseMB": 4.36,
+      "heapMB": 17.34,
+      "heapSlopeMBs": 0.128,
+      "leakMB": -0.07
+    },
+    "renderer": "canvas"
+  },
+  "leakfix/r3/echarts": {
+    "label": "leakfix/r3/echarts",
+    "backend": null,
+    "engine": "echarts",
+    "scenario": "stream",
+    "knobs": {
+      "base": 1000,
+      "rate": 500,
+      "seconds": 20
+    },
+    "at": 1788169141660,
+    "metrics": {
+      "nodes": 1000,
+      "edges": 1499,
+      "pushes": 101,
+      "pushedPerSec": 253,
+      "fps": 10.1,
+      "frameP95": 159.2,
+      "worstFrameMs": 183.3,
+      "dropped": 1005,
+      "updateMs": 11,
+      "blockedMs": 10831,
+      "baseMB": 34.27,
+      "heapMB": 80.66,
+      "heapSlopeMBs": 6.155,
+      "leakMB": 24.25
+    },
+    "renderer": "canvas"
+  },
+  "wall/50000/nvl": {
+    "label": "wall/50000/nvl",
+    "backend": null,
+    "engine": "nvl",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 50000,
+      "edges": 75000
+    },
+    "at": 1788169164719,
+    "metrics": {
+      "nodes": 50000,
+      "edges": 74996,
+      "synthMs": 65,
+      "layoutMs": 49,
+      "updateMs": 864,
+      "ttfrMs": 2452,
+      "heapMB": 224.75,
+      "blockedMs": 2083,
+      "longestTaskMs": 1105
+    },
+    "renderer": "canvas"
+  },
+  "wall/50000/vis": {
+    "label": "wall/50000/vis",
+    "backend": null,
+    "engine": "vis",
+    "scenario": "hairball",
+    "knobs": {
+      "nodes": 50000,
+      "edges": 75000
+    },
+    "at": 1788169178757,
+    "metrics": {
+      "nodes": 50000,
+      "edges": 74996,
+      "synthMs": 45,
+      "layoutMs": 57,
+      "updateMs": 3135,
+      "ttfrMs": 5630,
+      "heapMB": 294.25,
+      "blockedMs": 5730,
+      "longestTaskMs": 3135
+    },
+    "renderer": "canvas"
+  },
+  "wall/50000/cytoscape": {
+    "label": "wall/50000/cytoscape",
+    "driverError": "TimeoutError: locator.isDisabled: Timeout 120000ms exceeded.\nCall log:\n  - waiting for getByRole('button', { name: 'Run', exact: true })\n"
+  },
+  "expandgl/20000/nvl-webgl": {
+    "label": "expandgl/20000/nvl-webgl",
+    "backend": "webgl",
+    "engine": "nvl",
+    "scenario": "expand",
+    "knobs": {
+      "nodes": 20000,
+      "edges": 30000,
+      "expandBy": 25,
+      "clicks": 20
+    },
+    "at": 1788169346208,
+    "metrics": {
+      "nodes": 20500,
+      "edges": 30495,
+      "expansions": 20,
+      "addedNodes": 500,
+      "p50Ms": 1407.8,
+      "p95Ms": 1467.4,
+      "worstMs": 1467.4,
+      "firstMs": 1378.7,
+      "lastMs": 1407.5,
+      "layoutP95Ms": 32.6,
+      "updateP95Ms": 1232,
+      "blockedMs": 26959,
+      "longestTaskMs": 1232,
+      "heapMB": 394.7
+    },
+    "renderer": "webgl"
+  },
+  "expand/10000/flow": {
+    "label": "expand/10000/flow",
+    "driverError": "TimeoutError: locator.selectOption: Timeout 120000ms exceeded.\nCall log:\n  - waiting for locator('.bench__controls label.jump').filter({ hasText: /^Scenario/ }).first().locator('select')\n    - locator resolved to <select>…</select>\n  - attempting select option action\n    - waiting for element to be "
+  }
+}

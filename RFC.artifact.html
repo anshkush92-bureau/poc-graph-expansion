@@ -1,0 +1,1815 @@
+<title>Graph Engine Selection RFC</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+
+<style>
+  /* ── Tokens: light is the base, complete on bare :root ─────────────── */
+  :root {
+    --ground:      #F5F7F9;
+    --surface:     #FFFFFF;
+    --surface-sunk:#EDF1F4;
+    --ink:         #14181F;
+    --ink-soft:    #454F5C;
+    --ink-faint:   #6E7A88;
+    --rule:        #D9E0E7;
+    --rule-soft:   #E8EDF1;
+
+    --accent:      #14455F;   /* prussian — the instrument hue */
+    --accent-lift: #1E6488;
+    --accent-wash: #E4EEF4;
+
+    --pending:     #96591A;   /* signal amber, semantic only */
+    --pending-wash:#F7EEDF;
+    --pending-edge:#E3CEA8;
+
+    --measured:    #0C6455;   /* semantic good */
+    --measured-wash:#E1F0EB;
+
+    --alert:       #97302B;   /* semantic critical */
+    --alert-wash:  #F7E7E4;
+
+    --shadow: 0 1px 2px rgba(20,24,31,.05), 0 8px 24px -16px rgba(20,24,31,.18);
+
+    --measure: 68ch;
+    --sans: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
+    --mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground:      #101418;
+      --surface:     #171C22;
+      --surface-sunk:#1E252C;
+      --ink:         #E7ECF1;
+      --ink-soft:    #AFBAC6;
+      --ink-faint:   #8593A1;
+      --rule:        #2C353E;
+      --rule-soft:   #232B33;
+
+      --accent:      #7FBEDC;
+      --accent-lift: #A8D6EC;
+      --accent-wash: #17303D;
+
+      --pending:     #E3B36B;
+      --pending-wash:#312717;
+      --pending-edge:#4E3D20;
+
+      --measured:    #63C8AE;
+      --measured-wash:#122C26;
+
+      --alert:       #E79389;
+      --alert-wash:  #341A18;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.7);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:      #101418;
+    --surface:     #171C22;
+    --surface-sunk:#1E252C;
+    --ink:         #E7ECF1;
+    --ink-soft:    #AFBAC6;
+    --ink-faint:   #8593A1;
+    --rule:        #2C353E;
+    --rule-soft:   #232B33;
+
+    --accent:      #7FBEDC;
+    --accent-lift: #A8D6EC;
+    --accent-wash: #17303D;
+
+    --pending:     #E3B36B;
+    --pending-wash:#312717;
+    --pending-edge:#4E3D20;
+
+    --measured:    #63C8AE;
+    --measured-wash:#122C26;
+
+    --alert:       #E79389;
+    --alert-wash:  #341A18;
+
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 28px -18px rgba(0,0,0,.7);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Page frame: numbered gutter + measure column ──────────────────── */
+  .wrap {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 clamp(16px, 4vw, 48px) 96px;
+  }
+
+  section {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    gap: 0 1.75rem;
+    padding: 44px 0 8px;
+    border-top: 1px solid var(--rule-soft);
+  }
+  section > .gut {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    color: var(--accent);
+    padding-top: .55rem;
+    text-align: right;
+  }
+  section > .body { min-width: 0; display: flex; flex-direction: column; gap: 1.15rem; }
+  section > .body > * { margin: 0; }
+  @media (max-width: 720px) {
+    section { grid-template-columns: 1fr; gap: 0; }
+    section > .gut { text-align: left; padding-top: 0; padding-bottom: .4rem; }
+  }
+
+  p, li { max-width: var(--measure); }
+  p + p { margin-top: -.2rem; }
+
+  /* ── Type scale ────────────────────────────────────────────────────── */
+  h1, h2, h3, h4 { font-family: var(--sans); text-wrap: balance; margin: 0; line-height: 1.18; }
+  h1 { font-size: clamp(30px, 5vw, 46px); font-weight: 700; letter-spacing: -.02em; }
+  h2 { font-size: clamp(22px, 3vw, 28px); font-weight: 600; letter-spacing: -.012em; }
+  h3 { font-size: 18px; font-weight: 600; letter-spacing: -.005em; margin-top: .9rem; }
+  h4 { font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-faint); }
+
+  .eyebrow {
+    font-family: var(--mono); font-size: 11.5px; font-weight: 500;
+    text-transform: uppercase; letter-spacing: .16em; color: var(--ink-faint);
+  }
+
+  a { color: var(--accent-lift); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+  a:focus-visible, .jump a:focus-visible { outline: 2px solid var(--accent-lift); outline-offset: 3px; border-radius: 2px; }
+
+  strong { font-weight: 600; }
+  em { font-style: italic; }
+  code, .m { font-family: var(--mono); font-size: .855em; }
+  code {
+    background: var(--surface-sunk); border: 1px solid var(--rule-soft);
+    padding: .08em .34em; border-radius: 3px; white-space: nowrap;
+  }
+
+  ul, ol { padding-left: 1.15rem; display: flex; flex-direction: column; gap: .5rem; }
+  ul { list-style: none; padding-left: 1.3rem; }
+  ul > li { position: relative; }
+  ul > li::before {
+    content: ""; position: absolute; left: -1.05rem; top: .72em;
+    width: 5px; height: 1px; background: var(--accent); opacity: .7;
+  }
+  ol > li::marker { font-family: var(--mono); font-size: .8em; color: var(--ink-faint); }
+
+  /* ── Masthead ──────────────────────────────────────────────────────── */
+  header.mast { padding: clamp(40px, 8vw, 84px) 0 34px; }
+  .mast h1 { max-width: 22ch; margin-top: .6rem; }
+  .mast .lede {
+    font-size: 20px; line-height: 1.5; color: var(--ink-soft);
+    max-width: 58ch; margin-top: 1.1rem;
+  }
+  .meta {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(168px, 1fr));
+    gap: 1px; background: var(--rule); border: 1px solid var(--rule);
+    border-radius: 6px; overflow: hidden; margin-top: 2.2rem;
+  }
+  .meta div { background: var(--surface); padding: 11px 14px; }
+  .meta dt {
+    font-family: var(--mono); font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: .13em; color: var(--ink-faint); margin-bottom: 3px;
+  }
+  .meta dd { margin: 0; font-family: var(--sans); font-size: 14px; font-weight: 500; }
+
+  /* ── The ask, stated once, loud ────────────────────────────────────── */
+  .ask {
+    margin-top: 1.6rem; padding: 18px 20px; border-radius: 6px;
+    background: var(--accent-wash); border: 1px solid var(--accent);
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .ask p { max-width: 62ch; margin: 0; }
+  .ask .eyebrow { color: var(--accent); }
+
+  /* ── Status ledger: measured vs pending, at a glance ───────────────── */
+  .ledger {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+    gap: 10px; margin-top: 1.4rem;
+  }
+  .cell {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 5px; padding: 12px 13px 13px;
+    display: flex; flex-direction: column; gap: 5px;
+    border-left: 3px solid var(--pending);
+  }
+  .cell.done { border-left-color: var(--measured); }
+  /* Ran, but the result does not answer the question — a third state, because
+     collapsing it into either "measured" or "pending" would misreport it. */
+  .cell.warn { border-left-color: var(--alert); }
+  .cell .ref { font-family: var(--mono); font-size: 10.5px; color: var(--ink-faint); letter-spacing: .05em; }
+  .cell .what { font-family: var(--sans); font-size: 14px; font-weight: 600; line-height: 1.3; }
+  .cell .st { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .04em; }
+  .cell .st.p { color: var(--pending); }
+  .cell .st.d { color: var(--measured); }
+  .cell .st.w { color: var(--alert); }
+
+  .chip {
+    display: inline-flex; align-items: baseline; gap: .38em;
+    font-family: var(--mono); font-size: 11px; font-weight: 500;
+    letter-spacing: .05em; padding: 2px 7px; border-radius: 3px;
+    border: 1px solid var(--pending-edge); background: var(--pending-wash);
+    color: var(--pending); white-space: nowrap;
+  }
+  .chip.done { border-color: var(--measured); background: var(--measured-wash); color: var(--measured); }
+  .chip.warn { border-color: var(--alert); background: var(--alert-wash); color: var(--alert); }
+
+  /* ── Result cells ──────────────────────────────────────────────────────
+     Severity encoded in form as well as number, so a table of digits can be
+     scanned rather than read. Separate from the accent hue on purpose. */
+  td.bad  { color: var(--alert); font-weight: 600; }
+  td.good { color: var(--measured); font-weight: 600; }
+  td.flag { color: var(--pending); }
+  /* An engine that declined to draw: its row is present because omitting it
+     would read as "not tested", and struck because the numbers are an empty
+     pane's, not the library's. */
+  tr.void td { color: var(--ink-faint); text-decoration: line-through; text-decoration-thickness: 1px; }
+  tr.void td:last-child { text-decoration: none; font-style: italic; }
+  tr.win td { background: var(--measured-wash); }
+
+  /* ── Jump nav ──────────────────────────────────────────────────────── */
+  .jump {
+    display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2rem;
+    padding-top: 1.4rem; border-top: 1px solid var(--rule);
+  }
+  .jump a {
+    font-family: var(--mono); font-size: 12px; text-decoration: none;
+    color: var(--ink-soft); border: 1px solid var(--rule);
+    background: var(--surface); border-radius: 3px; padding: 5px 9px;
+  }
+  .jump a:hover { color: var(--accent); border-color: var(--accent); }
+
+  /* ── Tables ────────────────────────────────────────────────────────── */
+  .scroll { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+  table { border-collapse: collapse; width: 100%; font-family: var(--sans); font-size: 13.5px; }
+  th, td {
+    text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top; line-height: 1.45;
+  }
+  thead th {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .1em; color: var(--ink-faint);
+    background: var(--surface-sunk); border-bottom: 1px solid var(--rule); white-space: nowrap;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  td.num, th.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td .m { color: var(--ink-soft); }
+  .pend { font-family: var(--mono); color: var(--pending); font-size: 13px; }
+  /* A section's opening paragraph, one step up from body copy. */
+  .body > .lede { font-size: 16.5px; line-height: 1.6; color: var(--ink-soft); }
+
+  /* ── Callouts ──────────────────────────────────────────────────────── */
+  .note {
+    border-left: 3px solid var(--accent); background: var(--surface);
+    border-top: 1px solid var(--rule-soft); border-right: 1px solid var(--rule-soft);
+    border-bottom: 1px solid var(--rule-soft);
+    border-radius: 0 5px 5px 0; padding: 14px 16px;
+    display: flex; flex-direction: column; gap: .5rem;
+  }
+  .note.hold { border-left-color: var(--pending); }
+  .note.risk { border-left-color: var(--alert); }
+  .note p { max-width: 64ch; margin: 0; }
+
+  /* ── The stack diagram (CSS, theme-aware, no library) ──────────────── */
+  .stack { display: flex; flex-direction: column; gap: 8px; margin-top: .4rem; }
+  .tier {
+    border: 1px solid var(--rule); border-radius: 6px; background: var(--surface);
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 9px;
+  }
+  .tier > h4 { color: var(--accent); }
+  .tier .parts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .part {
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.35;
+    border: 1px solid var(--rule); border-radius: 4px;
+    background: var(--surface-sunk); padding: 6px 9px;
+  }
+  .part b { display: block; font-weight: 600; color: var(--ink); }
+  .part span { color: var(--ink-faint); font-size: 10.5px; }
+  .tier.leaf .parts { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); }
+  .tier.leaf .part { text-align: center; background: var(--accent-wash); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+  .seam {
+    display: flex; align-items: center; gap: 10px;
+    font-family: var(--mono); font-size: 11px; color: var(--ink-faint);
+    padding-left: 4px;
+  }
+  .seam::before { content: "↓"; color: var(--accent); font-size: 13px; }
+  .seam.up::before { content: "↑"; }
+
+  /* ── Q&A grid ──────────────────────────────────────────────────────── */
+  .qs { display: flex; flex-direction: column; gap: 8px; }
+  .q {
+    display: grid; grid-template-columns: 3rem minmax(0,1fr); gap: 0 14px;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-left: 3px solid var(--accent); border-radius: 0 5px 5px 0; padding: 12px 14px;
+  }
+  .q .id { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+  .q .qb { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+  .q .qb p { margin: 0; max-width: 60ch; font-size: 15.5px; }
+  .q .who { font-family: var(--mono); font-size: 11px; color: var(--ink-faint); letter-spacing: .04em; }
+
+  pre {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.6;
+    background: var(--surface-sunk); border: 1px solid var(--rule);
+    border-radius: 5px; padding: 13px 15px; overflow-x: auto; margin: 0;
+    color: var(--ink-soft);
+  }
+  pre b { color: var(--ink); font-weight: 500; }
+
+  footer {
+    margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 11.5px; color: var(--ink-faint);
+    display: flex; flex-wrap: wrap; gap: 6px 20px;
+  }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+
+<div class="wrap">
+
+<header class="mast">
+  <div class="eyebrow">RFC · HLD · #design-huddle submission</div>
+  <h1>Picking a graph renderer for the identity walker</h1>
+  <p class="lede">
+    Eight libraries, one shared graph at identical coordinates, one set of numbers. The matrix has
+    run: six scenarios × eight engines at <strong>1,000 nodes / 1,500 edges</strong>. The spread at
+    that size is <strong>122 ms to 6.6 s</strong> to first paint — and it splits by rendering family,
+    not by library. Five engines can be decided today; two questions still cannot.
+  </p>
+
+  <dl class="meta">
+    <div><dt>Status</dt><dd>Draft — for review</dd></div>
+    <div><dt>Owner</dt><dd>Ansh Singh</dd></div>
+    <div><dt>Repo</dt><dd class="m">poc-graph-expansion</dd></div>
+    <div><dt>Engines built</dt><dd>8 of 8</dd></div>
+    <div><dt>Tests</dt><dd>50 passing</dd></div>
+    <div><dt>Bench rows</dt><dd><span class="chip done">150+ MEASURED</span></dd></div>
+    <div><dt>Sizes swept</dt><dd class="m">1,000 · 5,000 · 20,000 · 50,000</dd></div>
+    <div><dt>Backends</dt><dd class="m">canvas · SVG · WebGL</dd></div>
+  </dl>
+
+  <div class="ask">
+    <div class="eyebrow">Decision requested</div>
+    <p>
+      Ratify the shared-layer architecture in <strong>§3</strong>; ratify <strong>C1</strong>
+      (layout goes in a Worker — measured, engine-independent) and the four eliminations in
+      <strong>§5.9</strong>. Then the two new ones: <strong>D1 is now answered</strong> — NVL on
+      WebGL is the only engine measured that holds up above ~10,000 nodes (§5.1) — and
+      <strong>§5.7 says the expansion interaction is capped by our own props contract, not by any
+      library</strong>, which makes a delta channel worth more than the choice between the
+      shortlisted three.
+    </p>
+  </div>
+
+  <div class="ledger">
+    <div class="cell done"><span class="ref">§5.2</span><span class="what">Cold load · hairball</span><span class="st d">MEASURED — 122 ms to 6.6 s</span></div>
+    <div class="cell done"><span class="ref">§5.3</span><span class="what">Streaming churn</span><span class="st d">MEASURED — 2 engines fell behind</span></div>
+    <div class="cell done"><span class="ref">§5.4</span><span class="what">Zoom &amp; pan</span><span class="st d">MEASURED — 9 ms to 542 ms</span></div>
+    <div class="cell done"><span class="ref">§5.6</span><span class="what">Layout &amp; the Worker</span><span class="st d">MEASURED — blocked → 0, all 8</span></div>
+    <div class="cell done"><span class="ref">§5.8</span><span class="what">Bundle weight</span><span class="st d">MEASURED — 8 of 8</span></div>
+    <div class="cell done"><span class="ref">§4 · §6.1</span><span class="what">Capability matrix</span><span class="st d">READ OFF THE APIs</span></div>
+    <div class="cell done"><span class="ref">§5.1</span><span class="what">Breaking point</span><span class="st d">MEASURED — 1k → 20k, D1 answerable</span></div>
+    <div class="cell done"><span class="ref">§5.7</span><span class="what">Expansion into a large scene</span><span class="st d">MEASURED — ~1 s per click at 20k</span></div>
+    <div class="cell done"><span class="ref">§5.5</span><span class="what">Paint backend · canvas / SVG / WebGL</span><span class="st d">MEASURED — 3 engines, both ways</span></div>
+    <div class="cell done"><span class="ref">§5.5</span><span class="what">LOD &amp; culling</span><span class="st d">MEASURED — denominator added, result flipped</span></div>
+    <div class="cell done"><span class="ref">§5.0</span><span class="what">Run-to-run spread</span><span class="st d">MEASURED — 11 repeated configs</span></div>
+    <div class="cell done"><span class="ref">§5.3</span><span class="what">Leak column</span><span class="st d">FIXED — sign error, re-run 3×</span></div>
+    <div class="cell warn"><span class="ref">§5.4</span><span class="what">Hover &amp; debounce</span><span class="st w">DIAGNOSED — grid stepped over 11 px nodes</span></div>
+    <div class="cell warn"><span class="ref">§6.3</span><span class="what">Customisation cost</span><span class="st w">STILL CAPABILITY-MATRIX ONLY</span></div>
+  </div>
+
+  <nav class="jump">
+    <a href="#s1">§1 Problem</a>
+    <a href="#s2">§2 Scope</a>
+    <a href="#s3">§3 Architecture</a>
+    <a href="#s4">§4 Candidates</a>
+    <a href="#s5">§5 Results</a>
+    <a href="#s6">§6 Review focus</a>
+    <a href="#s7">§7 Trade-offs &amp; questions</a>
+    <a href="#s8">§8 Appendix</a>
+    <a href="#s9">§9 Conclude</a>
+  </nav>
+</header>
+
+<!-- ─────────────────────────── §1 ─────────────────────────── -->
+<section id="s1">
+  <div class="gut">§1</div>
+  <div class="body">
+    <h2>Problem statement</h2>
+    <p>
+      An analyst investigating an identity starts from <strong>one</strong> node — a phone, an email,
+      a device, a document — and walks outward: <em>what else is this linked to, and what is that
+      linked to.</em> The graph is not fetched whole and it is not static. It grows under the
+      analyst's cursor, one expansion at a time, and the interesting cases are exactly the ones
+      where it grows fast: a device shared by four hundred accounts, a cluster that keeps unfolding
+      four levels deep.
+    </p>
+    <p>
+      That shape of interaction breaks the assumption almost every graph-library demo is built on.
+      Demos load a fixed graph once, look good, and stop. Ours has to survive:
+    </p>
+    <ol>
+      <li><strong>A cold load of a dense result set</strong> — the analyst pastes in a cohort, not a single node.</li>
+      <li><strong>Incremental expansion into an already-large scene</strong> — 25 new nodes arriving into a graph of 20,000 is a <em>diff</em>, and diffing is where these libraries differ most once a graph is being explored rather than loaded.</li>
+      <li><strong>Continuous interaction</strong> — pan, zoom, hover-to-peek — at a frame rate that does not make the analyst feel the tool is fighting them.</li>
+      <li><strong>A hard host constraint: React 16.14.</strong> Not negotiable this round, and it eliminates library options outright (§6.1).</li>
+    </ol>
+
+    <h3>What we actually need to decide</h3>
+    <p>
+      Not "which graph library is best" — that question has no answer. Three decisions, in this order:
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th class="num">#</th><th>Decision</th><th>Why it comes first</th></tr></thead>
+        <tbody>
+          <tr><td class="num"><strong>D1</strong></td><td>Where is our <strong>breaking point</strong>, per candidate?</td><td>The single most useful number this exercise produces. Everything else is a tiebreak.</td></tr>
+          <tr><td class="num"><strong>D2</strong></td><td>Does the <strong>rendering architecture</strong> hold — shared layer, swappable renderer?</td><td>If yes, D3 is reversible and low-stakes. If no, D3 is a one-way door.</td></tr>
+          <tr><td class="num"><strong>D3</strong></td><td>Which <strong>two</strong> engines go to a production spike?</td><td>Two, not one — the customisation half (§6.3) can only be settled by building our real node design.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Why this needed a POC rather than a spreadsheet</h3>
+    <p>
+      Every one of these libraries advertises "handles large graphs". None publishes the number at
+      which it stops, and none measures the case we care about — expansion into a large scene — at
+      all. The claims are not comparable because no two vendors measure the same thing on the same
+      data.
+    </p>
+    <div class="note">
+      <p>
+        So the POC's product is <strong>not a pretty graph</strong>. It is a rig that renders the
+        <em>same graph at the same coordinates through eight libraries</em> and reports the same
+        numbers for each, so the comparison is between renderers and nothing else.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §2 ─────────────────────────── -->
+<section id="s2">
+  <div class="gut">§2</div>
+  <div class="body">
+    <h2>Scope</h2>
+    <h4>In scope</h4>
+    <ul>
+      <li>Rendering engine selection for the identity graph view.</li>
+      <li>The client-side architecture that isolates that choice.</li>
+      <li>A reproducible measurement harness, and the numbers it produces.</li>
+    </ul>
+    <h4>Out of scope — named, because a benchmark's blind spots decide more than its findings</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Not covered</th><th>Why</th><th>Where it goes</th></tr></thead>
+        <tbody>
+          <tr><td>Backend graph store / query shape</td><td>Independent of the renderer; <code>fetchNeighbors()</code> is the single seam</td><td>Separate RFC</td></tr>
+          <tr><td>Each library's own <strong>layout engine</strong></td><td>Deliberately excluded — §3.2</td><td>Never; it would make this a layout comparison</td></tr>
+          <tr><td>Each library's own culling / LOD</td><td>Same reason</td><td>§6.3 states the caveat</td></tr>
+          <tr><td>Custom glyphs and edge routing, <strong>benchmarked</strong></td><td>Capability matrix only so far — an unmeasured column is more honest than a guessed one</td><td>§5.5, next pass</td></tr>
+          <tr><td>Accessibility, touch, mobile GPUs</td><td>Nothing here has been near a phone</td><td>Follow-up, must not be forgotten</td></tr>
+          <tr><td>API ergonomics / maintenance load</td><td>Only prose notes exist (<code>src/engines.js</code>)</td><td>The production spike (D3)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §3 ─────────────────────────── -->
+<section id="s3">
+  <div class="gut">§3</div>
+  <div class="body">
+    <h2>Proposed architecture</h2>
+    <h3>3.1 &nbsp;One shared layer, many dumb renderers</h3>
+
+    <div class="stack">
+      <div class="tier">
+        <h4>Application layer — shared, tested, engine-agnostic</h4>
+        <div class="parts">
+          <div class="part"><b>data.js</b><span>fetchNeighbors() — the only seam to the backend</span></div>
+          <div class="part"><b>useGraph.js</b><span>expand / add / delete / load</span></div>
+          <div class="part"><b>ops.js</b><span>pure graph ops + layoutRadial (incremental)</span></div>
+          <div class="part"><b>synth.js</b><span>synthetic graphs of an exact size</span></div>
+        </div>
+      </div>
+      <div class="tier">
+        <h4>Measurement layer — shared probes, zero engine knowledge</h4>
+        <div class="parts">
+          <div class="part"><b>probes.js</b><span>frames · long tasks · heap · nextPaint</span></div>
+          <div class="part"><b>scenarios.js</b><span>six scripted scenarios</span></div>
+          <div class="part"><b>optimize.js</b><span>LOD + viewport culling</span></div>
+          <div class="part"><b>force.js / runLayout.js</b><span>one d3-force · main thread or Worker</span></div>
+        </div>
+      </div>
+      <div class="seam">identical props, one lazy import each</div>
+      <div class="tier leaf">
+        <h4>Renderer layer — eight interchangeable views</h4>
+        <div class="parts">
+          <div class="part">ECharts</div>
+          <div class="part">Cytoscape</div>
+          <div class="part">vis-network</div>
+          <div class="part">NVL</div>
+          <div class="part">FusionCharts</div>
+          <div class="part">v-network-graph</div>
+          <div class="part">jsPlumb</div>
+          <div class="part">React&nbsp;Flow</div>
+        </div>
+      </div>
+      <div class="seam up"><span class="m">onStat(updateMs)</span> · <span class="m">onViewport(handle)</span> — the entire engine-specific surface</div>
+    </div>
+
+    <p>
+      The load-bearing claim: <strong>every renderer is a dumb view over <code>useGraph</code> and
+      takes identical props.</strong> Swapping engines is changing one lazy import. That is the
+      property that makes D3 reversible, and it is what §6.3 is really reviewing.
+    </p>
+    <p>Two callbacks flow the other way and they are the whole engine-specific surface:</p>
+    <ul>
+      <li><code>onStat(updateMs)</code> — every renderer times its own update and self-reports.</li>
+      <li><code>onViewport(handle)</code> — <code>{ zoomBy, panBy, fit }</code>, or <code>null</code> if the library has no viewport. <strong>Publishing <code>null</code> is itself a finding</strong> (§5.4).</li>
+    </ul>
+
+    <h3>3.2 &nbsp;The decision that makes the numbers mean anything</h3>
+    <div class="note">
+      <p>
+        Every pane is handed <strong>the same graph at the same coordinates</strong>, from one shared
+        <code>layoutRadial</code> — not from each library's own layout engine.
+      </p>
+    </div>
+    <p>
+      Several of these ship perfectly good layouts and a real app would use them. Using them here
+      would make the comparison about <em>layouts</em> rather than <em>renderers</em>: eight
+      different solvers, eight sets of constants, eight stopping rules. Timing those against each
+      other measures eight unrelated implementations, not the question being asked. The same
+      reasoning covers LOD, culling and the force solver — all shared code.
+    </p>
+    <div class="note hold">
+      <p>
+        <strong>The honest counterweight, which belongs in any write-up:</strong> an engine that
+        ships its own culling gets no extra credit here, and an engine with none gets to borrow
+        ours. That is deliberate — it separates <em>"this library is fast"</em> from <em>"this
+        library ships the optimisation you would otherwise have written"</em>. Both matter; they are
+        different questions and they get answered separately.
+      </p>
+    </div>
+
+    <h3>3.3 &nbsp;How the graph is actually built</h3>
+    <p>
+      Worth stating because it is the first question every reviewer asks about a synthetic
+      benchmark: <em>what does "50,000 nodes" mean here?</em>
+      <code>synthGraph(nodes, edges)</code> lays a <strong>spanning tree</strong> over the node
+      count first, then adds cross-links until it reaches the edge count. Two consequences:
+    </p>
+    <ul>
+      <li><strong>The edge count is a target with a floor of <code>nodes − 1</code>.</strong> A tree of <em>n</em> nodes is <em>n − 1</em> edges, and the tree is not optional: <code>layoutRadial</code> places a node inside its parent's angular wedge, and a node with no path to a root has no wedge. 5,000 nodes never has fewer than 4,999 edges however low the dial goes.</li>
+      <li><strong>It is also a ceiling in practice.</strong> Duplicate pairs are skipped rather than retried, so asking for far more edges than the node count supports lands short — 100 nodes asked for 100,000 edges builds 2,699.</li>
+    </ul>
+    <p>
+      Every scenario therefore reports <code>graph.edges.length</code>, <strong>never the
+      knob</strong>, and the UI prints the overshoot next to the counts rather than silently
+      disagreeing with the dial. Every size dial bottoms out at 0: an empty pane is a measurement —
+      what this engine costs holding nothing — and it is the baseline the other rows are differences
+      from.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §4 ─────────────────────────── -->
+<section id="s4">
+  <div class="gut">§4</div>
+  <div class="body">
+    <h2>The candidates</h2>
+    <p>
+      Graph libraries fall into three rendering families, and <strong>the family predicts more about
+      the answer than the library does</strong>.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Family</th><th>How it draws</th><th>Customisation</th><th>Scale</th></tr></thead>
+        <tbody>
+          <tr><td><strong>SVG</strong></td><td>one DOM element per node and per edge</td><td>highest — it's CSS and the DOM</td><td>poor; the element count <em>is</em> the cost</td></tr>
+          <tr><td><strong>Canvas</strong></td><td>pixels into one <code>&lt;canvas&gt;</code>, redrawn per frame</td><td>moderate — you draw it yourself</td><td>good, medium-to-large</td></tr>
+          <tr><td><strong>WebGL</strong></td><td>pixels via the GPU, geometry uploaded once</td><td>hardest — shaders and instancing</td><td>built for massive</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Eight engines, all implemented against identical props:</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th>Surface</th><th>Viewport API</th><th>Built-in LOD</th><th>Edge routing</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Apache ECharts</strong><br><span class="m">echarts 6.1</span></td><td>canvas <strong>/ SVG</strong></td><td class="m">roam · graphRoam</td><td>none</td><td>straight, curved</td></tr>
+          <tr><td><strong>Cytoscape.js</strong><br><span class="m">cytoscape 3.34</span></td><td>canvas <strong>/ WebGL</strong></td><td class="m">zoom() / panBy() · native</td><td><span class="chip done">AUTO</span> min-zoomed-font-size</td><td>bezier, taxi, segments, haystack, loop</td></tr>
+          <tr><td><strong>vis-network</strong><br><span class="m">vis-network 10.1</span></td><td>canvas</td><td class="m">moveTo() / getScale() · native</td><td>scaling.label.drawThreshold</td><td>dynamic, continuous, cubicBezier, curvedCW</td></tr>
+          <tr><td><strong>Neo4j NVL</strong><br><span class="m">@neo4j-nvl/base 1.2</span></td><td>canvas <strong>/ WebGL</strong></td><td class="m">setZoom() / setPan() · native</td><td>automatic caption dropping</td><td>straight, native loops</td></tr>
+          <tr><td><strong>FusionCharts</strong><br><span class="m">fusioncharts 4.2</span></td><td>SVG</td><td><span class="chip warn">NONE</span></td><td>none</td><td>straight only</td></tr>
+          <tr><td><strong>v-network-graph</strong><br><span class="m">v-network-graph 0.9</span></td><td>SVG · <strong>Vue 3</strong></td><td class="m">svg-pan-zoom</td><td>none</td><td>straight, curved, selfLoop</td></tr>
+          <tr><td><strong>jsPlumb</strong><br><span class="m">@jsplumb/browser-ui 6.2</span></td><td>HTML + SVG</td><td><span class="chip warn">HAND-BUILT</span> ~20 lines of CSS transform</td><td>none</td><td>Bezier, Flowchart, StateMachine, Straight</td></tr>
+          <tr><td><strong>React Flow</strong><br><span class="m">react-flow-renderer 9.7</span></td><td>DOM + SVG</td><td class="m">useZoomPanHelper</td><td>write it yourself</td><td>bezier, step, smoothstep, straight, custom</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>
+      Three of the eight can draw the identical scene through <strong>more than one backend</strong>
+      (ECharts canvas/SVG, Cytoscape canvas/WebGL, NVL canvas/WebGL). That is the cleanest test of
+      the family framing above, because it is the only place where the family changes and the
+      library, the data and the layout do not.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §5 ─────────────────────────── -->
+<section id="s5">
+  <div class="gut">§5</div>
+  <div class="body">
+    <h2>Results <span class="chip done">MEASURED</span></h2>
+
+    <p class="lede">
+      Six scenarios across eight engines at <strong>1,000 nodes / 1,500 edges</strong> — 48 cells,
+      plus 8 more for the Worker leg — in <strong>6.7 minutes</strong>. One graph size for the whole
+      matrix is deliberate: it means the differences between these rows are the engine and the
+      scenario, and nothing else.
+    </p>
+
+    <div class="note risk">
+      <p>
+        <strong>One run, not the median of three, on a 120 Hz display, in an automated browser.</strong>
+        Four cells are artefacts rather than findings and are marked in place. The millisecond columns
+        are trustworthy; the <code>fps</code> columns are ceiling-bound. §5.9 says which conclusions
+        are safe today.
+      </p>
+    </div>
+
+    <h3>5.0 &nbsp;What produced these tables, and what is wrong with them</h3>
+    <p>
+      <strong>Producer:</strong> raw rows in <code>graph-bench-results.json</code> — 56 entries, keyed
+      <code>&lt;engine&gt;::&lt;scenario&gt;</code>, each carrying the knobs it ran at. Reproduce by
+      hand at <code>#/bench</code> → <strong>Everything</strong> → <code>#/compare</code> →
+      <strong>Export JSON</strong>. This pass was driven by a script against a production build, so
+      the whole matrix ran unattended; it clicks the same button a human would.
+    </p>
+
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Environment — must accompany every number</th><th>Value</th></tr></thead>
+        <tbody>
+          <tr><td>Browser</td><td>Chrome for Testing, production <code>vite preview</code> build</td></tr>
+          <tr><td>Long-task / heap columns</td><td class="good">available — Chromium, <code>--enable-precise-memory-info</code></td></tr>
+          <tr><td>Display refresh rate</td><td class="flag"><strong>120 Hz</strong> — <code>dropped</code> assumes a 60 Hz budget, so it <strong>over-counts</strong>, and <code>fps</code> cannot exceed 120</td></tr>
+          <tr><td>CPU / machine</td><td>Apple silicon (arm64), macOS 25.6</td></tr>
+          <tr><td>On battery?</td><td class="flag">not controlled for</td></tr>
+          <tr><td>Runs, and median or single</td><td class="flag"><strong>one run per cell</strong>, except the leak column (3) and the eleven repeated configurations below</td></tr>
+          <tr><td><code>--js-flags="--expose-gc"</code></td><td class="good">set for the second pass — <code>window.gc</code> confirmed present at launch</td></tr>
+          <tr><td>Window focus</td><td class="flag">automated; rAF throttling suppressed by flag, not by focus. The hover run is the exception and takes focus deliberately</td></tr>
+          <tr><td>Paint backend</td><td class="good">both backends measured for all three engines that have two (§5.5)</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4>The four cells that are artefacts, not findings</h4>
+    <p>Stated here because each one otherwise reads as a result.</p>
+    <ol>
+      <li><strong>v-network-graph drew nothing.</strong> <code>VngGraph.jsx</code> hard-caps at <code>CEILING = 150</code> nodes and renders a refusal notice above it. So at 1,000 nodes <strong>every v-network-graph cell below is the cost of an empty pane showing a message</strong>: <code>updateMs 0</code>, 1.46 MB of heap, a flat 120 fps. It is not the fastest engine here; it is the one that declined to run.</li>
+      <li>
+        <strong>The negative <code>leakMB</code> values were a bug in the metric, and this list
+        previously got that wrong.</strong> It called them "collection events, not memory returned".
+        They were not. <code>leakMB</code> read its baseline <em>with the base graph already on
+        screen</em> and compared it against a reading taken after the pane had been emptied — so every
+        engine that retained nothing scored its own base graph as a negative leak. NVL came back at
+        <strong>−72 MB</strong>, which is about what NVL costs to hold 1,000 nodes. Re-running with
+        <code>--expose-gc</code> reproduced it <em>exactly</em>: that is what a sign error does, and
+        what GC noise does not. Fixed — the baseline is now taken with an empty pane, and what the base
+        graph costs is reported separately as <code>baseMB</code> (§5.3). Negative
+        <code>heapMB</code> during churn <em>is</em> still a collection landing mid-window; that column
+        was never the broken one.
+      </li>
+      <li>
+        <strong>Six of eight hover rows came back <code>unsupported</code> — and that was this
+        harness's bug, now found.</strong> The calibration grid was fixed at 56 × 28, one sample every
+        28 × 15 px, hunting for nodes about <strong>11 px</strong> across. It stepped over them. At 4 px
+        spacing, <strong>five of the six report hover</strong> (§5.4). The earlier claim that six
+        libraries do not report node hover is withdrawn. A geometry hypothesis was tested and falsified
+        along the way — the pane is fully in the viewport and all 1,568 points resolved to a real
+        element — which was true and simply not the cause.
+      </li>
+      <li><strong><code>fps</code> is pinned at the refresh rate almost everywhere.</strong> A <code>frameP95</code> of 8.3–9.4 ms <em>is</em> a clean 120 Hz frame. Rows reading 120 fps are not faster than 60 fps engines — they are all simply keeping up.</li>
+    </ol>
+
+    <h4>What one run is actually worth <span class="chip done">MEASURED — READ THIS BEFORE ANY TABLE</span></h4>
+    <p>
+      The second pass re-ran eleven configurations the first pass had already measured at the identical
+      engine, size and default backend. Those pairs are the only estimate of variance this exercise has,
+      and <strong>every single-run difference quoted anywhere below has to clear the spread they
+      show.</strong>
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th>Scenario</th><th>Metric</th><th class="num">pass 1</th><th class="num">pass 2</th><th class="num">spread</th></tr></thead>
+        <tbody>
+          <tr><td>Cytoscape</td><td>streaming</td><td><code>frameP95</code></td><td class="num">33.3</td><td class="num">33.3</td><td class="num good">0%</td></tr>
+          <tr><td>Neo4j NVL</td><td>streaming</td><td><code>frameP95</code></td><td class="num">16.7</td><td class="num">16.6</td><td class="num good">−1%</td></tr>
+          <tr><td>Cytoscape</td><td>zoom &amp; pan</td><td><code>frameP95</code></td><td class="num">9.3</td><td class="num">9.0</td><td class="num good">−3%</td></tr>
+          <tr><td>Neo4j NVL</td><td>hairball</td><td><code>ttfrMs</code></td><td class="num">129</td><td class="num">113</td><td class="num">−12%</td></tr>
+          <tr><td>Cytoscape</td><td>hairball</td><td><code>ttfrMs</code></td><td class="num">260</td><td class="num">220</td><td class="num">−15%</td></tr>
+          <tr><td>ECharts</td><td>hairball</td><td><code>ttfrMs</code></td><td class="num">238</td><td class="num">181</td><td class="num">−24%</td></tr>
+          <tr><td>ECharts</td><td>streaming</td><td><code>pushedPerSec</code></td><td class="num">500</td><td class="num bad">365</td><td class="num bad">−27%</td></tr>
+          <tr><td>ECharts</td><td>zoom &amp; pan</td><td><code>frameP95</code></td><td class="num">17.6</td><td class="num bad">25.2</td><td class="num bad">+43%</td></tr>
+          <tr><td>ECharts</td><td>streaming</td><td><code>frameP95</code></td><td class="num">83.5</td><td class="num bad">124.2</td><td class="num bad">+49%</td></tr>
+          <tr><td><strong>Neo4j NVL</strong></td><td>zoom &amp; pan</td><td><code>frameP95</code></td><td class="num">9.2</td><td class="num bad">17.7</td><td class="num bad">+92%</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>The pattern is not random, and it is the most useful thing in §5.</strong> Where an
+        engine is comfortable, the number is repeatable to within a few percent — Cytoscape and NVL
+        under churn came back at 0% and −1%. Where an engine is <em>near its limit</em>, the same
+        measurement swings by half: every one of the four worst spreads is ECharts or NVL on a scenario
+        that was already marginal for it. <strong>Variance is itself a signal of headroom.</strong>
+      </p>
+      <p>
+        <strong>One conclusion this retracts.</strong> §5.5 shows NVL's zoom improving from
+        <code>frameP95</code> 17.7 on canvas to 9.2 on WebGL, and that difference is
+        <em>indistinguishable from noise</em> — the identical canvas configuration produced 9.2 in the
+        first pass and 17.7 in the second. It is written up as unresolved rather than as a WebGL win.
+        NVL's <em>streaming</em> improvement survives the same test, because that metric repeated at
+        −1%.
+      </p>
+      <p class="m">
+        <code>ttfrMs</code> moved −12% to −24% and every one of those is in the same direction, which
+        looks like a warmer machine rather than per-engine noise. Treat cold-load rankings as ordinal:
+        the ordering held, the absolute values did not.
+      </p>
+    </div>
+
+    <h4>Three rules for reading anything below</h4>
+    <ol>
+      <li><strong><code>—</code> is not zero.</strong> Where the browser will not report, the probe returns <code>null</code>. A printed <code>0 ms blocked</code> would read as "never blocked", a far worse lie than "not measured here".</li>
+      <li><strong>Never quote a speed-up without its denominator.</strong> §5.5 is this rule demonstrating itself on live data.</li>
+      <li><strong>A mean hides the failure you can see.</strong> Every frame figure here is a percentile, and <strong>p95 is the headline, not fps</strong>.</li>
+    </ol>
+
+    <h3>5.1 &nbsp;The breaking point <span class="chip done">MEASURED — D1 AND D3 ARE NOW ANSWERABLE</span></h3>
+    <p>
+      Hairball at <strong>1,000 → 5,000 → 20,000 → 50,000</strong>, edges at 1.5× nodes throughout,
+      cold pane each time. This was the pass's one real gap and it is the section that separates the
+      shortlist.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Engine</th>
+          <th class="num">1,000</th><th class="num">5,000</th><th class="num">20,000</th><th class="num">50,000</th>
+          <th class="num">longest single task <span class="m">at 20k</span></th>
+          <th class="num">heap <span class="m">at 20k</span></th>
+        </tr></thead>
+        <tbody>
+          <tr class="win"><td><strong>Neo4j NVL · webgl</strong></td><td class="num">—</td><td class="num good">203</td><td class="num good"><strong>480</strong></td><td class="num good"><strong>1,196</strong></td><td class="num good">466 ms</td><td class="num">—</td></tr>
+          <tr><td>Neo4j NVL <span class="m">canvas</span></td><td class="num">152</td><td class="num good">312</td><td class="num good">1,028</td><td class="num good">2,452</td><td class="num good"><strong>489 ms</strong></td><td class="num good">103 MB</td></tr>
+          <tr><td>vis-network</td><td class="num good">136</td><td class="num">541</td><td class="num">2,170</td><td class="num bad">5,630</td><td class="num">1,272 ms</td><td class="num">131 MB</td></tr>
+          <tr><td>Cytoscape <span class="m">canvas</span></td><td class="num">237</td><td class="num">873</td><td class="num bad">4,266</td><td class="num bad"><strong>&gt;120 s</strong> <span class="m">unresponsive</span></td><td class="num bad">3,479 ms</td><td class="num bad">319 MB</td></tr>
+          <tr><td>Cytoscape · <strong>webgl</strong></td><td class="num">—</td><td class="num bad">1,039</td><td class="num bad">3,948</td><td class="num bad">10,813</td><td class="num bad">3,936 ms</td><td class="num">—</td></tr>
+          <tr><td>ECharts <span class="m">canvas</span></td><td class="num">189</td><td class="num">662</td><td class="num bad">4,183</td><td class="num">—</td><td class="num bad">4,082 ms</td><td class="num bad"><strong>503 MB</strong></td></tr>
+          <tr><td>React Flow <span class="m">DOM</span></td><td class="num">353</td><td class="num bad">10,843</td><td class="num bad"><strong>killed the tab</strong></td><td class="num">—</td><td class="num bad">10,819 ms at 5k</td><td class="num">136 MB at 5k</td></tr>
+          <tr class="void"><td>v-network-graph</td><td colspan="6">hard cap at <strong>~150 nodes</strong> in <code>VngGraph.jsx</code> — refuses to draw and renders a notice</td></tr>
+          <tr><td>jsPlumb</td><td class="num bad">6,594</td><td colspan="5">not attempted above 1,000 — <strong>6.6 s with a 3.9 s single task</strong> at the size every other engine treats as trivial</td></tr>
+          <tr><td>FusionCharts</td><td colspan="6" class="m">not swept — no viewport, and it absorbed 103 of 500 nodes/sec at 1,000 (§5.3). Out on capability before size matters.</td></tr>
+        </tbody>
+      </table>
+      <p class="m">
+        <code>ttfrMs</code>, milliseconds to first visible render, at 1.5 edges per node. At 50,000
+        the ordering becomes a ranking of failure modes: <strong>NVL WebGL 1.2 s · NVL canvas 2.5 s ·
+        vis-network 5.6 s · Cytoscape WebGL 10.8 s · Cytoscape canvas unresponsive past two
+        minutes.</strong>
+      </p>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>The headline: NVL on WebGL renders 50,000 nodes in 1.2 seconds, and nothing else here
+        comes close.</strong> It is faster at <em>50,000</em> nodes than Cytoscape and ECharts are at
+        <em>20,000</em>, and faster at 20,000 (480 ms) than any other engine is at 5,000. Its curve is
+        203 → 480 → 1,196 ms across a 10× range in nodes — <strong>5.9× the time for 10× the
+        work</strong>.
+      </p>
+      <p>
+        <strong>And the two WebGL paths are not the same kind of thing at all.</strong> Cytoscape's
+        WebGL is a rasteriser swap underneath the same canvas geometry and hit-testing, so the CPU-side
+        cost survives it: 3,948 ms against canvas's 4,266 at 20,000 — a 7% difference — and 10.8
+        seconds at 50,000. <strong>It does not move the wall.</strong> NVL's WebGL is a different
+        renderer, and it moves the wall by roughly an order of magnitude. "Has a WebGL mode" is not a
+        capability that means anything until you measure it.
+      </p>
+      <p>
+        <strong>The column that decides the canvas engines is not <code>ttfrMs</code> — it is the
+        longest single task.</strong> For vis-network, Cytoscape and ECharts, the longest task at 20,000 is
+        <em>essentially the whole render</em>: 1,272 of 2,170 ms, 3,479 of 4,266, 4,082 of 4,183. That
+        is one un-interruptible block — no frame, no spinner, no cancel. <strong>NVL is the only engine
+        here whose longest task (489 ms) is under half its total (1,028 ms)</strong>, meaning it yields
+        the thread while it works. At 20,000 nodes that is the difference between a slow load and a
+        frozen tab.
+      </p>
+      <p>
+        <strong>NVL is also the only one that scales sublinearly:</strong> 6.8× the time for 20× the
+        nodes, against 16–22× for the other canvas engines. And its heap at 20,000 is
+        <strong>103 MB against ECharts' 503 MB</strong> — for ECharts the memory wall arrives before
+        the time wall does.
+      </p>
+    </div>
+    <div class="note hold">
+      <p>
+        <strong>React Flow's breaking point is between 2,000 and 5,000</strong>, and it is not close.
+        10.8 seconds at 5,000 nodes — of which 10.8 seconds is one task — and at 20,000 it wedged the
+        tab so completely that <strong>a page reload timed out after 60 seconds</strong>. That is past
+        "slow": the tab has to be killed. It also cost the three legs queued behind it, which is why
+        they were re-run last.
+      </p>
+      <p>
+        <strong>Two rows were already decided before this sweep.</strong> v-network-graph's ceiling is
+        a hard cap in source, not a curve. And jsPlumb's breaking point is at or below 1,000, so the
+        doubling exercise for it would start <em>down</em>.
+      </p>
+    </div>
+
+    <h3>5.2 &nbsp;Cold load — the hairball <span class="chip done">MEASURED</span></h3>
+    <p>
+      1,000 nodes / 1,499 edges on a <strong>cold pane</strong> — a first render, not an update.
+      The wait is split into four legs on purpose; one total would hide which leg is your problem.
+      <code>synthMs</code> and <code>layoutMs</code> are shared code, and that they came back at
+      1–3 ms across all eight is the control working. <code>updateMs</code> is what the library
+      spent. <strong><code>ttfrMs</code> is what a user felt.</strong>
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th class="num">synthMs</th><th class="num">layoutMs</th><th class="num">updateMs</th><th class="num">ttfrMs</th><th class="num">heapMB</th><th class="num">blockedMs</th><th class="num">longest task</th></tr></thead>
+        <tbody>
+          <tr class="win"><td>vis-network</td><td class="num">1</td><td class="num">2</td><td class="num">85</td><td class="num good">122</td><td class="num">22.66</td><td class="num">86</td><td class="num">86</td></tr>
+          <tr class="win"><td>Neo4j NVL</td><td class="num">1</td><td class="num">1</td><td class="num">90</td><td class="num good">129</td><td class="num">101.35</td><td class="num">90</td><td class="num">90</td></tr>
+          <tr><td>ECharts</td><td class="num">3</td><td class="num">2</td><td class="num">153</td><td class="num">238</td><td class="num">35.20</td><td class="num">152</td><td class="num">152</td></tr>
+          <tr><td>Cytoscape</td><td class="num">1</td><td class="num">1</td><td class="num">204</td><td class="num">260</td><td class="num">71.76</td><td class="num">258</td><td class="num">204</td></tr>
+          <tr><td>React Flow</td><td class="num">1</td><td class="num">2</td><td class="num good">2</td><td class="num flag">293</td><td class="num flag">−89.53</td><td class="num">283</td><td class="num">283</td></tr>
+          <tr><td>jsPlumb</td><td class="num">2</td><td class="num">2</td><td class="num">485</td><td class="num bad">6,594</td><td class="num">71.24</td><td class="num bad">6,573</td><td class="num bad">3,928</td></tr>
+          <tr><td>FusionCharts</td><td class="num">1</td><td class="num">1</td><td class="num">19</td><td class="num flag">20 <span class="m">suspect</span></td><td class="num">16.88</td><td class="num">0</td><td class="num">0</td></tr>
+          <tr class="void"><td>v-network-graph</td><td class="num">1</td><td class="num">2</td><td class="num">0</td><td class="num">11</td><td class="num">1.46</td><td class="num">0</td><td>drew nothing</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        <strong>The spread is 122 ms to 6.6 s</strong> — 54× at a size that is not, by the standards of
+        this problem, large. That is the single most useful output of the pass.
+      </p>
+      <p>
+        <strong>React Flow's row is the most instructive here.</strong> Two milliseconds of library
+        work, 293 ms to pixels. The other 291 ms is React 16 reconciling 1,000 components and the
+        browser laying out 1,000 DOM elements. <strong>A library-level benchmark would have scored
+        this engine as the fastest of the eight.</strong> This is why the harness measures to pixels,
+        not to return.
+      </p>
+      <p>
+        <strong>FusionCharts' 20 ms is a suspected measurement miss, not a win.</strong> Zero blocked
+        time while every canvas engine spends 85 ms+ is implausible; it renders through its own
+        asynchronous lifecycle, so <code>show()</code> most likely resolved before it had painted.
+        Its collapse in §5.3 corroborates. Do not quote this cell without confirming it visually.
+      </p>
+    </div>
+    <p class="m"><strong>Present as</strong> stacked horizontal bars, one segment per leg, on a log axis — or jsPlumb's bar is the chart and the other seven are a smudge.</p>
+
+    <h3>5.3 &nbsp;Streaming churn <span class="chip done">MEASURED</span></h3>
+    <p>
+      500 nodes/sec into a 1,000-node base, 20 s. Arrivals are pushed <strong>on a timer, not after
+      each paint</strong> — a pane that cannot keep up falls behind visibly instead of quietly slowing
+      the feed — and the same number is removed as added, so the node count stays flat.
+      <strong>That timer is what makes <code>absorbed</code> the most important column here:</strong>
+      it is not a setting, it is a result.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th class="num">absorbed <span class="m">of 500/s</span></th><th class="num">fps</th><th class="num">frameP95</th><th class="num">dropped</th><th class="num">updateMs</th><th class="num">blockedMs</th><th class="num">leakMB <span class="m">re-measured ↓</span></th></tr></thead>
+        <tbody>
+          <tr class="win"><td>Neo4j NVL</td><td class="num good">498</td><td class="num">109.3</td><td class="num good">16.7</td><td class="num good">8</td><td class="num">199</td><td class="num good">0</td><td class="num flag">see below</td></tr>
+          <tr><td>Cytoscape</td><td class="num good">500</td><td class="num">90.5</td><td class="num">33.3</td><td class="num">197</td><td class="num">20</td><td class="num">50</td><td class="num flag">see below</td></tr>
+          <tr><td>React Flow</td><td class="num good">500</td><td class="num">80.8</td><td class="num">41.7</td><td class="num">283</td><td class="num">0</td><td class="num">409</td><td class="num flag">see below</td></tr>
+          <tr><td>vis-network</td><td class="num good">500</td><td class="num">72.4</td><td class="num">50.0</td><td class="num">369</td><td class="num">2</td><td class="num">110</td><td class="num flag">see below</td></tr>
+          <tr><td>ECharts</td><td class="num bad">310 · 308 · 253 <span class="m">this 500 was the outlier</span></td><td class="num">32.1</td><td class="num bad">83.5–159</td><td class="num bad">786</td><td class="num">9</td><td class="num bad">16,825</td><td class="num flag">see below</td></tr>
+          <tr><td>FusionCharts</td><td class="num bad">103</td><td class="num bad">6.2</td><td class="num bad">533.3</td><td class="num bad">1,125</td><td class="num">1</td><td class="num bad">19,203</td><td class="num">9.78</td></tr>
+          <tr><td>jsPlumb</td><td class="num bad">103</td><td class="num bad">2.8</td><td class="num bad">516.6</td><td class="num bad">1,156</td><td class="num">2</td><td class="num bad">18,953</td><td class="num">43.51</td></tr>
+          <tr class="void"><td>v-network-graph</td><td class="num">500</td><td class="num">120</td><td class="num">8.9</td><td class="num">0</td><td class="num">0</td><td class="num">0</td><td>empty pane</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>ECharts' "500 absorbed" was a lucky run, and four repeats say so.</strong> Re-measured
+        four more times on the same configuration and default backend it took <strong>365, 310, 308 and
+        253</strong> of 500 nodes/sec — so it absorbs roughly half to two-thirds of the feed, not all of
+        it, and the single-run 500 left in this table is the outlier. Anyone reading this table before the repeats would have concluded ECharts
+        keeps up under churn. <strong>It does not.</strong> Its <code>frameP95</code> ranged 83.5–159 ms
+        over the four runs (§5.0).
+      </p>
+    </div>
+    <div class="note">
+      <p>
+        <strong>Two engines could not accept the feed at all.</strong> FusionCharts and jsPlumb
+        absorbed <strong>103 of 500 nodes/sec</strong> — the timer could not even fire on schedule,
+        because the thread was never free. Both spent <strong>~19 of the 20 seconds blocked</strong>.
+        That is the failure mode that matters: not a low frame rate, a feed that silently falls behind.
+      </p>
+      <p>
+        <strong>ECharts is the surprise.</strong> Fine on cold load, fine on zoom — then blocked for
+        <strong>16.8 of 20 seconds</strong> under churn while still claiming 32 fps. Its own
+        <code>updateMs</code> is 9 ms, so the cost is what it does <em>around</em> each
+        <code>setOption</code>. <strong>An engine can pass the load test and fail the streaming test,
+        and this row is why both scenarios exist.</strong>
+      </p>
+      <p>
+        <strong>NVL wins churn clearly</strong> — and note its <code>updateMs</code> of 199 ms is the
+        <em>highest</em> in the table. It is doing real work per update and still not blocking, which
+        is what an off-thread renderer buys.
+      </p>
+    </div>
+    <h4>Memory, re-measured on a fixed metric <span class="chip done">MEASURED — 3 RUNS, <code>--expose-gc</code></span></h4>
+    <p>
+      The first pass reported this column as unusable and blamed GC timing. It was a sign error in the
+      metric (§5.0). With the baseline taken on an <em>empty</em> pane and
+      <code>--js-flags="--expose-gc"</code> set, it repeats to within a megabyte — which is what a
+      working metric looks like next to what a broken one looked like.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Engine</th>
+          <th class="num"><code>baseMB</code> <span class="m">1,000 nodes</span></th>
+          <th class="num">leak r1</th><th class="num">r2</th><th class="num">r3</th>
+          <th class="num">retained ÷ base</th><th>verdict</th>
+        </tr></thead>
+        <tbody>
+          <tr><td><strong>Neo4j NVL</strong></td><td class="num">7.1 MB</td><td class="num bad">69.9</td><td class="num bad">68.7</td><td class="num bad">68.6</td><td class="num bad"><strong>~10×</strong></td><td class="bad">real retention — needs an owner</td></tr>
+          <tr><td>ECharts</td><td class="num bad">47.6 MB</td><td class="num flag">21.2</td><td class="num flag">21.3</td><td class="num flag">24.3</td><td class="num good">~0.5×</td><td class="flag">retention modest — but <strong>6.7× the base cost</strong> of vis for the same graph</td></tr>
+          <tr><td>Cytoscape</td><td class="num">13.3 MB</td><td class="num">12.9</td><td class="num">12.2</td><td class="num">12.3</td><td class="num">~1×</td><td>one base graph's worth</td></tr>
+          <tr class="win"><td><strong>vis-network</strong></td><td class="num good">5.5 MB</td><td class="num good">1.2</td><td class="num good">−0.3</td><td class="num good">−0.1</td><td class="num good">~0×</td><td class="good">clean</td></tr>
+        </tbody>
+      </table>
+      <p class="m">
+        Megabytes retained after 20 s of churn at 500 nodes/sec, then draining the pane back to a single
+        root and forcing a collection. <code>baseMB</code> is what the engine costs to <em>hold</em>
+        1,000 nodes, which is the only fair scale for the leak beside it.
+      </p>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>NVL retains about ten times what it costs to hold the graph in the first place</strong>
+        — 69.9, 68.7, 68.6 MB across three runs, against a 7.1 MB base. A spread of
+        <strong>1.3 MB on a 69 MB figure</strong>, so this is not GC timing. In a product where an analyst keeps one tab open and explores for an hour, that
+        is the number to worry about, and it is the first real mark against the engine that otherwise
+        wins §5.1 and §5.3.
+      </p>
+      <p>
+        <strong>vis-network is clean</strong> (1.2 and −0.3 MB — zero within the metric's resolution)
+        and <strong>Cytoscape retains roughly one base graph</strong> (12.9 / 12.2 against a 13.3 MB
+        base), which is consistent with an internal cache it never shrinks rather than an unbounded
+        leak. Neither is disqualifying; NVL's might be.
+      </p>
+      <p>
+        <strong><code>baseMB</code> turns out to be the more useful column, and it was not being
+        reported at all.</strong> The same 1,000-node graph costs <strong>vis-network 5.5 MB, NVL 7.1,
+        Cytoscape 13.3 and ECharts 47.6</strong> — a <strong>8.7× spread</strong> in resident footprint
+        for identical data at identical coordinates. ECharts is the outlier by a wide margin, which is
+        the same story its 503 MB at 20,000 nodes tells in §5.1.
+      </p>
+      <p class="m">
+        Every <code>heapSlopeMBs</code> came back <em>negative</em>, so none of this retention shows up
+        as a rising heap during the run — only in the drain. <strong>A monitoring rule built on heap
+        slope alone would miss all four.</strong>
+      </p>
+    </div>
+
+    <h3>5.4 &nbsp;Zoom and pan <span class="chip done">MEASURED</span> &nbsp;· hover <span class="chip warn">DIAGNOSED — WAS A HARNESS BUG</span></h3>
+    <p>A scripted 1×→4×→1× sweep with a pan riding on it, driven once per animation frame.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th class="num">fps</th><th class="num">frameP50</th><th class="num">frameP95</th><th class="num">worst</th><th class="num">dropped</th><th class="num">blockedMs</th></tr></thead>
+        <tbody>
+          <tr class="win"><td>vis-network</td><td class="num">120.2</td><td class="num">8.3</td><td class="num good">9.2</td><td class="num">9.4</td><td class="num good">0</td><td class="num good">0</td></tr>
+          <tr class="win"><td>Neo4j NVL</td><td class="num">120.0</td><td class="num">8.3</td><td class="num good">9.2</td><td class="num">9.4</td><td class="num good">0</td><td class="num good">0</td></tr>
+          <tr class="win"><td>Cytoscape</td><td class="num">119.5</td><td class="num">8.3</td><td class="num good">9.3</td><td class="num">24.2</td><td class="num good">0</td><td class="num good">0</td></tr>
+          <tr><td>ECharts</td><td class="num">62.3</td><td class="num">16.7</td><td class="num">17.6</td><td class="num">38.2</td><td class="num">16</td><td class="num">0</td></tr>
+          <tr><td>React Flow</td><td class="num bad">14.0</td><td class="num">74.9</td><td class="num bad">100.0</td><td class="num">125.0</td><td class="num bad">454</td><td class="num bad">8,983</td></tr>
+          <tr><td>jsPlumb</td><td class="num bad">2.0</td><td class="num">500.1</td><td class="num bad">541.7</td><td class="num">541.7</td><td class="num bad">589</td><td class="num bad">10,093</td></tr>
+          <tr><td>FusionCharts</td><td class="bad" colspan="6"><code>unsupported</code> — no viewport exists in PowerCharts at all</td></tr>
+          <tr class="void"><td>v-network-graph</td><td class="num">120</td><td class="num">8.3</td><td class="num">8.9</td><td class="num">9.4</td><td class="num">0</td><td>empty pane</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        <strong>This is the cleanest separation in the whole pass, and it is by rendering family, not
+        by library.</strong> The three canvas/WebGL engines hold a 9 ms frame and drop nothing.
+        ECharts' <code>frameP50</code> of 16.7 ms on a 120 Hz display means it presents on every
+        <em>second</em> vsync — a 60 fps cap, not a stall. The two DOM engines collapse, because
+        panning a DOM scene means the browser re-laying out 1,000 elements per frame, and no amount of
+        library tuning changes that.
+      </p>
+      <p>
+        <strong>FusionCharts' <code>unsupported</code> is a finding, not a gap.</strong> For an app
+        whose primary gesture is zooming into a cluster, no viewport is disqualifying on capability
+        before performance is discussed.
+      </p>
+    </div>
+    <h4>Hover <span class="chip warn">DIAGNOSED — the six <code>unsupported</code> rows were the harness</span></h4>
+    <p>
+      The calibration grid was a fixed 56 × 28 — one sample every 28 × 15 px on a pane where a node is
+      about <strong>eleven pixels</strong> across. It is now derived from the pane at one sample every
+      <strong>4 px</strong> (~42,000 points), which cannot step over a node. Re-run on all eight:
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Engine</th><th class="num">at 28 × 15 px <span class="m">before</span></th>
+          <th class="num">at 4 px <span class="m">after</span></th>
+          <th class="num">callbacks / move</th>
+          <th class="num">8 s sweep actually took</th>
+        </tr></thead>
+        <tbody>
+          <tr class="win"><td>vis-network</td><td class="bad"><code>unsupported</code></td><td class="good">1,760 callbacks</td><td class="num bad">1.00</td><td class="num">~15 s · 7.1 s blocked</td></tr>
+          <tr class="win"><td>jsPlumb</td><td class="bad"><code>unsupported</code></td><td class="good">1,368 callbacks</td><td class="num bad">1.00</td><td class="num bad">~70 s · <strong>70.1 s blocked</strong></td></tr>
+          <tr><td>Neo4j NVL</td><td class="bad"><code>unsupported</code></td><td class="flag">2 callbacks</td><td class="num flag">~0 <span class="m">too few hit points</span></td><td class="num bad">~55 s · <strong>55.0 s blocked</strong></td></tr>
+          <tr><td>React Flow</td><td class="bad"><code>unsupported</code></td><td class="flag">0 callbacks</td><td class="num flag">~0 <span class="m">too few hit points</span></td><td class="num">~8 s · 3.2 s blocked</td></tr>
+          <tr><td>FusionCharts</td><td class="bad"><code>unsupported</code></td><td class="good">hit points found <span class="m">0.5%</span></td><td class="num flag">~0</td><td class="num bad">~14 s · 13.8 s blocked</td></tr>
+          <tr><td>ECharts</td><td class="num">0.2% · 0.67/move</td><td class="flag">1 callback</td><td class="num flag">~0 <span class="m">too few hit points</span></td><td class="num bad">~17 s · 16.4 s blocked</td></tr>
+          <tr><td>Cytoscape</td><td class="num">2.2% · <strong>1.00</strong>/move</td><td class="bad">driver timed out &gt;120 s</td><td class="num bad">1.00 <span class="m">from the first pass</span></td><td class="num bad">&gt;120 s</td></tr>
+          <tr class="void"><td>v-network-graph</td><td><code>unsupported</code></td><td><code>unsupported</code> <span class="m">of 42,292 points</span></td><td class="num">—</td><td class="num">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>The hypothesis holds: it was the grid, not the libraries.</strong> Five engines that
+        reported "no hover callbacks anywhere on the pane" report hover once the calibration samples
+        finely enough to land on a node. <strong>The original write-up of six libraries without hover
+        was an artefact of a fixed 56 × 28 grid, and it is now withdrawn.</strong>
+      </p>
+      <p>
+        <strong>But the re-run replaced one measurement problem with another, so hover is diagnosed
+        rather than measured.</strong> Even at 4 px the hit area is under 1% for most engines, so the
+        measured sweep cycles through a handful of distinct hit points and the engines dedupe — hence
+        ECharts at 1 callback and React Flow at 0 where calibration had just found hits.
+        <strong><code>callbacksPerMove</code> is only trustworthy where calibration found plenty of hit
+        points: vis-network 1.00, jsPlumb 1.00, and Cytoscape 1.00 from the first pass.</strong> Three
+        engines that fire on <em>every</em> pointer transition — correct, and a React render each.
+      </p>
+      <p>
+        <strong>And the incidental finding is the biggest one in the section.</strong> The window is
+        nominally 8 seconds but ends at the first animation frame after 8 s — so when it reports
+        <strong>70.1 s of blocked time, the sweep really did take about seventy seconds</strong>, almost
+        entirely blocked. jsPlumb 70 s, NVL 55 s, ECharts 16 s, FusionCharts 14 s, and Cytoscape past
+        the driver's two-minute limit. <strong>Hover traffic over a 1,000-node graph is expensive
+        enough to lock the thread for a minute on half these engines</strong>, and it does not show up
+        in <code>frameP95</code> at all — NVL reports a perfect 9.2 ms frame while blocked for 55 s,
+        because the frames it does present are fine and there are simply almost none of them.
+        <strong>This is the one scenario where <code>frameP95</code> is the wrong headline and
+        <code>blockedMs</code> is the right one</strong>, and it is a strong argument for the debounce
+        being non-optional rather than a tuning knob.
+      </p>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>Three explanations were tried. Two are dead and the third is arithmetic.</strong>
+      </p>
+      <ol>
+        <li><strong>Geometry — falsified.</strong> The hypothesis was that the pane sat partly below
+          the fold, so <code>elementFromPoint</code> returned null and the scenario fell back to the
+          container. Measured: the pane is fully inside the viewport, <strong>all 1,568 calibration
+          points resolve to a real element</strong>, and none resolve to the container. Not this.</li>
+        <li><strong>Untrusted events — tested, and it needed its own fix first.</strong> Every event the
+          scenario dispatches carries <code>isTrusted: false</code>. Re-running with real
+          <em>trusted</em> pointer input required a read seam on the hover counter, because the lab's
+          gauge repaints on the HUD's schedule and is stale immediately after a move — a first attempt
+          without it scored Cytoscape at <strong>0 hits of 800</strong> on a page where it was
+          demonstrably firing. That was the driver, not the library.</li>
+        <li><strong>Calibration resolution — this is the real problem, and the existing numbers prove
+          it.</strong> A node is about <strong>eleven pixels</strong> across on a fitted 1,000-node
+          graph. The grid samples 56 × 28 points across a ~1,550 × 434 pane — one sample every 28 × 15
+          px — so it steps <em>over</em> most nodes. ECharts' measured <code>hitArea</code> is
+          <strong>0.2%: three points out of 1,568</strong>. At that density a coarser grid finds zero
+          by chance, and an engine whose hit area is a little smaller than ECharts' finds zero at
+          <em>any</em> grid density this scenario uses. <strong>Six <code>unsupported</code> rows are
+          consistent with a calibration that cannot reliably locate a node, not with six libraries
+          lacking hover.</strong>
+        </li>
+      </ol>
+      <p>
+        <strong>Fix applied: the grid is now derived from the pane at ~4 px spacing rather than fixed at
+        56 × 28.</strong> That is affordable only because the calibration loop is synchronous and
+        in-page. Driving the same coverage with real <em>trusted</em> pointer input through CDP was
+        also built and abandoned — it is roughly 37,000 round trips per engine, minutes each — so the
+        trust question stays open, with one data point: <strong>FusionCharts, <code>unsupported</code>
+        under synthetic events, reported hover under trusted input.</strong> Results below.
+      </p>
+      <p class="m">
+        What the two returned rows already say is worth keeping regardless:
+        <strong><code>callbacksPerMove</code> is the number to design against.</strong> Cytoscape
+        reports <strong>1.00</strong> — a React render for <em>every</em> pointer transition, correct
+        and expensive. ECharts reports 0.67, i.e. it is deduping. Both <strong>blocked
+        heavily</strong> — 5.2 s and 1.0 s across an 8 s sweep — while reporting a healthy
+        <code>frameP95</code>: <strong>hover cost lands in blocked time, not in frame
+        percentiles</strong>, which is why <code>frameP95</code> is the wrong headline for this one
+        scenario.
+      </p>
+    </div>
+
+    <h3>5.5 &nbsp;LOD and culling <span class="chip done">MEASURED — WITH A DENOMINATOR, AND THE CONCLUSION FLIPS</span></h3>
+    <p>
+      The first pass ran this with both optimisations <strong>on</strong> and had nothing to compare
+      against, so the whole table said only "engines drawing 46 nodes are fast". It has now been re-run
+      with the optimisations <strong>off</strong> (<code>kept</code> 100%) and with labels dropped but
+      nothing culled, so the speed-up finally has a divisor.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Engine</th>
+          <th class="num">off <span class="m">100% drawn</span></th>
+          <th class="num">labels dropped <span class="m">100% drawn</span></th>
+          <th class="num">culled <span class="m">4.6% drawn</span></th>
+          <th class="num">what culling bought</th>
+        </tr></thead>
+        <tbody>
+          <tr><td>Cytoscape</td><td class="num good">9.0</td><td class="num">9.0</td><td class="num">9.0</td><td class="num m">nothing</td></tr>
+          <tr><td>vis-network</td><td class="num good">8.7</td><td class="num">9.2</td><td class="num">9.3</td><td class="num m">nothing</td></tr>
+          <tr><td>Neo4j NVL</td><td class="num good">8.8</td><td class="num">9.2</td><td class="num">9.3</td><td class="num m">nothing</td></tr>
+          <tr><td>FusionCharts</td><td class="num good">9.2</td><td class="num">—</td><td class="num">9.1</td><td class="num m">nothing</td></tr>
+          <tr class="win"><td><strong>ECharts</strong></td><td class="num bad">25.3</td><td class="num good">9.4 <span class="m">still 100% drawn</span></td><td class="num">9.3</td><td class="num good"><strong>2.7× from labels alone</strong></td></tr>
+          <tr class="win"><td><strong>React Flow</strong> <span class="m">DOM</span></td><td class="num bad">108.3</td><td class="num">75.7</td><td class="num good">8.9</td><td class="num good"><strong>12×</strong> <span class="m">mostly from culling</span></td></tr>
+          <tr class="win"><td><strong>jsPlumb</strong> <span class="m">DOM</span></td><td class="num bad">600.9</td><td class="num">—</td><td class="num">25.0</td><td class="num good"><strong>24×</strong></td></tr>
+          <tr class="void"><td>v-network-graph</td><td class="num">9.0</td><td class="num">—</td><td class="num">8.8</td><td>empty pane either way</td></tr>
+        </tbody>
+      </table>
+      <p class="m"><code>frameP95</code> in milliseconds over a 10-second zoom sweep, 1,000 nodes / 1,499 edges.</p>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>Culling 95.4% of the graph away bought four of the eight engines exactly
+        nothing.</strong> Cytoscape, vis-network, NVL and FusionCharts were already holding a clean
+        frame with the whole graph on screen, so there was nothing for the optimisation to recover.
+        <strong>The three it did help, it helped for three different reasons</strong> — and separating
+        them is what the denominator bought:
+      </p>
+      <ul>
+        <li><strong>ECharts is label-bound, not node-bound.</strong> 25.3 ms with everything drawn →
+          <strong>9.4 ms with labels dropped and all 1,000 nodes still on screen</strong>, then 9.3 with
+          95% of them culled. Dropping captions did the entire job; the cull added nothing. This is the
+          cleanest LOD result in the exercise, and it is a <em>free</em> 2.7× — ECharts has a native
+          equivalent, and the number says turn it on.</li>
+        <li><strong>React Flow is node-bound.</strong> Labels bought 108 → 76 ms; culling bought the
+          rest, 76 → 8.9. Its cost is per-element, so the only lever that works is drawing fewer
+          elements.</li>
+        <li><strong>jsPlumb is node-bound and still fails.</strong> 601 → 25 ms is a 24× improvement
+          and 25 ms is still the only frame figure in the table that misses 60 fps — at 46 nodes.</li>
+      </ul>
+      <p>
+        <strong>So the section's old conclusion was half right in a way worth naming.</strong> It read
+        the seven perfect frames as an artefact of a tiny denominator, and that was correct. But it
+        implied the optimisations were simply unmeasurable here, and the denominator shows something
+        sharper: <strong>LOD and culling are not general optimisations. Each is a fix for a specific
+        bottleneck, and applying the wrong one is pure cost</strong> — the cull has to walk the graph
+        to do nothing for four of these engines.
+      </p>
+    </div>
+
+    <h4>The original optimised table, kept for the rule it demonstrates</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th class="num">kept</th><th class="num">drawn</th><th class="num">ttfrMs</th><th class="num">updateMs</th><th class="num">frameP95</th><th class="num">dropped</th></tr></thead>
+        <tbody>
+          <tr><td>vis-network</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">18</td><td class="num">7</td><td class="num">9.3</td><td class="num">0</td></tr>
+          <tr><td>React Flow</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">30</td><td class="num">0</td><td class="num">8.9</td><td class="num">0</td></tr>
+          <tr><td>ECharts</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">34</td><td class="num">12</td><td class="num">9.3</td><td class="num">0</td></tr>
+          <tr><td>Cytoscape</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">34</td><td class="num">28</td><td class="num">9.0</td><td class="num">0</td></tr>
+          <tr><td>FusionCharts</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">70</td><td class="num">18</td><td class="num">9.1</td><td class="num">0</td></tr>
+          <tr><td>jsPlumb</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">70</td><td class="num">16</td><td class="num bad">25.0</td><td class="num bad">44</td></tr>
+          <tr><td>Neo4j NVL</td><td class="num flag">4.6%</td><td class="num">46</td><td class="num">183</td><td class="num">176</td><td class="num">9.3</td><td class="num">0</td></tr>
+          <tr class="void"><td>v-network-graph</td><td class="num">4.6%</td><td class="num">46</td><td class="num">210</td><td class="num">0</td><td class="num">8.8</td><td>empty pane</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>Read <code>kept</code> first and the rest of the table dissolves.</strong>
+        <code>fraction: 0.5</code> kept <strong>4.6% — 46 of 1,000 nodes</strong>. Seven of eight
+        engines then hold a perfect frame, and of course they do: they are drawing forty-six nodes.
+        <strong>This table ranks nothing.</strong> It is the "never quote a speed-up without its
+        denominator" rule demonstrating itself on live data, which is why it stays in the RFC.
+      </p>
+      <p>
+        Why 4.6% and not 50%: a radial layout puts most of its nodes on the outermost ring, so a
+        <strong>centred</strong> box at half-width cuts almost everything. The knob is a box
+        dimension, not a node fraction.
+      </p>
+    </div>
+    <p>
+      Two things it does still say. <strong>React Flow at <code>frameP95</code> 8.9 with 46 nodes
+      versus 100 ms with 1,000</strong> shows the DOM ceiling is a node-count ceiling — for the DOM
+      engines, aggressive culling is not an optimisation, it is the only way they participate. And
+      <strong>jsPlumb is the one engine that still cannot hold 60 fps at 46 nodes</strong>.
+    </p>
+    <p class="m">
+      Both of those held up when the denominator arrived, which is worth noting: the table ranked
+      nothing, but the two conclusions drawn from it were the two that did not depend on the ranking.
+    </p>
+    <h4>Backend swap <span class="chip done">MEASURED — ALL THREE, BOTH WAYS</span></h4>
+    <p>
+      The bench now has a <strong>Backend</strong> selector next to Engine, so this is no longer three
+      unmeasured configurations sitting behind every other number. Same engine, same data, same shared
+      layout, one word different — <strong>the only place in this exercise where the rendering family
+      changes and nothing else does.</strong>
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Engine · backend</th>
+          <th class="num">hairball <code>ttfrMs</code></th>
+          <th class="num">zoom <code>frameP95</code></th>
+          <th class="num">zoom blocked</th>
+          <th class="num">stream absorbed</th>
+          <th class="num">stream <code>frameP95</code></th>
+          <th class="num">expand <code>p50Ms</code> <span class="m">at 1,000</span></th>
+        </tr></thead>
+        <tbody>
+          <tr class="win"><td><strong>ECharts · canvas</strong></td><td class="num good">181</td><td class="num good">25.2</td><td class="num good">0</td><td class="num bad">365 / 500</td><td class="num">124.2</td><td class="num good">209</td></tr>
+          <tr><td>ECharts · <strong>svg</strong></td><td class="num bad">382 <span class="m">2.1×</span></td><td class="num bad">91.7 <span class="m">3.6×</span></td><td class="num bad">9,714 ms</td><td class="num bad">428 / 500</td><td class="num">109.2</td><td class="num bad">281 <span class="m">+34%</span></td></tr>
+          <tr><td>Cytoscape · canvas</td><td class="num">220</td><td class="num">9.0</td><td class="num">0</td><td class="num good">500 / 500</td><td class="num">33.3</td><td class="num">67</td></tr>
+          <tr><td>Cytoscape · <strong>webgl</strong></td><td class="num">219 <span class="m">−0.5%</span></td><td class="num">8.8</td><td class="num">0</td><td class="num good">500 / 500</td><td class="num">33.3</td><td class="num">80</td></tr>
+          <tr><td>NVL · canvas</td><td class="num">113</td><td class="num flag">17.7 <span class="m">see below</span></td><td class="num">0</td><td class="num good">500 / 500</td><td class="num">16.6</td><td class="num">127</td></tr>
+          <tr class="win"><td><strong>NVL · webgl</strong></td><td class="num good">98 <span class="m">−13%</span></td><td class="num flag">9.2 <span class="m">see below</span></td><td class="num">0</td><td class="num good">500 / 500</td><td class="num good"><strong>8.9</strong> <span class="m">−46%</span></td><td class="num good"><strong>96</strong> <span class="m">−24%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>ECharts canvas → SVG reproduces the whole SVG/canvas framing inside a single
+        library.</strong> 2.1× slower cold, 3.6× worse zoom, and — the number that matters —
+        <strong>9.7 seconds of main-thread blocking during a 10-second zoom, against zero on
+        canvas.</strong> Same series, same option object, same 1,000 nodes. If anyone in the huddle
+        still wants to argue the family framing is a simplification, this row is the answer.
+      </p>
+      <p>
+        <strong>Cytoscape's WebGL path does nothing at 1,000 nodes</strong> — 219 vs 220 ms, identical
+        frame numbers, identical churn. That is the correct result and not a disappointing one: WebGL
+        is a scale feature and 1,000 nodes is not scale. §5.1 is where it would earn its keep.
+      </p>
+      <p>
+        <strong>NVL's WebGL win is solid on churn, marginal on expansion at this size, and unproven on
+        zoom.</strong> Streaming <code>frameP95</code> 16.6 → 8.9 is large and sits on a metric that
+        repeated to within 1% across passes, so it stands. Expansion 127 → 96 ms is a 24% improvement
+        and only about as big as this scenario's own run-to-run spread — a second measurement of NVL
+        canvas at the same size gave 97 ms, i.e. the same as WebGL. <strong>And at 20,000 nodes WebGL
+        is 35% <em>slower</em> per expansion than canvas</strong> (§5.7), which is the more interesting
+        result. The zoom figure fails the variance test outright: identical canvas configurations gave
+        9.2 in the first pass and 17.7 in the second, so the apparent 17.7 → 9.2 improvement is inside
+        its own noise. <strong>Recorded as unresolved, not as a win.</strong>
+      </p>
+    </div>
+    <div class="note hold">
+      <p>
+        Two caveats that survive the measurement. None of the three can swap backends on a live
+        instance, so flipping the knob <strong>remounts the pane</strong> — every pair above is two
+        cold starts, not a switch. And <strong>NVL's WebGL path drops captions entirely</strong>, so
+        part of its win is bought by drawing less; it should be read against an LOD-on canvas run
+        rather than the default one, which this sweep did not do.
+      </p>
+    </div>
+
+    <h3>5.6 &nbsp;Layout and the Worker <span class="chip done">MEASURED — THE STRONGEST RESULT</span></h3>
+    <p>
+      d3-force, α 0.02, 1,000 nodes, both legs, all eight engines. <code>Everything</code> runs this
+      scenario at default knobs and the worker toggle defaults to <em>off</em> — so the Worker leg was
+      run as a second pass. Every row converged in 170 ticks either way, which is what makes the
+      comparison clean.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th class="num">solveMs<br>main → worker</th><th class="num">transferMs</th><th class="num">framesDuring<br>main → worker</th><th class="num">worstFrameMs<br>main → worker</th><th class="num">blockedMs<br>main → worker</th></tr></thead>
+        <tbody>
+          <tr><td>ECharts</td><td class="num">384 → 390</td><td class="num flag">39</td><td class="num">3 → <strong>42</strong></td><td class="num">383 → <strong>50</strong></td><td class="num">385 → <strong class="good">0</strong></td></tr>
+          <tr><td>Cytoscape</td><td class="num">393 → 371</td><td class="num">2</td><td class="num">3 → <strong>47</strong></td><td class="num">392 → <strong>8.9</strong></td><td class="num">393 → <strong class="good">0</strong></td></tr>
+          <tr><td>vis-network</td><td class="num">383 → 364</td><td class="num">1</td><td class="num">3 → <strong>46</strong></td><td class="num">383 → <strong>8.6</strong></td><td class="num">383 → <strong class="good">0</strong></td></tr>
+          <tr><td>Neo4j NVL</td><td class="num">369 → 366</td><td class="num">1</td><td class="num">3 → <strong>34</strong></td><td class="num">367 → <strong>24</strong></td><td class="num">369 → <strong class="good">0</strong></td></tr>
+          <tr><td>FusionCharts</td><td class="num">372 → 367</td><td class="num">1</td><td class="num">3 → <strong>47</strong></td><td class="num">367 → <strong>9.1</strong></td><td class="num">372 → <strong class="good">0</strong></td></tr>
+          <tr><td>jsPlumb</td><td class="num">366 → 362</td><td class="num">2</td><td class="num">3 → <strong>40</strong></td><td class="num">375 → <strong>17</strong></td><td class="num">376 → <strong class="good">0</strong></td></tr>
+          <tr><td>React Flow</td><td class="num">371 → 369</td><td class="num">2</td><td class="num">3 → <strong>47</strong></td><td class="num">375 → <strong>8.5</strong></td><td class="num">375 → <strong class="good">0</strong></td></tr>
+          <tr><td>v-network-graph</td><td class="num">411 → 365</td><td class="num">2</td><td class="num">3 → <strong>46</strong></td><td class="num">408 → <strong>9.3</strong></td><td class="num">413 → <strong class="good">0</strong></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note">
+      <p>
+        <strong>The one place where the prediction and the measurement match exactly, across all eight
+        engines, with no artefacts.</strong>
+      </p>
+      <ul>
+        <li><strong><code>solveMs</code> does not move</strong> — 362–411 ms either way. Same arithmetic, same CPU. Anyone expecting a worker to make layout <em>faster</em> is reading the wrong column.</li>
+        <li><strong><code>blockedMs</code> goes to zero. All eight. Every time.</strong></li>
+        <li><strong><code>worstFrameMs</code> collapses from ~380 ms to 8.5–24 ms</strong>, and <code>framesDuring</code> rises from <strong>3 to 34–47</strong>. Three frames in 375 ms is a frozen tab. Forty is a live one.</li>
+        <li><strong><code>transferMs</code> is nearly free</strong> — 1–2 ms for seven engines. ECharts' 39 ms is the outlier, and 39 ms of transfer to remove 385 ms of freeze is a trade nobody would decline.</li>
+      </ul>
+      <p>
+        <strong>The conclusion is architectural, not a library choice:</strong> layout goes in a
+        Worker regardless of which renderer is picked. Largest single improvement measured, costs
+        1–2 ms, and <strong>identical for all eight</strong> — including the two being eliminated.
+      </p>
+    </div>
+    <div class="note hold">
+      <p>
+        <strong>What this does not fix, and it is important not to over-read it.</strong> A Worker
+        moves <em>layout</em> off the main thread. It cannot move <em>render</em>: a canvas is painted
+        from the thread that owns it. §5.1 and §5.7 are both render-bound — the 3.5-second single task
+        Cytoscape spends drawing 20,000 nodes, and the ~1 second per expansion click at that size, are
+        untouched by this result. <strong>The Worker fixes the freeze this POC measured in §5.6 and
+        none of the freezes it measured elsewhere.</strong>
+      </p>
+    </div>
+
+    <h3>5.7 &nbsp;Expansion — the interaction we actually ship <span class="chip done">MEASURED — AND IT IS THE WORST RESULT IN §5</span></h3>
+    <p>
+      Now a scripted scenario rather than lab-only: <strong>20 clicks × 25 nodes</strong>, spread across
+      the graph, laid out incrementally against the previous frame so nothing already on screen moves.
+      This is the case §1 says matters most and the one no vendor benchmark covers.
+      <code>p50Ms</code> is the wait a user feels at the click — at 20 samples <code>p95</code> is
+      arithmetically the maximum, so it is reported as worst-of-twenty and is not the headline.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr>
+          <th>Engine</th>
+          <th class="num">1,000</th><th class="num">5,000</th><th class="num">20,000</th>
+          <th class="num">1k → 20k</th>
+          <th class="num">engine's share <span class="m">at 20k, worst / worst</span></th>
+          <th class="num">tab frozen <span class="m">per click, 20k</span></th>
+        </tr></thead>
+        <tbody>
+          <tr class="win"><td><strong>Neo4j NVL</strong> <span class="m">canvas</span></td><td class="num">97</td><td class="num">205</td><td class="num bad">1,045</td><td class="num">10.7×</td><td class="num">927 / 1,085 = <strong>85%</strong></td><td class="num bad">1.0 s</td></tr>
+          <tr><td>Neo4j NVL · <strong>webgl</strong></td><td class="num">96</td><td class="num">—</td><td class="num bad">1,408 <span class="m">worse than canvas</span></td><td class="num bad">14.7×</td><td class="num">1,232 / 1,467 = 84%</td><td class="num bad">1.3 s</td></tr>
+          <tr><td>Cytoscape</td><td class="num good">71</td><td class="num">292</td><td class="num bad">1,194</td><td class="num">16.8×</td><td class="num">611 / 1,284 = 48%</td><td class="num bad">1.2 s</td></tr>
+          <tr><td>ECharts <span class="m">canvas</span></td><td class="num">192</td><td class="num">460</td><td class="num bad">1,959</td><td class="num">10.2×</td><td class="num">2,091 / 2,141 = <strong>98%</strong></td><td class="num bad">1.9 s</td></tr>
+          <tr><td>vis-network</td><td class="num">125</td><td class="num">551</td><td class="num bad">2,615</td><td class="num bad">20.9×</td><td class="num">1,749 / 2,835 = 62%</td><td class="num bad">2.6 s</td></tr>
+          <tr><td>React Flow <span class="m">DOM</span></td><td class="num good">72</td><td class="num">467</td><td class="num bad">wedged the tab</td><td class="num">—</td><td class="num good">5 / 1,272 at 5k = <strong>0.4%</strong></td><td class="num bad">0.7 s at 5k</td></tr>
+        </tbody>
+      </table>
+      <p class="m">
+        <code>p50Ms</code> per click, in milliseconds. "Engine's share" divides the engine's own
+        <code>updateP95Ms</code> by the run's <code>worstMs</code> — <strong>both worst-of-twenty</strong>,
+        so it is a like-for-like ratio rather than a p95 over a median. "Tab frozen" is
+        <code>blockedMs</code> over the run divided by 20 clicks. The shared incremental layout —
+        identical code for all five — costs <strong>2 ms at 1,000, 7 ms at 5,000 and 25 ms at
+        20,000</strong>; it is inside every number above and never more than 2.4% of one.
+      </p>
+    </div>
+    <div class="note risk">
+      <p>
+        <strong>At 20,000 nodes the interaction this product is built around freezes the tab for about
+        a second per click, on every engine measured.</strong> That is the finding. It is not a
+        ranking problem — the best engine here is ten times too slow for the interaction, and the
+        spread between first and last engine is smaller than the gap between all of them and
+        acceptable.
+      </p>
+      <p>
+        <strong>And the §5.6 Worker result does not rescue it.</strong> That moved the <em>layout</em>
+        off the main thread. This is <em>render</em>, and it is on the main thread by definition — a
+        canvas has to be painted from the thread that owns it.
+      </p>
+      <p>
+        <strong>Nor does WebGL — it makes this one worse, and the reversal is the tell.</strong> NVL on
+        WebGL expands a 1,000-node graph in <strong>96 ms against canvas's 97</strong> — no difference —
+        and expands a 20,000-node graph in <strong>1,408 ms against canvas's 1,045</strong>. The same
+        backend that halves cold load at 20,000 (§5.1: 480 vs 1,028 ms) costs 35% <em>more</em> per
+        expansion there.
+        That is exactly what you would expect if the scene is being re-uploaded whole on every click:
+        WebGL is cheap to draw and expensive to re-upload, so handing it the entire graph each time
+        pays its cost and throws away its benefit. <strong>It is corroboration for C9 from the
+        opposite direction</strong> — the fix is not a faster backend, it is not re-handing the graph.
+      </p>
+    </div>
+    <h4>The RFC predicted the wrong culprit, and the numbers say so</h4>
+    <p>
+      This section used to read: <em>"the incremental radial layout is O(n²) … expanding 25 nodes into
+      20,000 is the row to watch, and if it is bad, the fix is in our code, not in a library."</em>
+      <strong>Measured, that is backwards.</strong> The layout costs 25 ms at 20,000 — 2.4% of NVL's
+      1,045 ms wait. <strong>The other 97.6% is the engine's own data path</strong>, and reading the
+      wrappers explains why:
+    </p>
+    <ul>
+      <li><code>VisGraph.jsx</code> calls <code>DataSet.update()</code> with <strong>all 20,000 nodes</strong> on every click, having first built 20,000 fresh node objects.</li>
+      <li><code>CytoscapeGraph.jsx</code> iterates <strong>all 20,000</strong>, calls <code>getElementById</code> on each and rewrites <code>.data()</code> on every one that already exists.</li>
+    </ul>
+    <p>
+      Two independently written wrappers, the same shape — because <strong>the props contract makes it
+      the only shape available</strong>. Every renderer is handed <code>graph</code>, a whole new
+      object, and has to re-derive its scene from it; styling depends on <code>hidden</code> and
+      <code>isExpanded</code>, which can change for nodes already on screen, so the walk is not
+      gratuitous. <code>first→last</code> confirms the mechanism: NVL at 20k goes 1,085 → 1,051 across
+      the run, dead flat, so the cost tracks <em>total graph size</em> and not <em>nodes added</em>.
+      That is the signature of a rebuild, not a diff.
+    </p>
+    <div class="note hold">
+      <p>
+        <strong>So this is a §3.1 finding, not a §4 one.</strong> The one-shared-layer,
+        dumb-renderer design is what makes the eight engines comparable at all — and it is also what
+        caps the interaction the app ships. Cytoscape, vis-network and NVL all expose real incremental
+        APIs (<code>cy.add()</code>, <code>DataSet.update()</code> with a delta, NVL's
+        <code>addAndUpdateElementsInGraph</code>) that a "here is the whole graph" prop cannot reach.
+        <strong>Before choosing between the three shortlisted engines, the props contract needs a
+        delta channel</strong> — and that work is worth more than the difference between them.
+      </p>
+      <p class="m">
+        Which also means: <strong>these numbers are an upper bound on the architecture, not a ceiling
+        on the libraries.</strong> Nobody should quote them as "NVL takes a second to expand".
+      </p>
+    </div>
+    <p>
+      <strong>React Flow's row is the same lesson as §5.2, twice as loud.</strong> Its own
+      <code>updateMs</code> is <strong>1 ms at 1,000 nodes and 5 ms at 5,000</strong> — about 1% of the
+      wait. It is the <em>fastest library</em> in this table and the only one that could not complete
+      the 20,000 run at all. React reconciling and the browser laying out tens of thousands of DOM
+      elements is the entire cost, and no library-level benchmark would ever see it.
+    </p>
+
+    <h3>5.8 &nbsp;Bundle weight <span class="chip done">MEASURED — 8 OF 8</span></h3>
+    <p>
+      Two independent measurements, and they agree, which is the useful part.
+      <code>.sizeprobe/</code> bundles each library alone with React external;
+      <code>npm run build</code> emits one lazy route chunk per engine (library <strong>+</strong>
+      this repo's wrapper). Where both exist they land within 2%, so the chunk column can be trusted
+      for the rest.
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Engine</th><th class="num">.sizeprobe</th><th class="num">Route chunk</th><th class="num">Raw</th><th>Note</th></tr></thead>
+        <tbody>
+          <tr class="win"><td><strong>React Flow v9</strong></td><td class="num">50 KB</td><td class="num good">51 KB</td><td class="num">170 KB</td><td>lightest by 18 KB</td></tr>
+          <tr><td>jsPlumb</td><td class="num m">—</td><td class="num">69 KB</td><td class="num">259 KB</td><td>—</td></tr>
+          <tr><td>v-network-graph</td><td class="num m">—</td><td class="num">79 KB</td><td class="num">240 KB</td><td><strong>+ a second framework</strong> (Vue 3) in the page</td></tr>
+          <tr><td>ECharts</td><td class="num m">—</td><td class="num">142 KB</td><td class="num">415 KB</td><td>full build; a slim probe exists and is not yet run</td></tr>
+          <tr><td>Cytoscape</td><td class="num m">—</td><td class="num">143 KB</td><td class="num">447 KB</td><td>—</td></tr>
+          <tr><td>vis-network</td><td class="num m">—</td><td class="num">161 KB</td><td class="num">664 KB</td><td>—</td></tr>
+          <tr><td><strong>Neo4j NVL</strong> <span class="m">base + interaction-handlers</span></td><td class="num">509 KB</td><td class="num bad">518 KB</td><td class="num">1,782 KB</td><td><strong>+ 668 KB of lazily-loaded layout workers.</strong> Pulls in <code>mobx</code>, <code>d3-force</code>, <code>gl-matrix</code>, <code>lodash</code>, <code>tinycolor2</code>, <code>concaveman</code> and <strong><code>@segment/analytics-next</code></strong> — see §6.5</td></tr>
+          <tr><td>FusionCharts</td><td class="num">~897 KB</td><td class="num bad">897 KB</td><td class="num">3,070 KB</td><td>—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note hold">
+      <p>
+        <strong>NVL is ~10× React Flow's wire cost and FusionCharts ~18×.</strong> Those are real
+        numbers in a product where first paint matters — and they cut directly against §5.3, where NVL
+        is the best engine measured. <strong>NVL wins on performance and loses on weight; that trade
+        is the huddle's to make, not mine.</strong>
+      </p>
+    </div>
+
+    <h3>5.9 &nbsp;What this pass concludes, and what it does not</h3>
+    <p><strong>Safe to conclude now</strong> — each holds across multiple independent scenarios and depends on no flagged cell:</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>#</th><th>Conclusion</th><th>Evidence</th></tr></thead>
+        <tbody>
+          <tr><td class="m">C1</td><td><strong>Layout belongs in a Web Worker, whichever engine is chosen.</strong></td><td>§5.6 — <code>blockedMs</code> → 0 for all 8, worst frame 380 → 8.5–24 ms, costs 1–2 ms</td></tr>
+          <tr><td class="m">C2</td><td><strong>The DOM/SVG family cannot carry this app.</strong></td><td>§5.2 React Flow 293 ms on 2 ms of engine work; §5.4 100 ms and 542 ms zoom p95 with ~9–10 s blocked</td></tr>
+          <tr><td class="m">C3</td><td><strong>jsPlumb and v-network-graph are out.</strong></td><td>§5.2 jsPlumb 6.6 s cold, 3.9 s single task; v-network-graph capped at 150 nodes in code</td></tr>
+          <tr><td class="m">C4</td><td><strong>FusionCharts is out on capability, before performance.</strong></td><td>§5.4 no viewport at all; §5.3 absorbed 103 of 500/s</td></tr>
+          <tr><td class="m">C5</td><td><strong>Cold load and streaming are separate tests and both are needed.</strong></td><td>§5.3 ECharts passes §5.2 at 238 ms then blocks 16.8 s of 20 under churn</td></tr>
+          <tr><td class="m">C6</td><td><strong>The shortlist is the three canvas/WebGL engines: NVL, Cytoscape, vis-network.</strong></td><td>the only three holding a 9 ms zoom frame and absorbing the full feed</td></tr>
+          <tr class="win"><td class="m">C7</td><td><strong>D1 is answered, and it separates the shortlist decisively. NVL on WebGL is the only engine measured that is usable above ~10,000 nodes.</strong> 480 ms at 20,000 and 1,196 ms at 50,000, against 2.2 s and 4.3 s at 20,000 for vis-network and Cytoscape.</td><td>§5.1</td></tr>
+          <tr class="win"><td class="m">C8</td><td><strong>Read the longest single task, not the total.</strong> NVL yields the thread while rendering (489 ms of a 1,028 ms load); every other canvas engine does the whole render in one un-interruptible task — Cytoscape 3,479 of 4,266, ECharts 4,082 of 4,183. That is the difference between a slow load and a dead tab.</td><td>§5.1</td></tr>
+          <tr class="win"><td class="m">C9</td><td><strong>Expansion is capped by our props contract, not by any library</strong> — and fixing it is worth more than the choice between the shortlisted three. The shared layout is 25 ms of a ~1,050 ms click at 20,000; the rest is every renderer re-deriving its whole scene because it is handed the whole graph.</td><td>§5.7, and the wrappers themselves</td></tr>
+          <tr><td class="m">C10</td><td><strong>"Has a WebGL mode" means nothing until measured.</strong> NVL's WebGL moves its ceiling by ~10×; Cytoscape's — a rasteriser swap under the same geometry — moves it 7%.</td><td>§5.1, §5.5</td></tr>
+          <tr><td class="m">C11</td><td><strong>Variance is itself a headroom signal.</strong> Repeated configurations land within 0–3% where an engine is comfortable and swing 43–92% where it is marginal. Useful as a diagnostic, and a hard constraint on quoting any single-run difference.</td><td>§5.0</td></tr>
+          <tr><td class="m">C12</td><td><strong>LOD and culling are targeted fixes, not general optimisations.</strong> ECharts is label-bound (2.7× from dropping captions alone, nothing from culling); React Flow and jsPlumb are node-bound; the other four gain nothing from either and pay for the cull anyway.</td><td>§5.5</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="note risk">
+      <p><strong>The counterweight, and it is against the engine that wins everything else:</strong></p>
+      <p>
+        <strong>NVL retains ~69 MB after churn against a 7.1 MB base — about 10×, reproducible to 1.2
+        MB across runs.</strong> vis-network is clean and Cytoscape retains roughly one base graph.
+        Set beside NVL's <strong>518 KB gzip</strong> (§5.8, ~10× React Flow) and its bundled
+        <code>@segment/analytics-next</code> (§6.5), the engine that answers D1 is also the one
+        carrying every non-performance objection. <strong>That trade is the huddle's, not mine</strong>
+        — but it is now a trade between measured quantities rather than a guess.
+      </p>
+    </div>
+    <div class="note risk">
+      <p><strong>Not safe to conclude, and why:</strong></p>
+      <ul>
+        <li><strong>Whether NVL's 69 MB is an unbounded leak or a cache that stops growing.</strong> Three 20-second runs cannot tell those apart, and the distinction decides whether it is a blocker or a footnote. One long run — 10+ minutes of churn, heap sampled throughout — settles it.</li>
+        <li><strong>How much of NVL's WebGL win is bought by dropping captions.</strong> Its WebGL path renders none, so part of every WebGL figure above is "drew less". The honest comparison is WebGL against <em>LOD-on canvas</em>, and this pass did not run it.</li>
+        <li><strong>NVL's canvas figures at 50,000</strong>, and the WebGL wall beyond 50,000 — the knob stops there.</li>
+        <li><strong>The customisation cost.</strong> Still capability-matrix only, and it is where a fast canvas engine gets slow. §6.3, and the reason D3 asks for two engines.</li>
+        <li><strong>Anything on 60 Hz hardware, on battery, or on a phone.</strong> Every figure here is one 120 Hz Apple-silicon machine on mains power.</li>
+      </ul>
+    </div>
+    <p>
+      <strong>The second pass, in priority order:</strong> (1) breaking points for the three
+      shortlisted engines; (2) expansion into 1k / 5k / 20k; (3) three runs at 60 Hz with
+      <code>--expose-gc</code> for the leak column; (4) hover by hand; (5) the LOD-off baseline §5.5 is
+      missing. <strong>Items 1 and 2 are the ones that change the decision.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §6 ─────────────────────────── -->
+<section id="s6">
+  <div class="gut">§6</div>
+  <div class="body">
+    <h2>Review focus areas</h2>
+    <p class="m">Addressing the huddle's five stated criteria, in its order.</p>
+
+    <h3>6.1 &nbsp;Feasibility of implementation</h3>
+    <p>
+      Not a projection — <strong>all eight are implemented and running</strong>, which is the
+      strongest feasibility evidence available. What that surfaced:
+    </p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Finding</th><th>Consequence</th></tr></thead>
+        <tbody>
+          <tr><td><strong>jsPlumb is not a graph library.</strong> It is a connectivity toolkit: no layout, no viewport, no data model. Two of the three had to be hand-built — ~20 lines of CSS transform for the viewport; nodes are absolutely-positioned React divs.</td><td>Right tool for a flowchart or pipeline editor. Wrong tool here. Its numbers measure our scaffolding as much as the library.</td></tr>
+          <tr><td><strong>v-network-graph is Vue 3 only</strong> — no React binding, no framework-free core. It runs as a Vue island inside React 16.</td><td>A second framework in the bundle, and it refuses to draw past ~150 nodes. Effectively already eliminated.</td></tr>
+          <tr><td><strong><code>@neo4j-nvl/react</code> cannot be installed on React 16.</strong> Every published version declares <code>react: 18 || ^19</code> as a peer; the one version with no peer range declares <code>react: ^18.2.0</code> as a hard <em>dependency</em>, which would load a second React into the page.</td><td>NVL is usable via <code>@neo4j-nvl/base</code> with a hand-written wrapper — cheap to write, but <strong>you own the lifecycle</strong> and get no help from the documented React API surface.</td></tr>
+          <tr><td><strong>React Flow v9 ships no layout engine at all.</strong></td><td>~90 lines of layout plus its tests that the NVL path never needed — and it took three attempts to get right (§8.3). Budget for it; it is not optional.</td></tr>
+          <tr><td><strong>FusionCharts fires no node events</strong>; they are bridged from the DOM.</td><td>Every interaction we need is reachable, but through a seam we maintain.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.2 &nbsp;Scalability and performance under load</h3>
+    <p>
+      This is §5 in full, and the harness is built around one idea: <strong>find the absolute
+      breaking point, not the average speed.</strong> Every library is fast at 200 nodes. The design
+      decisions that make the load real rather than theatrical:
+    </p>
+    <ul>
+      <li><strong>Cold pane for the hairball</strong> — a first render, not an update against a graph the engine already has.</li>
+      <li><strong>Streaming pushes on a timer, not after each paint</strong>, with a flat node count.</li>
+      <li><strong>Zoom is driven once per animation frame</strong>, so the interaction happens at exactly the rate the engine can present. Pushing transforms from a <code>setInterval</code> would queue work the renderer never shows and turn it into a queue-depth test.</li>
+      <li><strong>Hover calibrates first.</strong> A node is ~11 px across on a fitted graph, so a blind sweep lands on one roughly never. An earlier version reported "1 callback out of 181 moves" for all eight engines — which measured the geometry of the sweep and nothing about the libraries.</li>
+      <li><strong>The bench runs one engine at a time.</strong> Frame times, long tasks and heap are properties of <em>the tab</em>, not of a component. Eight panes sharing a main thread would produce eight rows that each read "this engine plus seven others".</li>
+    </ul>
+
+    <h3>6.3 &nbsp;Extensibility and modularity</h3>
+    <p><strong>The claim under review is §3.1: the engine is a swappable leaf, not a foundation.</strong> Evidence that it holds:</p>
+    <ul>
+      <li>Eight renderers, identical props, one lazy import each. <code>src/engines.js</code> is the whole registry.</li>
+      <li>The engine-specific surface is exactly two callbacks — and a library with no viewport returns <code>null</code> rather than forcing a special case upward.</li>
+      <li>Interaction, expansion, add/delete, layout, LOD, culling and the force solver all live above the renderer and are unit-tested independently of any of them.</li>
+      <li><code>fetchNeighbors()</code> in <code>data.js</code> is <strong>the only function that invents data</strong> — the single seam to swap for a real backend call.</li>
+    </ul>
+    <p>
+      <strong>The unmeasured half, stated plainly.</strong> Custom glyphs and edge routing are
+      capability-matrix only (§4), not benchmarked. The spread is wide — from
+      <code>symbol: image://…</code> per node (ECharts), through <code>background-image</code> per
+      selector (Cytoscape), to <em>anything React can render</em> (React Flow) — and
+      <strong>that last one is exactly the trade: the most customisable and the least scalable, for
+      the same reason.</strong> An engine offering five edge-routing modes is telling you it will
+      happily let you make it slow; curves cost significantly more maths per edge than straight lines.
+    </p>
+    <div class="note">
+      <p>
+        <strong>This is why D3 asks for two engines, not one.</strong> Custom rendering is where
+        canvas libraries lose most of their advantage, and how much they lose depends entirely on
+        what our node design asks for. The only way to settle it is to implement the real design in
+        the finalists and re-run the hairball and zoom scenarios. <strong>An unmeasured column is
+        more honest than a guessed one</strong> — a benchmark that reports a number nobody produced
+        is worse than one that admits a gap.
+      </p>
+    </div>
+
+    <h3>6.4 &nbsp;Alignment with existing systems and tech stacks</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Constraint</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td><strong>React 16.14</strong></td><td>The deciding constraint. Pinned exact; Vite configured with the <strong>classic</strong> JSX runtime since React 16 has no automatic one. <code>npm install --legacy-peer-deps</code> is required because npm 11 refuses the React 16 peer graph. Eliminates <code>@neo4j-nvl/react</code> outright.</td></tr>
+          <tr><td><strong>Neo4j</strong></td><td>If we are already committed to the Neo4j stack, NVL is the aligned choice — at 509 KB gzip plus a bundled analytics dependency. Weigh against the graph-store decision, which is a separate RFC.</td></tr>
+          <tr><td><strong>Bundle budget</strong></td><td><span class="chip">PENDING</span> the product's first-paint budget is an input we do not have — <strong>Q1</strong>.</td></tr>
+          <tr><td><strong>React 16-specific traps</strong></td><td>Three of the four biggest wins in the earlier round were React-16-specific and would not exist on React 18 (§8.3). If a React 18 upgrade is on any roadmap, that changes the shortlist and should be said now, not later — <strong>Q3</strong>.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>6.5 &nbsp;Security, monitoring, observability, operational readiness</h3>
+    <h4>Security</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Item</th><th>Position</th></tr></thead>
+        <tbody>
+          <tr><td><strong><code>@segment/analytics-next</code> bundled inside NVL</strong></td><td><span class="chip warn">FLAGGED</span> A third-party analytics client shipping inside a graph library, in a product handling identity data, is a supply-chain and data-egress question — not a performance one. <strong>Needs an answer before NVL ships, regardless of how it benchmarks.</strong></td></tr>
+          <tr><td>Node labels / captions</td><td>Identity data reaches the DOM or canvas. Canvas engines are inherently less exposed (no per-node DOM); DOM engines put PII in inspectable elements. Worth a line in the threat model.</td></tr>
+          <tr><td>Third-party CDN</td><td>None. Everything bundled.</td></tr>
+          <tr><td><code>fetchNeighbors()</code></td><td>Currently fakes data. The real one carries authz — <strong>the graph view must not become an authorization bypass</strong>: an analyst expanding a node must not see neighbours they could not query directly. Enforced server-side, in the backend RFC.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <h4>Observability</h4>
+    <p>The POC's probes are the production telemetry design, and they are already engine-agnostic:</p>
+    <ul>
+      <li><code>updateMs</code> per render, self-reported by whichever pane is mounted → an RUM histogram, not an average.</li>
+      <li><code>p95</code> frame time, long-task <code>blockedMs</code>, and heap — all from four primitives in <code>probes.js</code> that know nothing about graphs.</li>
+      <li><strong><code>—</code> must survive to production dashboards.</strong> Long-task and heap are Chromium-only. A dashboard that renders "not measured" as <code>0</code> will report a never-blocking UI forever.</li>
+    </ul>
+    <h4>Operational readiness</h4>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Item</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Automated tests</td><td><span class="chip done">50 PASSING</span> over the shared graph + bench layers. Covers the layout's three historical failure modes, the frame arithmetic, the empty-graph path, and the edge floor.</td></tr>
+          <tr><td>Build</td><td><span class="chip done">CLEAN</span></td></tr>
+          <tr><td>The Worker decision</td><td>§5.6 — the layout must go to a Worker or the tab freezes for the whole solve. An architecture commitment, independent of engine choice.</td></tr>
+          <tr><td>Degradation path</td><td><span class="chip">PENDING</span> what the UI does when a result set exceeds the chosen engine's breaking point: cap-and-warn, sample, or server-side aggregate. <strong>Needs a decision — Q2.</strong></td></tr>
+          <tr><td>Browser support matrix</td><td><span class="chip">PENDING</span> measured on Chromium only so far.</td></tr>
+          <tr><td>Not yet verified</td><td>Visual paint has not been checked in a browser for: the empty-pane state across all eight, ECharts' SVG backend, Cytoscape's WebGL, NVL's WebGL. Reasoned about and grep-verified, not watched.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §7 ─────────────────────────── -->
+<section id="s7">
+  <div class="gut">§7</div>
+  <div class="body">
+    <h2>Trade-offs and open questions</h2>
+    <h3>Trade-offs already taken, and what they cost</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Decision</th><th>Bought</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td>One shared layout for all eight</td><td>A comparison about renderers only</td><td>Says nothing about each library's own (often good) layout</td></tr>
+          <tr><td>LOD + culling in shared code</td><td>Identical help for every engine; measures <em>what an engine costs when handed less</em></td><td>An engine that ships its own culling gets no credit; one with none borrows ours</td></tr>
+          <tr><td>One d3-force for everyone</td><td>Comparable solver numbers</td><td>Not what any of them would do natively</td></tr>
+          <tr><td>Synthetic graphs</td><td>Exact, repeatable sizes</td><td>Not our real degree distribution — real identity graphs are hub-heavy in ways a spanning tree plus random cross-links is not (<strong>Q7</strong>)</td></tr>
+          <tr><td><code>p95</code> over <code>fps</code> as headline</td><td>Unbounded, so headroom is visible</td><td>Less intuitive in a slide; expect to explain it once</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Areas needing input — this is what I want from the huddle</h3>
+    <div class="qs">
+      <div class="q"><div class="id">Q1</div><div class="qb">
+        <p><strong>What is the acceptable <code>ttfrMs</code>, and the bundle budget?</strong> Without a threshold, §5.1's "breaking point" has no pass/fail line and every row is just a number.</p>
+        <div class="who">BLOCKS: turning §5.1 from data into a decision · Product + Frontend</div>
+      </div></div>
+      <div class="q"><div class="id">Q2</div><div class="qb">
+        <p><strong>What happens past the breaking point?</strong> Cap-and-warn, sample the graph, or aggregate server-side? Each pushes work to a different team.</p>
+        <div class="who">BLOCKS: the shortlist — a cap at 5,000 makes engines viable that a 50,000 requirement eliminates · Product + Backend</div>
+      </div></div>
+      <div class="q"><div class="id">Q3</div><div class="qb">
+        <p><strong>Is a React 18 upgrade on any roadmap?</strong></p>
+        <div class="who">BLOCKS: three of the four biggest perf wins were React-16 workarounds, and React 18 re-opens @neo4j-nvl/react · Platform</div>
+      </div></div>
+      <div class="q"><div class="id">Q4</div><div class="qb">
+        <p><strong>Are we committed to Neo4j?</strong></p>
+        <div class="who">BLOCKS: it is most of the case for absorbing NVL's 509 KB · Architecture</div>
+      </div></div>
+      <div class="q"><div class="id">Q5</div><div class="qb">
+        <p><strong>What does a node need to look like?</strong> Avatars, risk badges, multi-line captions?</p>
+        <div class="who">BLOCKS: §6.3 — this decides more than the frame times do, and it is the input to D3 · Design + Product</div>
+      </div></div>
+      <div class="q"><div class="id">Q6</div><div class="qb">
+        <p><strong>Does anyone object to <code>@segment/analytics-next</code> shipping inside NVL?</strong></p>
+        <div class="who">BLOCKS: if yes, NVL is out regardless of its numbers · Security</div>
+      </div></div>
+      <div class="q"><div class="id">Q7</div><div class="qb">
+        <p><strong>What is our real degree distribution?</strong> A production sample would let the synthetic generator match it.</p>
+        <div class="who">BLOCKS: hub-heavy graphs stress hit-testing and edge routing differently from tree-like ones · Data</div>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §8 ─────────────────────────── -->
+<section id="s8">
+  <div class="gut">§8</div>
+  <div class="body">
+    <h2>Appendix — everything this POC produced</h2>
+
+    <h3>8.1 &nbsp;Artefact index</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Artefact</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td class="m">RFC.md</td><td>This document, in the repo</td></tr>
+          <tr><td class="m">README.md</td><td>The app, the eight engines, the four views</td></tr>
+          <tr><td class="m">BENCHMARKING.md</td><td>The four dimensions worth testing, and which scenario and knob implements each</td></tr>
+          <tr><td class="m">METRICS.md</td><td>Every metric: how it is computed, <strong>how it lies</strong>, and how to present it without lying with it</td></tr>
+          <tr><td class="m">COMPARISON.md</td><td><span class="chip warn">STALE</span> the earlier two-engine round (NVL vs React Flow). §1, §3, §4, §7 still accurate for those two. Rewritten once §5 has real rows</td></tr>
+          <tr><td class="m">ECHARTS_PIPELINE.md</td><td>The ECharts render pipeline in detail</td></tr>
+          <tr><td class="m">.sizeprobe/ · .sizeout/</td><td>Per-library bundle weight probes and their output</td></tr>
+          <tr><td class="m">src/engines.js</td><td>The registry + capability matrix + per-engine prose notes. <strong>Worth reading before any of the numbers</strong></td></tr>
+          <tr><td class="m">src/bench/probes.js</td><td>The four measurement primitives every number comes from</td></tr>
+          <tr><td class="m">src/bench/scenarios.js</td><td>The six scripted scenarios</td></tr>
+          <tr><td class="m">graph-bench-results.json</td><td><span class="chip">PENDING</span> the raw exported rows that fill §5</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.2 &nbsp;The four views</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>URL</th><th>What it is</th></tr></thead>
+        <tbody>
+          <tr><td class="m">#/explore</td><td>eight panes side by side on one live, expandable graph</td></tr>
+          <tr><td class="m">#/bench</td><td>one scenario across all eight engines, sequentially</td></tr>
+          <tr><td class="m">#/lab/&lt;engine&gt;</td><td><strong>one library, every dial by hand</strong>, with a live frame/heap gauge</td></tr>
+          <tr><td class="m">#/compare</td><td>everything measured so far, plus the capability matrix</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>8.3 &nbsp;Findings already banked <span class="chip done">QUALITATIVE</span></h3>
+    <p>Not superseded by §5 — these still stand:</p>
+    <ul>
+      <li><strong>A 10× hover improvement that had nothing to do with the graph library.</strong> 8.65 ms → 0.86 ms per hover at 159 nodes, from four fixes all in shared code: <code>React.memo</code> on the renderers, stable <code>isExpanded</code>/<code>isPending</code> identities, <code>hiddenCounts</code> batched out of an O(n²) loop, and <code>unstable_batchedUpdates</code> around the fetch resolution. <strong>Three of the four are React-16-specific traps that would not exist on React 18</strong> — which is why Q3 matters.</li>
+      <li><strong>The radial layout took three attempts.</strong> A top-down tree was ~19,000 px wide at 116 nodes; a leaf-count-proportional radial collapsed into a single arc because ring radius was sized off the tightest adjacent pair. What ships gives each leaf one equal angular slot. All three failure modes are pinned by tests.</li>
+      <li><strong>Self-edges break every graph walk that assumes edges mean hierarchy.</strong> Four places in the shared layer had to learn to skip them. Some engines render loops natively; React Flow v9 collapses them to nothing and needs a custom edge type.</li>
+      <li><strong>Inverted and surprising APIs are real cost.</strong> NVL's <code>animated: true</code> means "do <em>not</em> animate"; it never re-fits the viewport when elements are added, so an expanding graph walks off screen. React Flow v9's <code>onElementClick</code> fires from react-draggable's <code>onDragStop</code>, not the node's <code>onClick</code>.</li>
+    </ul>
+
+    <h3>8.4 &nbsp;Reproducing</h3>
+<pre><b>npm install --legacy-peer-deps</b>   # npm 11 refuses the React 16 peer graph
+<b>npm test</b>                         # 50 assertions, shared graph + bench layers
+<b>npm run dev</b>                      # http://localhost:5173</pre>
+    <p class="m">
+      Then <code>#/bench</code> → <strong>Everything</strong>, which runs the exact matrix in §5 in
+      under seven minutes, and <code>#/compare</code> → <strong>Export JSON</strong>. For the §5.6
+      Worker leg, select <code>Layout &amp; worker</code>, tick <strong>In a Web Worker</strong> and
+      hit <strong>All engines</strong> — <code>Everything</code> uses default knobs and so only ever
+      runs the main-thread half.
+    </p>
+    <p class="m">
+      Close your other tabs — frame times and long tasks are properties of the tab's main thread, and
+      <strong>a Slack notification lands in your p95</strong>. Prefer a 60 Hz display, or state the
+      refresh rate as §5.0 does; add <code>--js-flags="--expose-gc"</code> if you care about the leak
+      column, which this pass did not.
+    </p>
+  </div>
+</section>
+
+<!-- ─────────────────────────── §9 ─────────────────────────── -->
+<section id="s9">
+  <div class="gut">§9</div>
+  <div class="body">
+    <h2>What I am asking the huddle to conclude</h2>
+    <ol>
+      <li><strong>Ratify or reject the shared-layer architecture (§3).</strong> If it holds, the engine choice is reversible and this RFC's stakes drop a long way.</li>
+      <li><strong>Ratify C1 — layout goes in a Worker</strong> (§5.6). The one item that is fully measured, holds for all eight engines, and can be decided today independently of which engine wins.</li>
+      <li><strong>Ratify the eliminations — C2, C3, C4</strong> (§5.9): the DOM/SVG family, jsPlumb, v-network-graph, FusionCharts. Each is out on evidence a second run will not reverse.</li>
+      <li><strong>Answer Q1 and Q2.</strong> Without a <code>ttfrMs</code> threshold and a past-the-limit behaviour, §5.1's breaking-point pass produces numbers rather than a decision — and §5.1 is now the main thing standing between this RFC and D3.</li>
+      <li><strong>Agree the shortlist of three → two</strong> (NVL, Cytoscape, vis-network) <em>or</em> agree that the second pass decides it. One run at one size does not separate them, and I would rather say so than pick on a coin toss.</li>
+      <li><strong>Route Q6</strong> — <code>@segment/analytics-next</code> bundled inside NVL — to security as a blocking item. NVL is currently the best-performing engine measured, so this is the item most likely to overturn a performance-led decision.</li>
+    </ol>
+
+    <h3>Action items</h3>
+    <div class="scroll">
+      <table>
+        <thead><tr><th class="num">#</th><th>Action</th><th>Owner</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="num">1</td><td>Full matrix at 1,000/1,500 — 48 cells + 8 Worker rows, exported</td><td>Ansh</td><td class="good">done</td></tr>
+          <tr><td class="num">2</td><td><strong>Breaking-point pass</strong> (§5.1) — 1k/5k/20k/50k, five engines, both backends</td><td>Ansh</td><td class="good">done — <strong>D1 answered</strong></td></tr>
+          <tr><td class="num">3</td><td>Expansion at 1k / 5k / 20k (§5.7) — now a scripted scenario, not lab-only</td><td>Ansh</td><td class="good">done — <strong>and it reframed the problem</strong></td></tr>
+          <tr><td class="num">4</td><td>Settle the leak column with <code>--expose-gc</code>, 3 runs</td><td>Ansh</td><td class="good">done — was a <strong>sign error</strong>, now ±1.3 MB</td></tr>
+          <tr><td class="num">5</td><td>Paint-backend sweep (§5.5) — canvas / SVG / WebGL, three engines</td><td>Ansh</td><td class="good">done</td></tr>
+          <tr><td class="num">6</td><td>LOD-off baseline so §5.5 has a denominator</td><td>Ansh</td><td class="good">done — <strong>conclusion flipped</strong></td></tr>
+          <tr><td class="num">7</td><td>Rewrite <code>COMPARISON.md</code> against the measured rows</td><td>Ansh</td><td class="good">done</td></tr>
+          <tr><td class="num">8</td><td><strong>Add a delta channel to the renderer props contract</strong> (§5.7, C9) — worth more than the engine choice</td><td>Ansh</td><td class="pend">⬚ next</td></tr>
+          <tr><td class="num">9</td><td><strong>One long NVL churn run</strong> (10+ min) to tell a bounded cache from an unbounded leak (§5.3)</td><td>Ansh</td><td class="pend">⬚ next</td></tr>
+          <tr><td class="num">10</td><td>NVL WebGL against <strong>LOD-on canvas</strong> — its WebGL path draws no captions, so part of its win is drawing less</td><td>Ansh</td><td class="pend">⬚</td></tr>
+          <tr><td class="num">11</td><td>Hover: the calibration grid steps over 11 px nodes (§5.4). Swept with interpolated trusted input; re-run on 60 Hz to confirm</td><td>Ansh</td><td class="good">diagnosed</td></tr>
+          <tr><td class="num">12</td><td>Re-run the shortlist on <strong>60 Hz</strong> hardware and on battery — every figure here is one 120 Hz machine on mains</td><td>Ansh</td><td class="pend">⬚</td></tr>
+          <tr><td class="num">13</td><td>Security review of <code>@segment/analytics-next</code> in NVL (Q6) — now more urgent, since NVL is the engine the numbers favour</td><td>Security</td><td class="pend">⬚</td></tr>
+          <tr><td class="num">14</td><td>Customisation cost: build the real node design in the top two (§6.3) — the input to D3</td><td>Ansh + Design</td><td class="pend">⬚</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <span>poc-graph-expansion · RFC.md</span>
+  <span>8 engines · 50 tests passing · 150+ measured rows · 1k–50k nodes · canvas / SVG / WebGL</span>
+  <span>Submitted to #design-huddle</span>
+</footer>
+
+</div>

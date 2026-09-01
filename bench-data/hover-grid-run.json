@@ -1,0 +1,47 @@
+{
+  "echarts": {
+    "engine": "echarts",
+    "nodes": 1000,
+    "probePoints": 800,
+    "hits": 0,
+    "verdict": "no hover with a real pointer either"
+  },
+  "fusion": {
+    "engine": "fusion",
+    "nodes": 1000,
+    "probePoints": 800,
+    "hits": 6,
+    "hitArea": "0.8%",
+    "legs": {
+      "debounce0": {
+        "pointerMoves": 720,
+        "hoverCallbacks": 540,
+        "callbacksPerMove": 0.75
+      },
+      "debounce50": {
+        "pointerMoves": 722,
+        "hoverCallbacks": 538,
+        "callbacksPerMove": 0.75
+      }
+    },
+    "verdict": "hover measured with trusted input"
+  },
+  "cytoscape": {
+    "engine": "cytoscape",
+    "nodes": 1000,
+    "probePoints": 800,
+    "hits": 0,
+    "verdict": "no hover with a real pointer either"
+  },
+  "vis": {
+    "engine": "vis",
+    "nodes": 1000,
+    "probePoints": 800,
+    "hits": 0,
+    "verdict": "no hover with a real pointer either"
+  },
+  "vng": {
+    "engine": "vng",
+    "driverError": "Error: page.waitForTimeout: Target page, context or browser has been closed"
+  }
+}
