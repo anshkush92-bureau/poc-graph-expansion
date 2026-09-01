@@ -1,12 +1,6 @@
-import React, { useEffect, useRef } from 'react'
-import { FreeLayoutType, NVL } from '@neo4j-nvl/base'
-import {
-  ClickInteraction,
-  DragNodeInteraction,
-  HoverInteraction,
-  PanInteraction,
-  ZoomInteraction
-} from '@neo4j-nvl/interaction-handlers'
+import React, { useEffect, useMemo, useRef } from 'react'
+import { FreeLayoutType } from '@neo4j-nvl/base'
+import { InteractiveNvlWrapper } from '@neo4j-nvl/react'
 import { ENTITY } from '../graph/data.js'
 import { isSelfEdge } from '../graph/ops.js'
 import { INK, nodeColor } from '../ui/theme.js'
@@ -17,19 +11,29 @@ import { useResize } from '../ui/useResize.js'
  * THE NEO4J NVL RENDERER
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * **`@neo4j-nvl/react` is not used, because it cannot be installed here.** Every
- * published version declares `react: 18 || ^19` as a peer, and the one version
- * with no peer range pins `react: ^18.2.0` as a hard *dependency*, which would
- * load a second React into the page. So the documented wrappers —
- * `BasicNvlWrapper`, `InteractiveNvlWrapper` — are off the table and this file
- * is the wrapper.
+ * This uses the official `@neo4j-nvl/react` wrapper (`InteractiveNvlWrapper`)
+ * instead of driving `@neo4j-nvl/base` by hand. That used to be off the table:
+ * every published version peers `react: 18.0.0 || ^19.0.0`, which this POC
+ * didn't satisfy until it moved off React 16. On React 19 the wrapper installs
+ * cleanly with no hard React dependency of its own, so this file is now props
+ * in, canvas out — no `new NVL(...)`, no interaction handlers built one by
+ * one, no id-diffed `present` ref, no `destroy()` cascade on unmount. The
+ * wrapper's own `BasicNvlWrapper` does that diffing internally by comparing
+ * the `nodes`/`rels` arrays it's given on each render.
  *
- * That turns out to be little code, but the cost is not lines: **you own the
- * lifecycle**. Constructing `new NVL(...)`, constructing each interaction
- * handler separately, registering callbacks through `updateCallback(name, fn)`
- * rather than as props, diffing removals yourself through
- * `removeNodesWithIds` / `removeRelationshipsWithIds`, and calling `destroy()`
- * on every handler *and* the instance on unmount. Miss one and the canvas leaks.
+ * It does not do everything, though. Four things below exist because the
+ * wrapper doesn't: the `hoveredId` dedupe, the debounced `refit`, the `fitted`
+ * tracking, and the `onViewport` handle, now built from the wrapper's ref.
+ *
+ * One wrapper behaviour worth knowing before it bites: `InteractiveNvlWrapper`
+ * only constructs a Pan / Zoom / DragNode interaction handler when
+ * `mouseEventCallbacks` carries a truthy entry for that event (`onPan`,
+ * `onZoom`, `onDrag`) — see `@neo4j-nvl/react`'s `InteractionHandlers.js` and
+ * `hooks.js`. This app has no use for those specific callbacks, but leaving
+ * them out doesn't error, it just silently disables panning, zooming and node
+ * dragging. They're passed as `true` below purely to switch the handlers on,
+ * which is what the hand-rolled version got for free by constructing
+ * `PanInteraction` / `ZoomInteraction` / `DragNodeInteraction` unconditionally.
  *
  * ── What NVL gives back ────────────────────────────────────────────────────
  * - **Self-edges are native**, drawn as proper labelled loops. No pivot detour.
@@ -42,11 +46,12 @@ import { useResize } from '../ui/useResize.js'
  *   code at all.
  *
  * ── What it costs ──────────────────────────────────────────────────────────
- * Roughly **509 KB gzipped**, ten times the lightest engine here, plus ~668 KB
- * of lazily-loaded layout workers. It bundles `mobx`, `d3-force`, `gl-matrix`,
- * `lodash`, `tinycolor2`, `concaveman` — and `@segment/analytics-next`, which
- * is worth knowing about before shipping it into a product. `disableTelemetry`
- * below switches the reporting off; the dependency is still in the bundle.
+ * Roughly **482 KB gzipped** (measured from `npm run build`'s own chunk
+ * report), about eight times the lightest engine here. It bundles `mobx`,
+ * `d3-force`, `gl-matrix`, `lodash`, `tinycolor2`, `concaveman` — and
+ * `@segment/analytics-next`, which is worth knowing about before shipping it
+ * into a product. `disableTelemetry` below switches the reporting off; the
+ * dependency is still in the bundle.
  */
 
 const EDGE = '#2F3746'
@@ -66,11 +71,11 @@ function NvlGraph({
   onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
 }) {
   const frame = useRef(null)
+  // The wrapper's ref, once mounted, is not the NVL instance itself but a
+  // proxy object exposing NVL's instance methods directly (`.fit`, `.setZoom`,
+  // `.getScale`, `.getPan`, `.setPan`, ...) — see `BasicNvlWrapper`'s
+  // `useImperativeHandle`. No `.nvl` nesting.
   const nvl = useRef(null)
-  const parts = useRef([])
-  // Ids currently in the scene, so removals can be worked out — NVL has no
-  // "replace the graph" call, only add/update and remove-by-id.
-  const present = useRef({ nodes: new Set(), rels: new Set() })
   // Node ids to fit against, as an array, so a resize can re-fit without
   // waiting for the next graph change.
   const shown = useRef([])
@@ -81,61 +86,59 @@ function NvlGraph({
   const handlers = useRef({})
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
-  useEffect(() => {
-    // Captions only render on the canvas backend — the WebGL one drops them
-    // entirely, which is most of what makes it fast and is exactly the trade
-    // worth seeing rather than reading about. Fixed at construction: a caller
-    // that wants the other one remounts this component.
-    // (`useWebGL` used to sit alongside this and is not an NvlOptions key at
-    // all — `renderer` is the only switch. Removed rather than kept as a
-    // reassuring no-op.)
-    const instance = new NVL(frame.current, [], [], Object.assign({}, OPTIONS, {
-      renderer: renderer === 'webgl' ? 'webgl' : 'canvas'
-    }))
+  // Captions only render on the canvas backend — the WebGL one drops them
+  // entirely, which is most of what makes it fast and is exactly the trade
+  // worth seeing rather than reading about. `renderer` is read once here: the
+  // lab remounts this pane with a key to change it rather than swapping it
+  // live, so a stable ref (evaluated once, on first render) matches that
+  // contract instead of reacting to a prop that in practice never changes
+  // under a mounted instance.
+  const nvlOptions = useRef(Object.assign({}, OPTIONS, {
+    renderer: renderer === 'webgl' ? 'webgl' : 'canvas'
+  })).current
 
-    // Callbacks live on handler instances and are registered by name, not
-    // passed as props. The ref indirection above is what keeps a changed
-    // handler from forcing the canvas to be rebuilt.
-    const click = new ClickInteraction(instance)
-    click.updateCallback('onNodeClick', node => handlers.current.onNodeClick(node.id))
-    click.updateCallback('onRelationshipClick', rel => handlers.current.onEdgeClick(rel.id))
-    click.updateCallback('onCanvasClick', () => handlers.current.onBackgroundClick())
-
-    const hover = new HoverInteraction(instance)
+  const mouseEventCallbacks = useRef({
+    onNodeClick: node => handlers.current.onNodeClick(node.id),
+    onRelationshipClick: rel => handlers.current.onEdgeClick(rel.id),
+    onCanvasClick: () => handlers.current.onBackgroundClick(),
     // `onHover` fires on **every mousemove**, hit or miss, so without this
     // dedupe it thrashes React state continuously while the pointer moves.
-    hover.updateCallback('onHover', (element, hit, event) => {
+    onHover: (element, hit, event) => {
       const id = element && element.id && !element.from ? element.id : null
       if (id === hoveredId.current) return
       hoveredId.current = id
       handlers.current.onNodeHover(id, id ? { x: event.clientX, y: event.clientY } : null)
-    })
+    },
+    // Turns the Pan/Zoom/DragNode interaction handlers on — see the header
+    // comment. No app-level behaviour hangs off these three; they exist only
+    // because leaving them unset leaves panning, zooming and dragging off.
+    onPan: true,
+    onZoom: true,
+    onDrag: true
+  }).current
 
-    parts.current = [click, hover, new PanInteraction(instance), new ZoomInteraction(instance), new DragNodeInteraction(instance)]
-    nvl.current = instance
-
+  useEffect(() => {
     // The benchmark's handle. NVL is the only engine here that exposes zoom and
     // pan as one call — `setZoomAndPan` exists precisely because setting them
     // separately jitters — so the two are kept apart only to match the shared
     // contract, and a scenario that drives both per frame pays for that.
     if (onViewport) {
       onViewport({
-        zoomBy: factor => instance.setZoom(instance.getScale() * factor),
-        panBy: (dx, dy) => {
-          const at = instance.getPan()
-          instance.setPan(at.x + dx, at.y + dy)
+        zoomBy: factor => {
+          if (nvl.current) nvl.current.setZoom(nvl.current.getScale() * factor)
         },
-        fit: () => { if (shown.current.length) instance.fit(shown.current) }
+        panBy: (dx, dy) => {
+          if (!nvl.current) return
+          const at = nvl.current.getPan()
+          nvl.current.setPan(at.x + dx, at.y + dy)
+        },
+        fit: () => { if (nvl.current && shown.current.length) nvl.current.fit(shown.current) }
       })
     }
 
     return () => {
       if (onViewport) onViewport(null)
       clearTimeout(fitTimer.current)
-      parts.current.forEach(part => part.destroy())
-      parts.current = []
-      instance.destroy()
-      nvl.current = null
     }
   }, [])
 
@@ -156,9 +159,11 @@ function NvlGraph({
 
   useResize(frame, () => refit.current())
 
-  useEffect(() => {
-    const instance = nvl.current
-    if (!instance) return
+  // The node and relationship mapping the wrapper is handed each render.
+  // `addAndUpdateElementsInGraph`-style diffing now happens inside
+  // `BasicNvlWrapper` itself, comparing this array against the previous one —
+  // this file no longer tracks which ids are already on screen.
+  const scene = useMemo(() => {
     const started = performance.now()
 
     const nodes = graph.nodes.filter(n => positions[n.id]).map(node => {
@@ -195,20 +200,15 @@ function NvlGraph({
       width: 1
     }))
 
-    // Removals first, then one add-and-update pass. `addAndUpdateElementsInGraph`
-    // merges by id and leaves unmentioned properties alone, so it covers both
-    // the newcomers and the restyle of everything already on screen — but it
-    // never deletes, which is why the id sets above have to be kept.
-    const wantNodes = new Set(nodes.map(n => n.id))
-    const wantRels = new Set(rels.map(r => r.id))
-    const goneNodes = Array.from(present.current.nodes).filter(id => !wantNodes.has(id))
-    const goneRels = Array.from(present.current.rels).filter(id => !wantRels.has(id))
-    if (goneRels.length) instance.removeRelationshipsWithIds(goneRels)
-    if (goneNodes.length) instance.removeNodesWithIds(goneNodes)
-    present.current = { nodes: wantNodes, rels: wantRels }
-    shown.current = Array.from(wantNodes)
+    // What this measures changed with the rewrite: it used to include NVL's
+    // own add/update/remove calls, made directly from this file. Now that
+    // work happens inside the wrapper's own effect, invisible from here, so
+    // this is the cost of preparing the frame, not of NVL drawing it.
+    return { nodes, rels, ms: performance.now() - started }
+  }, [graph, positions, hidden, statusVersion, isExpanded, isPending])
 
-    instance.addAndUpdateElementsInGraph(nodes, rels)
+  useEffect(() => {
+    shown.current = scene.nodes.map(n => n.id)
 
     // NVL never re-fits when elements are added, so an expanding graph walks
     // off screen.
@@ -217,10 +217,20 @@ function NvlGraph({
       refit.current()
     }
 
-    if (onStat) onStat(Math.round(performance.now() - started))
-  }, [graph, positions, hidden, statusVersion, isExpanded, isPending, onStat])
+    if (onStat) onStat(Math.round(scene.ms))
+  }, [scene, graph.nodes.length, onStat])
 
-  return <div className="canvas" ref={frame} />
+  return (
+    <div className="canvas" ref={frame}>
+      <InteractiveNvlWrapper
+        ref={nvl}
+        nodes={scene.nodes}
+        rels={scene.rels}
+        nvlOptions={nvlOptions}
+        mouseEventCallbacks={mouseEventCallbacks}
+      />
+    </div>
+  )
 }
 
 export default React.memo(NvlGraph)
