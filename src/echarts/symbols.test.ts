@@ -4,7 +4,7 @@
 
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
-import { EDGE_RULES, EDGE_STYLES, EDGE_STYLE_ORDER, SHAPE, SHAPE_SETS } from './symbols.js'
+import { EDGE_RULES, EDGE_STYLES, EDGE_STYLE_ORDER, SHAPE, SHAPE_SETS } from './symbols.ts'
 import { ENTITY, ROOT } from '../graph/data.js'
 
 // One node per entity type, at every depth the layout can reach, flagged and
@@ -19,12 +19,15 @@ const NODES = Object.keys(ENTITY)
       ].map(risk => Object.assign({ id: `${type}-${level}`, type, level, name: type }, risk))
     )
   )
-  .concat(ROOT, { id: 'x', type: 'nonsense', level: 1, risk: 0, flagged: false })
+  .concat(ROOT, { id: 'x', type: 'nonsense', level: 1, name: 'x', risk: 0, flagged: false })
 
 test('every shape a set can return exists in SHAPE', () => {
-  Object.keys(SHAPE_SETS).forEach(setKey => {
+  ;(Object.keys(SHAPE_SETS) as (keyof typeof SHAPE_SETS)[]).forEach(setKey => {
     NODES.forEach(node => {
-      const key = SHAPE_SETS[setKey].shapeOf(node)
+      // Each shapeOf takes a different arity (uniform's takes none), so a call
+      // through the unioned SHAPE_SETS[setKey] type doesn't narrow past
+      // `string` — the assertions below are the actual check.
+      const key = SHAPE_SETS[setKey].shapeOf(node) as keyof typeof SHAPE
       assert.ok(SHAPE[key], `${setKey} returned unknown shape "${key}"`)
       assert.ok(SHAPE[key].symbol, `${key} has no symbol`)
       assert.ok(SHAPE[key].scale > 0, `${key} has a non-positive scale`)
@@ -43,7 +46,7 @@ const LINKS = ['SHARED_BY', 'SEEN_ON', 'PAIRED_WITH', 'REPEAT_ATTEMPT', 'RELATED
 )
 
 test('every style a rule can return exists in EDGE_STYLES', () => {
-  Object.keys(EDGE_RULES).forEach(ruleKey => {
+  ;(Object.keys(EDGE_RULES) as (keyof typeof EDGE_RULES)[]).forEach(ruleKey => {
     LINKS.forEach(link => {
       // -1 is the pivot case: a loop's middle leg leaves no real node.
       ;[-1, 0, 1, 2, 3, 4, 8].forEach(level => {
@@ -65,7 +68,7 @@ test('the click cycle covers every style and ends by clearing the override', () 
 })
 
 test('every edge style is a complete recipe', () => {
-  Object.keys(EDGE_STYLES).forEach(key => {
+  ;(Object.keys(EDGE_STYLES) as (keyof typeof EDGE_STYLES)[]).forEach(key => {
     const style = EDGE_STYLES[key]
     assert.equal(style.ends.length, 2, `${key} needs a [tail, head] pair`)
     assert.ok(style.line.width > 0, `${key} has no line width`)
@@ -98,7 +101,7 @@ test('EDGE_RULES has exactly the current set of keys, in order', () => {
 })
 
 test('every flat edge rule returns its own key, not a shared closure value', () => {
-  Object.keys(EDGE_STYLES).forEach(key => {
+  ;(Object.keys(EDGE_STYLES) as (keyof typeof EDGE_STYLES)[]).forEach(key => {
     LINKS.forEach(link => {
       ;[-1, 0, 1, 2, 3, 4, 8].forEach(level => {
         assert.equal(EDGE_RULES[key].styleOf(link, { level }), key)
@@ -108,7 +111,7 @@ test('every flat edge rule returns its own key, not a shared closure value', () 
 })
 
 test('every flat edge rule label matches its EDGE_STYLES label', () => {
-  Object.keys(EDGE_STYLES).forEach(key => {
+  ;(Object.keys(EDGE_STYLES) as (keyof typeof EDGE_STYLES)[]).forEach(key => {
     assert.equal(EDGE_RULES[key].label, EDGE_STYLES[key].label)
   })
 })

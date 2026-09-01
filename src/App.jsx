@@ -10,7 +10,7 @@ import SidePanel from './ui/SidePanel.jsx'
 // The shape and line catalogs, read here only to label the two pickers. The
 // renderer is handed the chosen *key* and looks the recipe up itself, so App
 // never touches an ECharts option object.
-import { EDGE_RULES, EDGE_STYLE_ORDER, SHAPE_SETS } from './echarts/symbols.js'
+import { EDGE_RULES, EDGE_STYLE_ORDER, SHAPE_SETS } from './echarts/symbols.ts'
 
 // The benchmark views, lazy for the same reason the engines are: they pull in
 // d3-force and the layout worker, and the explore view needs neither.

@@ -14,7 +14,7 @@ echarts.use([GraphChart, CanvasRenderer, SVGRenderer])
 import { ENTITY } from '../graph/data.js'
 import { withLoops } from '../graph/loops.js'
 import { BONE, FLARE, INK, nodeColor } from '../ui/theme.js'
-import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.js'
+import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -45,7 +45,7 @@ import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.js'
  *   ../graph/loops.js     withLoops: turns self-edges into three drawable
  *                         links plus the invisible pivot nodes they need.
  *   ../ui/theme.js        nodeColor: the one place brightness is decided.
- *   ./symbols.js          SHAPE / SHAPE_SETS / EDGE_STYLES — every shape and
+ *   ./symbols.ts          SHAPE / SHAPE_SETS / EDGE_STYLES — every shape and
  *                         line recipe the user can pick between.
  *
  * Nothing above imports this file back. The data flows one way:

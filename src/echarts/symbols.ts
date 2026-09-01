@@ -68,10 +68,21 @@ export const SHAPE = {
   }
 }
 
+// The subset of GraphNode a shape set's shapeOf needs. `type` stays a bare
+// string rather than the app's EntityType union: shapeOf must survive a node
+// whose type doesn't match anything below (the symbols test exercises exactly
+// that, with a `'nonsense'` type), falling back rather than refusing to type.
+interface ShapeNode {
+  type: string
+  level: number
+  risk: number
+  flagged: boolean
+}
+
 // One shape per entity type. This is the set worth shipping: shape carries the
 // type, so the graph survives being read at a glance, printed, or looked at by
 // someone who cannot separate the six palette hues.
-const BY_TYPE = {
+const BY_TYPE: Record<string, keyof typeof SHAPE> = {
   account: 'circle',
   device: 'square',
   phone: 'rounded',
@@ -87,10 +98,21 @@ const BY_TYPE = {
  * set is free to key off anything the graph knows — type, level, risk, whether
  * the analyst added it by hand.
  */
+// Typed (rather than a bare array literal) for the same reason as
+// DEPTH_STYLES below: indexing it must stay a literal SHAPE key, not widen to
+// `string`, once `|| 'plus'` covers a level past the array's end.
+const DEPTH_SHAPES: readonly (keyof typeof SHAPE)[] = [
+  'circle',
+  'hexagon',
+  'square',
+  'diamond',
+  'triangle'
+]
+
 export const SHAPE_SETS = {
   type: {
     label: 'Shape per entity type',
-    shapeOf: node => BY_TYPE[node.type] || 'circle'
+    shapeOf: (node: ShapeNode) => BY_TYPE[node.type] || 'circle'
   },
   uniform: {
     label: 'All circles',
@@ -100,27 +122,29 @@ export const SHAPE_SETS = {
     label: 'Custom SVG paths',
     // Same six types, drawn with hand-written path:// symbols instead of
     // built-ins — the proof that the shape vocabulary is not capped at eight.
-    shapeOf: node =>
-      ({
-        account: 'hexagon',
-        device: 'chip',
-        phone: 'shield',
-        email: 'plus',
-        ip: 'triangle',
-        card: 'star'
-      })[node.type] || 'hexagon'
+    shapeOf: (node: ShapeNode) =>
+      (
+        {
+          account: 'hexagon',
+          device: 'chip',
+          phone: 'shield',
+          email: 'plus',
+          ip: 'triangle',
+          card: 'star'
+        } as Record<string, keyof typeof SHAPE>
+      )[node.type] || 'hexagon'
   },
   risk: {
     label: 'Shape per risk band',
     // Shape as a severity channel: the thing an analyst is hunting for is the
     // only pointed shape on the canvas.
-    shapeOf: node => (node.flagged ? 'star' : node.risk > 55 ? 'triangle' : 'rounded')
+    shapeOf: (node: ShapeNode) => (node.flagged ? 'star' : node.risk > 55 ? 'triangle' : 'rounded')
   },
   depth: {
     label: 'Shape per hop distance',
     // Reads the ring you are on off the symbol, so a screenshot still says how
     // far from the root each node sits after the labels are cropped off.
-    shapeOf: node => ['circle', 'hexagon', 'square', 'diamond', 'triangle'][node.level] || 'plus'
+    shapeOf: (node: ShapeNode) => DEPTH_SHAPES[node.level] || 'plus'
   }
 }
 
@@ -187,7 +211,11 @@ export const EDGE_STYLES = {
 // Grouped by what the relationship *means*, not by name: the two ways an entity
 // gets shared between accounts read alike, and the two ways a device is
 // physically observed read alike.
-const RELATION_STYLE = {
+//
+// Keyed by relationship label (an open string, not every label has an entry),
+// so the index signature is `string` rather than a literal union — the lookup
+// below is a genuine partial match, hence its `|| ...` fallback.
+const RELATION_STYLE: Record<string, keyof typeof EDGE_STYLES> = {
   SHARED_BY: 'socket', // the pivot in a fraud ring — the loudest line
   AUTHORISED_FROM: 'socket',
   SIGNED_IN_FROM: 'arrow', // ordinary account activity
@@ -217,32 +245,62 @@ const RELATION_STYLE = {
  * carrying what the link itself cannot know — currently `{ level }`, the hop
  * distance of the node the edge leaves from, or -1 for a loop's pivot legs.
  */
-export const EDGE_RULES = Object.assign(
-  // Flat: the picked style, everywhere. Derived from EDGE_STYLES rather than
-  // written out, so a new style shows up in the picker for free.
-  Object.keys(EDGE_STYLES).reduce((rules, key) => {
-    rules[key] = { label: EDGE_STYLES[key].label, styleOf: () => key }
-    return rules
-  }, {}),
-  {
-    kind: {
-      label: 'Rule · by edge origin',
-      // Provenance as a line style: what the backend returned, what the analyst
-      // drew by hand, and what an entity does to itself.
-      styleOf: link => (link.loop ? 'curved' : link.synthetic ? 'dashed' : 'arrow')
-    },
-    relation: {
-      label: 'Rule · by relationship',
-      styleOf: link => RELATION_STYLE[link.label] || (link.loop ? 'curved' : 'arrow')
-    },
-    depth: {
-      label: 'Rule · by hop distance',
-      // Lines thin out as they go further from the root, so the first hop off
-      // the subject reads as the spine of the graph.
-      styleOf: (link, ctx) => ['socket', 'arrow', 'dashed', 'dotted'][ctx.level] || 'plain'
-    }
+
+/** The flattened link shape `withLoops` (src/graph/loops.js) produces. */
+export interface FlatLink {
+  id: string
+  from: string
+  to: string
+  label: string
+  arrow: boolean
+  loop?: boolean
+  synthetic?: boolean
+}
+
+export interface EdgeRule {
+  label: string
+  styleOf(link: FlatLink, ctx: { level: number }): keyof typeof EDGE_STYLES
+}
+
+// Lines thin out as they go further from the root, so the first hop off the
+// subject reads as the spine of the graph. Typed (rather than a bare array
+// literal) so indexing it stays a literal EDGE_STYLES key instead of widening
+// to `string` once `|| 'plain'` covers the out-of-range case.
+const DEPTH_STYLES: readonly (keyof typeof EDGE_STYLES)[] = ['socket', 'arrow', 'dashed', 'dotted']
+
+// Flat: the picked style, everywhere. Derived from EDGE_STYLES rather than
+// written out, so a new style shows up in the picker for free.
+//
+// Built with Object.fromEntries + an explicit Record cast rather than
+// Object.assign(Object.keys(...).reduce(...), {}) — the reduce's accumulator
+// had no way to declare its keys up front, so TypeScript inferred it as an
+// index signature (`{ [key: string]: EdgeRule }`) and every literal key
+// collapsed to `string`. fromEntries has the same runtime shape; only the
+// static type changes.
+const flatRules = Object.fromEntries(
+  (Object.keys(EDGE_STYLES) as (keyof typeof EDGE_STYLES)[]).map(key => [
+    key,
+    { label: EDGE_STYLES[key].label, styleOf: () => key }
+  ])
+) as unknown as Record<keyof typeof EDGE_STYLES, EdgeRule>
+
+export const EDGE_RULES = {
+  ...flatRules,
+  kind: {
+    label: 'Rule · by edge origin',
+    // Provenance as a line style: what the backend returned, what the analyst
+    // drew by hand, and what an entity does to itself.
+    styleOf: (link: FlatLink) => (link.loop ? 'curved' : link.synthetic ? 'dashed' : 'arrow')
+  },
+  relation: {
+    label: 'Rule · by relationship',
+    styleOf: (link: FlatLink) => RELATION_STYLE[link.label] || (link.loop ? 'curved' : 'arrow')
+  },
+  depth: {
+    label: 'Rule · by hop distance',
+    styleOf: (_link: FlatLink, ctx: { level: number }) => DEPTH_STYLES[ctx.level] || 'plain'
   }
-)
+}
 
 /** The cycle a click walks an individual edge through. */
 export const EDGE_STYLE_ORDER = Object.keys(EDGE_STYLES)
