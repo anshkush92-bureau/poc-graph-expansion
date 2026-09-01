@@ -30,7 +30,11 @@ export default tseslint.config(
       // "latest ref" callback-caching pattern (`ref.current = fn` during
       // render, read back in an effect/handler) is deliberate and pervasive
       // across every adapter, as is the odd impure read (performance.now())
-      // used purely for instrumentation. Downgraded to warn for the same
+      // used purely for instrumentation. A second pattern accounts for the
+      // rest of the `refs` warnings: reading a ref in the render body to
+      // display a measurement (the bench gauges in Lab.jsx). That is a
+      // genuine tearing risk under concurrent rendering and is the one group
+      // here worth revisiting rather than silencing. Downgraded to warn for the same
       // reason as exhaustive-deps: addressed file by file as each adapter is
       // migrated, not blocked wholesale here.
       'react-hooks/refs': 'warn',

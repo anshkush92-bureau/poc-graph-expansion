@@ -66,6 +66,12 @@ function JsPlumbGraph({
   hidden,
   isExpanded,
   isPending,
+  // Load-bearing despite being unread. Nodes here are React elements coloured
+  // during render, so unlike the canvas panes there is no effect to hang this
+  // on — but the export below is React.memo'd, and on a status-only update
+  // (explored/pending flipped, graph identity unchanged) this counter is the
+  // one prop whose value differs. Drop it from the call site and the memo
+  // short-circuits: the pane keeps its old colours until something else moves.
   statusVersion: _statusVersion,
   onNodeClick,
   onNodeHover,
