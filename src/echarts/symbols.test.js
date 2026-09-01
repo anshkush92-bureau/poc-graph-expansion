@@ -72,3 +72,43 @@ test('every edge style is a complete recipe', () => {
     assert.equal(typeof style.curveness, 'number', `${key} has no curveness`)
   })
 })
+
+// Characterization tests, written before the EDGE_RULES restructure
+// (Object.assign(reduce(...), {...}) → Object.fromEntries(...)) so the diff
+// proves them green against the old implementation first. The middle one is
+// the one that matters: a rewrite in which every flat rule closed over the
+// same variable and returned it (instead of its own key) would still pass
+// every other test in this file, because nothing else checks which key a
+// flat rule actually returns versus just that the key exists in EDGE_STYLES.
+
+test('EDGE_RULES has exactly the current set of keys, in order', () => {
+  // Pinned literal, not derived from EDGE_STYLES/EDGE_RULES themselves — the
+  // restructure must not silently drop, add, or reorder a rule.
+  assert.deepEqual(Object.keys(EDGE_RULES), [
+    'arrow',
+    'dashed',
+    'dotted',
+    'curved',
+    'socket',
+    'plain',
+    'kind',
+    'relation',
+    'depth'
+  ])
+})
+
+test('every flat edge rule returns its own key, not a shared closure value', () => {
+  Object.keys(EDGE_STYLES).forEach(key => {
+    LINKS.forEach(link => {
+      ;[-1, 0, 1, 2, 3, 4, 8].forEach(level => {
+        assert.equal(EDGE_RULES[key].styleOf(link, { level }), key)
+      })
+    })
+  })
+})
+
+test('every flat edge rule label matches its EDGE_STYLES label', () => {
+  Object.keys(EDGE_STYLES).forEach(key => {
+    assert.equal(EDGE_RULES[key].label, EDGE_STYLES[key].label)
+  })
+})
