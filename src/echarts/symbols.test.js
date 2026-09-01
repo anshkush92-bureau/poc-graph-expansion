@@ -2,7 +2,7 @@
 // does `SHAPE[key].symbol` on it unguarded. A typo'd key is a TypeError on the
 // first paint, and the graph is gone — cheaper to catch here.
 
-import { test } from 'node:test'
+import { test } from 'vitest'
 import assert from 'node:assert/strict'
 import { EDGE_RULES, EDGE_STYLES, EDGE_STYLE_ORDER, SHAPE, SHAPE_SETS } from './symbols.js'
 import { ENTITY, ROOT } from '../graph/data.js'

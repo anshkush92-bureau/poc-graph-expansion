@@ -128,7 +128,7 @@ export function watchLongTasks() {
       list.getEntries().forEach(entry => entries.push(entry))
     })
     observer.observe({ entryTypes: ['longtask'] })
-  } catch (err) {
+  } catch {
     return { stop: () => null }
   }
   return {

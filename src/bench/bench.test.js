@@ -7,7 +7,7 @@
 // entirely plausible in the UI and quietly change every conclusion.
 
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import { test } from 'vitest'
 import { synthGraph } from '../graph/synth.js'
 import { layoutRadial } from '../graph/ops.js'
 import { summarise } from './probes.js'

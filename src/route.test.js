@@ -6,7 +6,7 @@
 // right heading — which would then be measured and written down.
 
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import { test } from 'vitest'
 import { ENGINE_KEYS } from './engines.js'
 import { parseRoute, routeHash } from './route.js'
 

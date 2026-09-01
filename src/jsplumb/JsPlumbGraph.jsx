@@ -66,7 +66,7 @@ function JsPlumbGraph({
   hidden,
   isExpanded,
   isPending,
-  statusVersion,
+  statusVersion: _statusVersion,
   onNodeClick,
   onNodeHover,
   onEdgeClick,

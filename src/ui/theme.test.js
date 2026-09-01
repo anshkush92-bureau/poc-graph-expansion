@@ -9,7 +9,7 @@
 // pending, so that one path alone preserves the caller's casing.
 
 import assert from 'node:assert/strict'
-import test from 'node:test'
+import { test } from 'vitest'
 import { BONE, FLARE, INK, mix, nodeColor } from './theme.js'
 
 const HEX = /^#[0-9a-f]{6}$/

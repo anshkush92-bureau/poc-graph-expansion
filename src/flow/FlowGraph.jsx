@@ -12,7 +12,7 @@ import {
 import '@xyflow/react/dist/style.css'
 import { ENTITY } from '../graph/data.js'
 import { isSelfEdge } from '../graph/ops.js'
-import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
+import { FLARE, INK, mix, nodeColor } from '../ui/theme.js'
 import { useResize } from '../ui/useResize.js'
 
 /**

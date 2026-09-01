@@ -9,9 +9,14 @@
   "description": "React 16 POC comparing eight graph rendering libraries side by side on one shared graph",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "node --test \"src/**/*.test.js\""
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,css}\"",
+    "check": "npm run typecheck && npm run lint && npm run test"
   },
   "dependencies": {
     "@jsplumb/browser-ui": "^6.2.10",
@@ -30,7 +35,18 @@
     "vue": "^3.5.42"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/d3-force": "3.0.10",
+    "@types/node": "26.4.1",
+    "@types/react": "19.2.18",
+    "@types/react-dom": "19.2.5",
     "@vitejs/plugin-react": "6.1.1",
-    "vite": "8.2.2"
+    "eslint": "10.9.1",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "prettier": "3.9.6",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.69.0",
+    "vite": "8.2.2",
+    "vitest": "4.1.11"
   }
 }

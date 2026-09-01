@@ -66,7 +66,7 @@ export function useHud(active) {
         })
       })
       observer.observe({ entryTypes: ['longtask'] })
-    } catch (err) {
+    } catch {
       // Chromium only. `null` rather than a zero, for the same reason as probes.
       observer = null
     }

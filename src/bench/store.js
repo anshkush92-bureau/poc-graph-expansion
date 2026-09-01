@@ -16,7 +16,7 @@ const KEY = 'graph-bench-results-v1'
 const read = () => {
   try {
     return JSON.parse(localStorage.getItem(KEY)) || {}
-  } catch (err) {
+  } catch {
     // A corrupted or unavailable store must not take the bench down with it —
     // the run is still worth doing, it just will not be remembered.
     return {}
@@ -26,7 +26,7 @@ const read = () => {
 const write = all => {
   try {
     localStorage.setItem(KEY, JSON.stringify(all))
-  } catch (err) {
+  } catch {
     // Quota, or a browser with storage disabled. Nothing to do but carry on.
   }
 }
