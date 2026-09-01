@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import React from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -7,6 +6,7 @@ import {
   Position,
   MarkerType,
   EdgeText,
+  applyNodeChanges,
   useReactFlow
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
@@ -30,8 +30,10 @@ import { useResize } from '../ui/useResize.js'
  * Not "weak layouts" — none. Nodes render exactly where you put them. A graph
  * that grows by expansion therefore needs a layout you write and maintain, and
  * that is the origin of `layoutRadial` in `graph/ops.js`: ~90 lines plus its
- * tests that exist solely because of this engine. Budget for it; it is not
- * optional.
+ * tests that exist solely because of this engine. It took three attempts —
+ * top-down tree (19,000px wide at 116 nodes), radial with leaf-proportional
+ * wedges (degenerated into a single arc), then radial with one equal angular
+ * slot per leaf, which is what ships. Budget for it; it is not optional.
  *
  * ── Traps this file is shaped around ───────────────────────────────────────
  * - `nodeTypes` / `edgeTypes` must be **module-level constants**. A fresh
@@ -45,6 +47,11 @@ import { useResize } from '../ui/useResize.js'
  * - Self-edges still cannot be drawn by any built-in type: source and target
  *   resolve to the same handle coordinates and the curve collapses. Hence the
  *   explicit cubic arc in `SelfLoopEdge`.
+ * - v12's controlled mode only persists a node's position when `onNodesChange`
+ *   (or `defaultNodes`) is wired up. Without it, a drag still runs and fires
+ *   `onNodeDragStart`/`onNodeDragStop`, but nothing writes the new coordinate
+ *   back, so the disc snaps to wherever the `nodes` prop says it is on the
+ *   very next render — silently, with no error.
  */
 
 const EDGE = '#2F3746'
@@ -115,22 +122,46 @@ function FlowCanvas({
   const handlers = useRef({})
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
-  // How long the last element build took, written during the memo and reported
-  // from an effect. `onStat` sets state in App, and doing that from inside a
-  // useMemo is a state update during another component's render.
-  const cost = useRef(0)
+  const [nodes, setNodes] = useState([])
+  const [edges, setEdges] = useState([])
 
-  const nodes = useMemo(() => {
+  // Controlled mode: React Flow only applies a change (drag included) back
+  // onto `nodes` if something is listening here. `applyNodeChanges` is the
+  // library's own reducer for the change objects it emits.
+  const onNodesChange = useCallback(
+    changes => setNodes(nds => applyNodeChanges(changes, nds)),
+    []
+  )
+
+  useEffect(() => {
     const started = performance.now()
-    const built = graph.nodes
+
+    // Timed together, nodes and edges, because this is the whole update the
+    // pane renders — matching how CytoscapeGraph and VisGraph measure theirs.
+    const nextEdges = graph.edges.map(edge => {
+      const loop = isSelfEdge(edge)
+      return {
+        id: edge.id,
+        source: edge.source,
+        target: edge.target,
+        type: loop ? 'selfloop' : 'straight',
+        label: loop ? undefined : edge.label,
+        data: loop ? { label: edge.label } : undefined,
+        markerEnd: loop ? undefined : { type: MarkerType.ArrowClosed },
+        style: { stroke: loop ? LOOP : EDGE, strokeWidth: 1 },
+        labelStyle: { fill: '#6B7385', fontSize: 8 },
+        labelBgStyle: { fill: INK, fillOpacity: 0.8 }
+      }
+    })
+
+    const nextNodeData = graph.nodes
       .filter(n => positions[n.id])
       .map(node => {
         const meta = ENTITY[node.type]
         const pending = isPending(node.id)
         return {
           id: node.id,
-          type: 'disc',
-          position: positions[node.id],
+          seed: positions[node.id],
           data: {
             label: `${meta.tag} ${node.name}`,
             risk: node.risk,
@@ -142,35 +173,29 @@ function FlowCanvas({
           }
         }
       })
-    cost.current = Math.round(performance.now() - started)
-    return built
+
+    const took = Math.round(performance.now() - started)
+
+    setNodes(prev => {
+      const byId = new Map(prev.map(n => [n.id, n]))
+      return nextNodeData.map(({ id, seed, data }) => ({
+        id,
+        type: 'disc',
+        // Seeded once, from the shared layout, and never overwritten for a
+        // node that already has one — mirrors CytoscapeGraph's rule, so a
+        // hand-drag survives the next expansion instead of being undone by
+        // it. `layoutRadial` is incremental precisely so this holds: an
+        // existing node's coordinates never change underneath it.
+        position: byId.get(id)?.position ?? seed,
+        data
+      }))
+    })
+    setEdges(nextEdges)
+
+    if (onStat) onStat(took)
     // statusVersion is in here because expansion status lives in a ref: without
     // it, a node finishing its fetch would not change any value this reads.
-  }, [graph, positions, hidden, statusVersion, isExpanded, isPending])
-
-  const edges = useMemo(
-    () =>
-      graph.edges.map(edge => {
-        const loop = isSelfEdge(edge)
-        return {
-          id: edge.id,
-          source: edge.source,
-          target: edge.target,
-          type: loop ? 'selfloop' : 'straight',
-          label: loop ? undefined : edge.label,
-          data: loop ? { label: edge.label } : undefined,
-          markerEnd: loop ? undefined : { type: MarkerType.ArrowClosed },
-          style: { stroke: loop ? LOOP : EDGE, strokeWidth: 1 },
-          labelStyle: { fill: '#6B7385', fontSize: 8 },
-          labelBgStyle: { fill: INK, fillOpacity: 0.8 }
-        }
-      }),
-    [graph.edges]
-  )
-
-  useEffect(() => {
-    if (onStat) onStat(cost.current)
-  }, [nodes, onStat])
+  }, [graph, positions, hidden, statusVersion, isExpanded, isPending, onStat])
 
   useEffect(() => {
     if (fitted.current === graph.nodes.length) return
@@ -224,10 +249,14 @@ function FlowCanvas({
   const handlePaneClick = useCallback(() => handlers.current.onBackgroundClick(), [])
 
   return (
+    // Kept as a real element, not just a ref target: `useResize` below
+    // observes it, `zoomBy` above reads its `getBoundingClientRect`, and
+    // `styles.css` targets `.canvas > .react-flow` for sizing.
     <div className="canvas" ref={frame}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        onNodesChange={onNodesChange}
         nodeTypes={NODE_TYPES}
         edgeTypes={EDGE_TYPES}
         onNodeClick={handleNodeClick}
