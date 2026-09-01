@@ -1,5 +1,4 @@
 import { useCallback, useRef, useState } from 'react'
-import { unstable_batchedUpdates } from 'react-dom'
 import { ENTITY, ROOT, fetchNeighbors, relationLabel } from './data.js'
 import { mergeGraph, removeNode } from './ops.js'
 
@@ -26,13 +25,11 @@ export function useGraph() {
     status.current.set(node.id, 'pending')
     publish()
     fetchNeighbors(node).then(incoming => {
-      // React 16 does not batch state updates inside a promise callback, so
-      // these two would otherwise re-render (and re-layout) the graph twice.
-      unstable_batchedUpdates(() => {
-        status.current.set(node.id, 'done')
-        setGraph(g => mergeGraph(g, incoming))
-        publish()
-      })
+      // React 18+ batches these automatically; before 19 this needed
+      // unstable_batchedUpdates or the graph re-rendered and re-laid-out twice.
+      status.current.set(node.id, 'done')
+      setGraph(g => mergeGraph(g, incoming))
+      publish()
     })
   }, [])
 

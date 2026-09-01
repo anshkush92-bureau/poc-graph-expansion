@@ -1,7 +1,7 @@
-import React from 'react'
-import ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import App from './App.jsx'
 import './styles.css'
 
-// React 16: ReactDOM.render, not createRoot.
-ReactDOM.render(<App />, document.getElementById('root'))
+const host = document.getElementById('root')
+if (!host) throw new Error('index.html is missing #root')
+createRoot(host).render(<App />)
