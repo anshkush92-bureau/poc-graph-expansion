@@ -168,11 +168,19 @@ Under `noUncheckedIndexedAccess`, `positions[node.id]` types as
 are real bugs, and finding them is a goal of this migration rather than an
 obstacle to it.
 
-The engine contract. `ShapeSetKey` and `EdgeStyleKey` are derived in
-`echarts/symbols.ts` as `keyof typeof SHAPE_SETS` and `keyof typeof EDGE_RULES`
-and re-exported from `engine/types.ts`, so adding a shape set or an edge style
-widens the prop type automatically. `LazyExoticComponent` and `ComponentType`
-are React's own, imported from `react`.
+The engine contract. Three key types are derived in `echarts/symbols.ts` and
+re-exported from `engine/types.ts`, so adding a shape set or a line style widens
+the prop types automatically:
+
+- `ShapeSetKey = keyof typeof SHAPE_SETS`
+- `EdgeStyleKey = keyof typeof EDGE_STYLES` — a concrete line style, what an
+  individual edge override holds and what `EDGE_STYLE_ORDER` cycles through
+- `EdgeRuleKey = keyof typeof EDGE_RULES` — what the picker offers, which is
+  every `EdgeStyleKey` *plus* the computed rules `kind`, `relation` and `depth`
+
+These two are not interchangeable: the `edgeStyle` prop is an `EdgeRuleKey`,
+while `edgeOverrides` values are `EdgeStyleKey`. `LazyExoticComponent` and
+`ComponentType` are React's own, imported from `react`.
 
 ```ts
 export interface ViewportHandle {
@@ -192,7 +200,7 @@ export interface GraphPaneProps {
   renderer?: string
 
   shapeSet?: ShapeSetKey
-  edgeStyle?: EdgeStyleKey
+  edgeStyle?: EdgeRuleKey
   edgeOverrides?: ReadonlyMap<string, EdgeStyleKey>
 
   onNodeClick(id: string): void
