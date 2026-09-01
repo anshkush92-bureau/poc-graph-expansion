@@ -571,8 +571,9 @@ select {
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Sized from CSS, never inline: an inline width/height makes v9 skip
-     measuring the DOM, after which it cannot resolve edge handles. */
+  /* Sized from CSS, never inline: an inline width/height makes the renderer
+     skip measuring the DOM, and edges need that measurement to resolve their
+     handles. */
   width: 38px;
   height: 38px;
   border: 1px solid var(--ring);
@@ -581,7 +582,7 @@ select {
   cursor: pointer;
 }
 
-/* v9's root needs an explicit box; `.canvas` is the wrapper around it. */
+/* The root still needs an explicit box; `.canvas` is the wrapper around it. */
 .canvas > .react-flow { width: 100%; height: 100%; }
 
 .flow-node__handle { opacity: 0; pointer-events: none; }
