@@ -5,7 +5,7 @@
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
 import { EDGE_RULES, EDGE_STYLES, EDGE_STYLE_ORDER, SHAPE, SHAPE_SETS } from './symbols.ts'
-import { ENTITY, ROOT } from '../graph/data.js'
+import { ENTITY, ROOT } from '../graph/data.ts'
 
 // One node per entity type, at every depth the layout can reach, flagged and
 // not — between them these cover every branch in every `shapeOf`.

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react'
 import cytoscape from 'cytoscape'
-import { ENTITY } from '../graph/data.js'
-import { isSelfEdge } from '../graph/ops.js'
+import { ENTITY } from '../graph/data.ts'
+import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
 import { useResize } from '../ui/useResize.js'
 

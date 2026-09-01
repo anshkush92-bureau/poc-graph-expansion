@@ -14,8 +14,8 @@
 //     miss the half of the cost a debounce exists to remove.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ROOT } from '../graph/data.js'
-import { layoutRadial } from '../graph/ops.js'
+import { ROOT } from '../graph/data.ts'
+import { layoutRadial } from '../graph/ops.ts'
 import { nextPaint, sleep } from './probes.js'
 import { stopWorker } from './runLayout.js'
 

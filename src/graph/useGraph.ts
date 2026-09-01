@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from 'react'
-import { ENTITY, ROOT, fetchNeighbors, relationLabel } from './data.js'
-import { mergeGraph, removeNode } from './ops.js'
+import type { EntityType, Graph, GraphNode } from '../engine/types.ts'
+import { ENTITY, ROOT, fetchNeighbors, relationLabel } from './data.ts'
+import { mergeGraph, removeNode } from './ops.ts'
+
+type ExpandStatus = 'pending' | 'done'
 
 /**
  * The whole interaction model, shared by both renderers.
@@ -10,17 +13,17 @@ import { mergeGraph, removeNode } from './ops.js'
  * backend stops returning neighbours.
  */
 export function useGraph() {
-  const [graph, setGraph] = useState({ nodes: [ROOT], edges: [] })
+  const [graph, setGraph] = useState<Graph>({ nodes: [ROOT], edges: [] })
   // id -> 'pending' | 'done'. A ref because the click handler has to check it
   // synchronously: a second click landing before the first fetch resolves
   // would otherwise duplicate the entire level.
-  const status = useRef(new Map())
+  const status = useRef<Map<string, ExpandStatus>>(new Map())
   const [statusVersion, bump] = useState(0)
   const counter = useRef(0)
 
   const publish = () => bump(v => v + 1)
 
-  const expand = useCallback(node => {
+  const expand = useCallback((node: GraphNode) => {
     if (!node || status.current.has(node.id)) return
     status.current.set(node.id, 'pending')
     publish()
@@ -33,10 +36,10 @@ export function useGraph() {
     })
   }, [])
 
-  const addNode = useCallback((parent, type) => {
+  const addNode = useCallback((parent: GraphNode, type: EntityType): GraphNode => {
     counter.current += 1
     const n = counter.current
-    const child = {
+    const child: GraphNode = {
       id: `${ENTITY[type].tag}-manual-${n}`,
       type,
       level: parent.level + 1,
@@ -64,7 +67,7 @@ export function useGraph() {
     return child
   }, [])
 
-  const deleteNode = useCallback(id => {
+  const deleteNode = useCallback((id: string): boolean => {
     if (id === ROOT.id) return false // the graph needs somewhere to start
     setGraph(g => removeNode(g, id))
     // Drop the status too, so a re-added node can be expanded again.
@@ -86,7 +89,7 @@ export function useGraph() {
    * and stay clickable: a synthetic graph is still a live graph, and expanding a
    * node inside one adds real neighbours on top of it.
    */
-  const load = useCallback(next => {
+  const load = useCallback((next: Graph): void => {
     setGraph(next)
     status.current = new Map()
     publish()
@@ -95,8 +98,8 @@ export function useGraph() {
   // Stable identities: both read a ref, so an empty dep list is safe. If these
   // were re-created each render, every consumer's useMemo would miss and the
   // React Flow layout would recompute on unrelated state changes like hover.
-  const isExpanded = useCallback(id => status.current.get(id) === 'done', [])
-  const isPending = useCallback(id => status.current.get(id) === 'pending', [])
+  const isExpanded = useCallback((id: string) => status.current.get(id) === 'done', [])
+  const isPending = useCallback((id: string) => status.current.get(id) === 'pending', [])
 
   return { graph, isExpanded, isPending, statusVersion, expand, addNode, deleteNode, reset, load }
 }

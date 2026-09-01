@@ -8,8 +8,8 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { synthGraph } from '../graph/synth.js'
-import { layoutRadial } from '../graph/ops.js'
+import { synthGraph } from '../graph/synth.ts'
+import { layoutRadial } from '../graph/ops.ts'
 import { summarise } from './probes.js'
 import { centreBox, cullToBox, optimise, stripLabels } from './optimize.js'
 import { forceLayout } from './force.js'

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { ENTITY } from '../graph/data.js'
-import { neighborsOf, pathToRoot } from '../graph/ops.js'
+import { ENTITY } from '../graph/data.ts'
+import { neighborsOf, pathToRoot } from '../graph/ops.ts'
 
 const ADDABLE = Object.keys(ENTITY)
 

@@ -22,9 +22,9 @@
 // have no viewport API at all, and "cannot do this" is a finding worth a row in
 // the table — much more useful than an invented zero.
 
-import { ENTITY, ROOT, relationLabel } from '../graph/data.js'
-import { layoutRadial } from '../graph/ops.js'
-import { synthGraph } from '../graph/synth.js'
+import { ENTITY, ROOT, relationLabel } from '../graph/data.ts'
+import { layoutRadial } from '../graph/ops.ts'
+import { synthGraph } from '../graph/synth.ts'
 import { optimise } from './optimize.js'
 import {
   heapMB,

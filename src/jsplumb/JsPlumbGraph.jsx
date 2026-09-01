@@ -5,8 +5,8 @@ import {
   StateMachineConnector,
   newInstance
 } from '@jsplumb/browser-ui'
-import { ENTITY } from '../graph/data.js'
-import { isSelfEdge } from '../graph/ops.js'
+import { ENTITY } from '../graph/data.ts'
+import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
 import { useResize } from '../ui/useResize.js'
 

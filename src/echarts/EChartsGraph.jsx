@@ -11,8 +11,8 @@ import { GraphChart } from 'echarts/charts'
 import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 
 echarts.use([GraphChart, CanvasRenderer, SVGRenderer])
-import { ENTITY } from '../graph/data.js'
-import { withLoops } from '../graph/loops.js'
+import { ENTITY } from '../graph/data.ts'
+import { withLoops } from '../graph/loops.ts'
 import { BONE, FLARE, INK, nodeColor } from '../ui/theme.js'
 import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.ts'
 
@@ -40,9 +40,9 @@ import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.ts'
  *   echarts/charts        GraphChart — the only series type used
  *   echarts/renderers     CanvasRenderer — the paint backend (see STEP 7)
  *
- *   ../graph/data.js      ENTITY: per-type colour, tag and display label.
+ *   ../graph/data.ts      ENTITY: per-type colour, tag and display label.
  *                         Also the fake backend, but this file never calls it.
- *   ../graph/loops.js     withLoops: turns self-edges into three drawable
+ *   ../graph/loops.ts     withLoops: turns self-edges into three drawable
  *                         links plus the invisible pivot nodes they need.
  *   ../ui/theme.js        nodeColor: the one place brightness is decided.
  *   ./symbols.ts          SHAPE / SHAPE_SETS / EDGE_STYLES — every shape and

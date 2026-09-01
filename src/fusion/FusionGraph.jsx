@@ -1,8 +1,8 @@
 import React, { useEffect, useRef } from 'react'
 import FusionCharts from 'fusioncharts'
 import PowerCharts from 'fusioncharts/fusioncharts.powercharts'
-import { ENTITY } from '../graph/data.js'
-import { withLoops } from '../graph/loops.js'
+import { ENTITY } from '../graph/data.ts'
+import { withLoops } from '../graph/loops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
 
 /**

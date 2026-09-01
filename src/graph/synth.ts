@@ -14,11 +14,15 @@
 // the same graph, so two runs of the same benchmark are comparable and a
 // screenshot can be reproduced.
 
-import { ENTITY, ROOT, hash, relationLabel } from './data.js'
+import type { EntityType, Graph, GraphEdge, GraphNode } from '../engine/types.ts'
+import { ENTITY, ROOT, hash, relationLabel } from './data.ts'
 
-const TYPES = Object.keys(ENTITY)
+// ENTITY is a Record<EntityType, ...> with every EntityType key required and no
+// others, so its keys are exactly the EntityType values — Object.keys just
+// can't say so on its own.
+const TYPES = Object.keys(ENTITY) as EntityType[]
 
-const pick = (salt, n) => hash(salt) % n
+const pick = (salt: string, n: number): number => hash(salt) % n
 
 /**
  * Children per node.
@@ -28,14 +32,17 @@ const pick = (salt, n) => hash(salt) % n
  * node graph twelve rings deep, and `layoutRadial` spaces rings 230px apart —
  * the graph would be mostly empty space and the fit would zoom it to nothing.
  */
-const branchingFor = count => Math.max(2, Math.ceil(Math.pow(count, 0.25)))
+const branchingFor = (count: number): number => Math.max(2, Math.ceil(Math.pow(count, 0.25)))
 
-function nameFor(type, seq) {
+function nameFor(type: EntityType, seq: number): string {
   switch (type) {
     case 'account':
       return `acct_${seq}`
-    case 'device':
-      return ['iPhone 14', 'Pixel 7', 'Win/Chrome', 'macOS/Safari'][seq % 4]
+    case 'device': {
+      const name = ['iPhone 14', 'Pixel 7', 'Win/Chrome', 'macOS/Safari'][seq % 4]
+      if (!name) throw new Error(`no device name for seq ${seq}`)
+      return name
+    }
     case 'phone':
       return `+91 ${seq}${(seq * 7) % 100000}`
     case 'email':
@@ -68,24 +75,26 @@ function nameFor(type, seq) {
  * rather than retried, so a request for far more than the node count can support
  * lands short. Callers report what was actually built, not what was asked.
  */
-export function synthGraph(nodeCount, edgeCount, seed = 1) {
+export function synthGraph(nodeCount: number, edgeCount: number, seed: number = 1): Graph {
   const n = Math.max(0, Math.floor(nodeCount))
   // Zero means zero. The dials go down to it, and floors that quietly hand back
   // one node are the same lie as the edge floor above — better to draw nothing
   // and let the pane say so.
   if (!n) return { nodes: [], edges: [] }
   const branching = branchingFor(n)
-  const nodes = [ROOT]
-  const edges = []
-  const seen = new Set()
+  const nodes: GraphNode[] = [ROOT]
+  const edges: GraphEdge[] = []
+  const seen = new Set<string>()
 
   for (let i = 1; i < n; i++) {
     const salt = `${seed}:${i}`
     const parent = nodes[Math.floor((i - 1) / branching)]
+    if (!parent) throw new Error(`no parent placed yet for node ${i}`)
     const type = TYPES[pick(salt + ':type', TYPES.length)]
+    if (!type) throw new Error(`no entity type for salt ${salt}`)
     const seq = pick(salt + ':seq', 9000) + 1000
     const risk = pick(salt + ':risk', 100)
-    const node = {
+    const node: GraphNode = {
       id: `S${i}-${ENTITY[type].tag}`,
       type,
       level: parent.level + 1,
@@ -105,11 +114,13 @@ export function synthGraph(nodeCount, edgeCount, seed = 1) {
   for (let j = 0; j < extra; j++) {
     const salt = `${seed}:x${j}`
     const from = nodes[pick(salt + ':from', n)]
+    if (!from) throw new Error(`no node to link from for salt ${salt}`)
     // Every fortieth cross-link loops back on itself. Left to chance a
     // self-edge needs source and target to collide, which at 2,000 nodes is
     // roughly never — and the engines differ more on self-edges than on almost
     // anything else, so a stress graph without them hides the interesting part.
     const to = j % 40 === 0 ? from : nodes[pick(salt + ':to', n)]
+    if (!to) throw new Error(`no node to link to for salt ${salt}`)
     const id = `${from.id}=>${to.id}`
     if (seen.has(id)) continue
     seen.add(id)

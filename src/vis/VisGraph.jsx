@@ -5,8 +5,8 @@ import React, { useEffect, useRef } from 'react'
 // standalone build has them rolled in, which is one dependency in package.json
 // instead of six.
 import { DataSet, Network } from 'vis-network/standalone'
-import { ENTITY } from '../graph/data.js'
-import { isSelfEdge } from '../graph/ops.js'
+import { ENTITY } from '../graph/data.ts'
+import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
 import { useResize } from '../ui/useResize.js'
 

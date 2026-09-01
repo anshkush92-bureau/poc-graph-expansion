@@ -124,14 +124,14 @@ export const SHAPE_SETS = {
     // built-ins — the proof that the shape vocabulary is not capped at eight.
     shapeOf: (node: ShapeNode) =>
       (
-        {
+        ({
           account: 'hexagon',
           device: 'chip',
           phone: 'shield',
           email: 'plus',
           ip: 'triangle',
           card: 'star'
-        } as Record<string, keyof typeof SHAPE>
+        }) as Record<string, keyof typeof SHAPE>
       )[node.type] || 'hexagon'
   },
   risk: {
@@ -246,7 +246,7 @@ const RELATION_STYLE: Record<string, keyof typeof EDGE_STYLES> = {
  * distance of the node the edge leaves from, or -1 for a loop's pivot legs.
  */
 
-/** The flattened link shape `withLoops` (src/graph/loops.js) produces. */
+/** The flattened link shape `withLoops` (src/graph/loops.ts) produces. */
 export interface FlatLink {
   id: string
   from: string

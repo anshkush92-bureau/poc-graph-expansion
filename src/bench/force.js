@@ -15,7 +15,7 @@
 // a graph of this size, and whether that cost lands on the UI thread.
 
 import { forceCenter, forceLink, forceManyBody, forceSimulation } from 'd3-force'
-import { NODE_SPACING } from '../graph/ops.js'
+import { NODE_SPACING } from '../graph/ops.ts'
 
 /**
  * Runs a simulation to convergence and reports what it took.

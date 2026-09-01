@@ -1,7 +1,9 @@
 // Stand-in for the graph backend. Swap `fetchNeighbors` for a real Cypher call
 // (`MATCH (n {id:$id})--(m) RETURN m`) and nothing else in the app changes.
 
-export const ENTITY = {
+import type { EntityType, GraphEdge, GraphNode } from '../engine/types.ts'
+
+export const ENTITY: Record<EntityType, { label: string; color: string; tag: string }> = {
   account: { label: 'Account', color: '#E8A33D', tag: 'ACC' },
   device: { label: 'Device', color: '#7FD4E8', tag: 'DEV' },
   phone: { label: 'Phone', color: '#9B8CFF', tag: 'TEL' },
@@ -11,7 +13,7 @@ export const ENTITY = {
 }
 
 // What each entity type tends to connect to, in order of preference.
-const LINKS = {
+const LINKS: Record<EntityType, readonly EntityType[]> = {
   account: ['device', 'phone', 'email', 'card'],
   device: ['account', 'ip', 'phone'],
   phone: ['account', 'device'],
@@ -20,7 +22,7 @@ const LINKS = {
   card: ['account', 'ip']
 }
 
-const RELATION = {
+const RELATION: Record<string, string> = {
   'account>device': 'SIGNED_IN_FROM',
   'account>phone': 'VERIFIED_WITH',
   'account>email': 'REGISTERED_AS',
@@ -41,10 +43,10 @@ const RELATION = {
 export const MAX_DEPTH = 4
 
 // Deterministic hash so the same node always has the same neighbours — the
-// graph is stable across reloads and screenshots. Exported because `synth.js`
+// graph is stable across reloads and screenshots. Exported because `synth.ts`
 // builds its stress graphs off the same one, so a given size always draws the
 // same graph and two benchmark runs are comparable.
-export function hash(str) {
+export function hash(str: string): number {
   let h = 2166136261
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i)
@@ -53,41 +55,42 @@ export function hash(str) {
   return h >>> 0
 }
 
-const pick = (id, salt, n) => hash(id + ':' + salt) % n
+const pick = (id: string, salt: string, n: number): number => hash(id + ':' + salt) % n
 
 /**
  * How many neighbours a node has in the backend, whether or not they are on
  * screen yet. The hover card needs this before the node is ever expanded.
  */
-export function degreeOf(node) {
+export function degreeOf(node: GraphNode): number {
   if (node.synthetic) return 0
   if (node.level >= MAX_DEPTH) return 0
   return 2 + pick(node.id, 'degree', 3)
 }
 
-export function relationLabel(fromType, toType) {
+export function relationLabel(fromType: EntityType, toType: EntityType): string {
   return RELATION[fromType + '>' + toType] || 'RELATED_TO'
 }
 
 // Entities that can legitimately relate to themselves: the same device
 // retrying, the same card re-authorising, an IP re-routing through itself.
-const SELF_RELATION = {
+const SELF_RELATION: Partial<Record<EntityType, string>> = {
   device: 'REPEAT_ATTEMPT',
   card: 'RE_AUTHORISED',
   ip: 'REROUTED_VIA'
 }
 
 /** The self-referring relationship on a node, if the backend holds one. */
-export function selfEdgeFor(node) {
+export function selfEdgeFor(node: GraphNode): GraphEdge | null {
   const label = SELF_RELATION[node.type]
   if (!label || node.synthetic) return null
   if (pick(node.id, 'self', 2) !== 0) return null
   return { id: `${node.id}<->${node.id}`, source: node.id, target: node.id, label }
 }
 
-function makeNode(parent, index) {
+function makeNode(parent: GraphNode, index: number): GraphNode {
   const options = LINKS[parent.type]
   const type = options[pick(parent.id, 'type' + index, options.length)]
+  if (!type) throw new Error(`no link target for ${parent.type}`)
   const seq = pick(parent.id, 'seq' + index, 9000) + 1000
   const risk = pick(parent.id, 'risk' + index, 100)
   return {
@@ -102,7 +105,7 @@ function makeNode(parent, index) {
   }
 }
 
-function nameFor(type, seq) {
+function nameFor(type: EntityType, seq: number): string {
   switch (type) {
     case 'account':
       return `acct_${seq}`
@@ -121,7 +124,7 @@ function nameFor(type, seq) {
   }
 }
 
-export const ROOT = {
+export const ROOT: GraphNode = {
   id: 'ACC-4471-0',
   type: 'account',
   level: 0,
@@ -136,13 +139,15 @@ export const ROOT = {
  * Returns the next level down from `node`. Async on purpose — expansion has to
  * survive a real network round trip, including a second click while in flight.
  */
-export function fetchNeighbors(node) {
+export function fetchNeighbors(
+  node: GraphNode
+): Promise<{ nodes: GraphNode[]; edges: GraphEdge[] }> {
   return new Promise(resolve => {
     setTimeout(() => {
       const count = degreeOf(node)
-      const nodes = []
+      const nodes: GraphNode[] = []
       for (let i = 0; i < count; i++) nodes.push(makeNode(node, i))
-      const edges = []
+      const edges: GraphEdge[] = []
       nodes.forEach(child => {
         edges.push({
           id: `${node.id}->${child.id}`,

@@ -10,8 +10,8 @@ import {
   useReactFlow
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
-import { ENTITY } from '../graph/data.js'
-import { isSelfEdge } from '../graph/ops.js'
+import { ENTITY } from '../graph/data.ts'
+import { isSelfEdge } from '../graph/ops.ts'
 import { FLARE, INK, mix, nodeColor } from '../ui/theme.js'
 import { useResize } from '../ui/useResize.js'
 
@@ -29,7 +29,7 @@ import { useResize } from '../ui/useResize.js'
  * ── The catch: no layout engine at all ─────────────────────────────────────
  * Not "weak layouts" — none. Nodes render exactly where you put them. A graph
  * that grows by expansion therefore needs a layout you write and maintain, and
- * that is the origin of `layoutRadial` in `graph/ops.js`: ~90 lines plus its
+ * that is the origin of `layoutRadial` in `graph/ops.ts`: ~90 lines plus its
  * tests that exist solely because of this engine. It took three attempts —
  * top-down tree (19,000px wide at 116 nodes), radial with leaf-proportional
  * wedges (degenerated into a single arc), then radial with one equal angular

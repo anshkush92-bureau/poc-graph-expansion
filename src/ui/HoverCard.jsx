@@ -1,5 +1,5 @@
 import React from 'react'
-import { ENTITY } from '../graph/data.js'
+import { ENTITY } from '../graph/data.ts'
 
 /**
  * The peek layer: enough to decide whether this node is worth opening, and

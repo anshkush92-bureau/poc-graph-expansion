@@ -15,7 +15,7 @@
 // pass on each side. That is measured too — `runLayout` reports the round trip
 // as well as the solve, and the gap between them is the transfer.
 
-import { layoutRadial } from '../graph/ops.js'
+import { layoutRadial } from '../graph/ops.ts'
 import { forceLayout } from './force.js'
 
 self.onmessage = event => {

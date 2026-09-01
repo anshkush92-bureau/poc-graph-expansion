@@ -16,7 +16,24 @@
 // finds nothing and no-ops. That is the whole of their isolation — worth
 // knowing before adding an interaction that assumes every drawn node is real.
 
-import { NODE_SPACING, isSelfEdge } from './ops.js'
+import type { Graph, Point, Positions } from '../engine/types.ts'
+import { NODE_SPACING, isSelfEdge } from './ops.ts'
+
+/** A drawable link, flattened from either an ordinary edge or one loop segment. */
+interface LoopLink {
+  id: string
+  from: string
+  to: string
+  label: string
+  arrow?: boolean
+  loop?: boolean
+  synthetic?: boolean
+}
+
+/** An invisible node a loop needs as an endpoint. Never enters graph state. */
+interface Pivot extends Point {
+  id: string
+}
 
 // Kept inside the elbow room `layoutRadial` guarantees every node on its ring,
 // so a loop never reaches far enough to sit on the node next door.
@@ -35,9 +52,12 @@ const HALF = NODE_SPACING * 0.3
  * Returns `links` in a shape both renderers map over, and the `pivots` they
  * have to add as invisible nodes for those links to have endpoints.
  */
-export function withLoops(graph, positions) {
-  const links = []
-  const pivots = []
+export function withLoops(
+  graph: Graph,
+  positions: Positions
+): { links: LoopLink[]; pivots: Pivot[] } {
+  const links: LoopLink[] = []
+  const pivots: Pivot[] = []
 
   graph.edges.forEach(edge => {
     if (!isSelfEdge(edge)) {

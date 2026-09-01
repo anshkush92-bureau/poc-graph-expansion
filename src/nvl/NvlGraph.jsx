@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { FreeLayoutType } from '@neo4j-nvl/base'
 import { InteractiveNvlWrapper } from '@neo4j-nvl/react'
-import { ENTITY } from '../graph/data.js'
-import { isSelfEdge } from '../graph/ops.js'
+import { ENTITY } from '../graph/data.ts'
+import { isSelfEdge } from '../graph/ops.ts'
 import { INK, nodeColor } from '../ui/theme.js'
 import { useResize } from '../ui/useResize.js'
 

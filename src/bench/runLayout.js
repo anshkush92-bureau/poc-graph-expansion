@@ -10,7 +10,7 @@
 // the price of the boundary, and it is not small at 50,000 nodes — which is the
 // honest counterweight to "just put it in a worker".
 
-import { layoutRadial } from '../graph/ops.js'
+import { layoutRadial } from '../graph/ops.ts'
 import { forceLayout } from './force.js'
 
 let worker = null
