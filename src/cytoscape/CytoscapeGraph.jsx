@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react'
 import cytoscape from 'cytoscape'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
-import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
-import { useResize } from '../ui/useResize.js'
+import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
+import { useResize } from '../ui/useResize.ts'
 
 /**
  * The Cytoscape.js renderer.

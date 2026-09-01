@@ -13,7 +13,7 @@ import { CanvasRenderer, SVGRenderer } from 'echarts/renderers'
 echarts.use([GraphChart, CanvasRenderer, SVGRenderer])
 import { ENTITY } from '../graph/data.ts'
 import { withLoops } from '../graph/loops.ts'
-import { BONE, FLARE, INK, nodeColor } from '../ui/theme.js'
+import { BONE, FLARE, INK, nodeColor } from '../ui/theme.ts'
 import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.ts'
 
 /**

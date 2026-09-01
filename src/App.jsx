@@ -4,9 +4,9 @@ import { ENTITY, MAX_DEPTH, ROOT } from './graph/data.ts'
 import { hiddenCounts, isSelfEdge, layoutRadial } from './graph/ops.ts'
 import { synthGraph } from './graph/synth.ts'
 import { useGraph } from './graph/useGraph.ts'
-import { MODES, parseRoute, routeHash } from './route.js'
-import HoverCard from './ui/HoverCard.jsx'
-import SidePanel from './ui/SidePanel.jsx'
+import { MODES, parseRoute, routeHash } from './route.ts'
+import HoverCard from './ui/HoverCard.tsx'
+import SidePanel from './ui/SidePanel.tsx'
 // The shape and line catalogs, read here only to label the two pickers. The
 // renderer is handed the chosen *key* and looks the recipe up itself, so App
 // never touches an ECharts option object.

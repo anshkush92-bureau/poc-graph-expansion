@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, type RefObject } from 'react'
 
 /**
  * Runs `onResize` whenever an element's box changes — including once as soon as
@@ -16,7 +16,7 @@ import { useEffect, useRef } from 'react'
  * The callback is held in a ref so a fresh closure each render does not tear the
  * observer down and rebuild it.
  */
-export function useResize(ref, onResize) {
+export function useResize(ref: RefObject<HTMLElement | null>, onResize: () => void): void {
   const cb = useRef(onResize)
   cb.current = onResize
 

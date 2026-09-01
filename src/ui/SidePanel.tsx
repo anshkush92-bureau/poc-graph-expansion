@@ -1,8 +1,28 @@
 import React, { useEffect, useRef, useState } from 'react'
+import type { EntityType, Graph, GraphNode } from '../engine/types.ts'
 import { ENTITY } from '../graph/data.ts'
 import { neighborsOf, pathToRoot } from '../graph/ops.ts'
 
-const ADDABLE = Object.keys(ENTITY)
+// ENTITY's keys are exactly the EntityType values — Object.keys just can't say
+// so on its own.
+const ADDABLE = Object.keys(ENTITY) as EntityType[]
+
+// A <select> only ever yields a string, even though every <option> here is
+// drawn from ADDABLE — this is the guard that recovers the narrower type.
+const isEntityType = (v: string): v is EntityType => (ADDABLE as string[]).includes(v)
+
+interface SidePanelProps {
+  graph: Graph
+  node: GraphNode
+  tab: 'details' | 'trace'
+  onTab: (tab: 'details' | 'trace') => void
+  onClose: () => void
+  onAdd: (parent: GraphNode, type: EntityType) => void
+  onDelete: (node: GraphNode) => void
+  onExpand: (node: GraphNode) => void
+  isRoot: boolean
+  hidden: number
+}
 
 export default function SidePanel({
   graph,
@@ -15,9 +35,9 @@ export default function SidePanel({
   onExpand,
   isRoot,
   hidden
-}) {
-  const [addType, setAddType] = useState('device')
-  const closeRef = useRef(null)
+}: SidePanelProps) {
+  const [addType, setAddType] = useState<EntityType>('device')
+  const closeRef = useRef<HTMLButtonElement>(null)
   const meta = ENTITY[node.type]
 
   useEffect(() => {
@@ -25,7 +45,7 @@ export default function SidePanel({
   }, [node.id])
 
   useEffect(() => {
-    const onKey = e => {
+    const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
@@ -153,7 +173,13 @@ export default function SidePanel({
             Add linked node
           </label>
           <div className="addrow__controls">
-            <select id="addtype" value={addType} onChange={e => setAddType(e.target.value)}>
+            <select
+              id="addtype"
+              value={addType}
+              onChange={e => {
+                if (isEntityType(e.target.value)) setAddType(e.target.value)
+              }}
+            >
               {ADDABLE.map(t => (
                 <option key={t} value={t}>
                   {ENTITY[t].label}

@@ -13,9 +13,11 @@ export const MODES = [
   ['bench', 'Bench'],
   ['lab', 'Lab'],
   ['compare', 'Compare']
-]
+] as const
 
-const KEYS = MODES.map(m => m[0])
+export type ModeKey = (typeof MODES)[number][0]
+
+const KEYS: readonly string[] = MODES.map(m => m[0])
 
 /**
  * `#/lab/cytoscape` -> { mode: 'lab', arg: 'cytoscape' }
@@ -23,13 +25,15 @@ const KEYS = MODES.map(m => m[0])
  * Anything unrecognised falls back to explore rather than erroring: a stale
  * bookmark from a renamed engine should land somewhere useful.
  */
-export function parseRoute(hash) {
+export function parseRoute(hash: string | null): { mode: ModeKey; arg: string | null } {
   const parts = String(hash || '')
     .replace(/^#\/?/, '')
     .split('/')
     .filter(Boolean)
-  const mode = KEYS.indexOf(parts[0]) === -1 ? 'explore' : parts[0]
+  const head = parts[0]
+  const mode: ModeKey = head && KEYS.includes(head) ? (head as ModeKey) : 'explore'
   return { mode, arg: mode === 'lab' && parts[1] ? parts[1] : null }
 }
 
-export const routeHash = (mode, arg) => '#/' + mode + (arg ? '/' + arg : '')
+export const routeHash = (mode: ModeKey, arg?: string): string =>
+  '#/' + mode + (arg ? '/' + arg : '')

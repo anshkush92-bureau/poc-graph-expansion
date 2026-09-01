@@ -10,7 +10,7 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { BONE, FLARE, INK, mix, nodeColor } from './theme.js'
+import { BONE, FLARE, INK, mix, nodeColor } from './theme.ts'
 
 const HEX = /^#[0-9a-f]{6}$/
 

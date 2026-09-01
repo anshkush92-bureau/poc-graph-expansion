@@ -3,7 +3,7 @@ import FusionCharts from 'fusioncharts'
 import PowerCharts from 'fusioncharts/fusioncharts.powercharts'
 import { ENTITY } from '../graph/data.ts'
 import { withLoops } from '../graph/loops.ts'
-import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
+import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
 
 /**
  * The FusionCharts renderer, on the drag-node chart (`dragnode`).

@@ -2,7 +2,7 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.js'
 import { layoutRadial } from '../graph/ops.ts'
 import { synthGraph } from '../graph/synth.ts'
-import { routeHash } from '../route.js'
+import { routeHash } from '../route.ts'
 import { useHud } from './hud.js'
 import { optimise } from './optimize.js'
 import { runLayout } from './runLayout.js'

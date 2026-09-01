@@ -7,8 +7,8 @@ import {
 } from '@jsplumb/browser-ui'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
-import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
-import { useResize } from '../ui/useResize.js'
+import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
+import { useResize } from '../ui/useResize.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════

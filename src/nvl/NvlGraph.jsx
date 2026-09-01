@@ -3,8 +3,8 @@ import { FreeLayoutType } from '@neo4j-nvl/base'
 import { InteractiveNvlWrapper } from '@neo4j-nvl/react'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
-import { INK, nodeColor } from '../ui/theme.js'
-import { useResize } from '../ui/useResize.js'
+import { INK, nodeColor } from '../ui/theme.ts'
+import { useResize } from '../ui/useResize.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════

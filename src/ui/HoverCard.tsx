@@ -1,5 +1,17 @@
 import React from 'react'
+import type { GraphNode, Point } from '../engine/types.ts'
 import { ENTITY } from '../graph/data.ts'
+
+interface HoverCardProps {
+  node: GraphNode
+  shown: number
+  hidden: number
+  explored: boolean
+  at: Point
+  onOpen: (tab: 'details' | 'trace') => void
+  onHold: () => void
+  onRelease: () => void
+}
 
 /**
  * The peek layer: enough to decide whether this node is worth opening, and
@@ -15,7 +27,7 @@ export default function HoverCard({
   onOpen,
   onHold,
   onRelease
-}) {
+}: HoverCardProps) {
   const meta = ENTITY[node.type]
   const total = shown + hidden
   const style = {
