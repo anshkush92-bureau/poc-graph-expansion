@@ -44,7 +44,7 @@ test('summarise: no samples is reported as no samples, not as zero cost', () => 
   assert.equal(out.p95, null)
 })
 
-test('stripLabels blanks captions without touching the caller\'s nodes', () => {
+test("stripLabels blanks captions without touching the caller's nodes", () => {
   const graph = synthGraph(40, 60)
   const before = graph.nodes[5].name
   const out = stripLabels(graph)
@@ -77,10 +77,16 @@ test('cullToBox keeps only whole edges', () => {
     ]
   }
   const out = cullToBox(graph, positions, { minX: -1, maxX: 1, minY: -1, maxY: 1 })
-  assert.deepEqual(out.nodes.map(n => n.id), ['a', 'b'])
+  assert.deepEqual(
+    out.nodes.map(n => n.id),
+    ['a', 'b']
+  )
   // A half-edge would mean keeping its off-screen endpoint, which is culling
   // that culls nothing.
-  assert.deepEqual(out.edges.map(e => e.id), ['inside'])
+  assert.deepEqual(
+    out.edges.map(e => e.id),
+    ['inside']
+  )
 })
 
 test('optimise reports what survived, which is the denominator for every other number', () => {
@@ -177,7 +183,11 @@ test('sprout hangs every newcomer off the node it was given', () => {
 
 test('sprout without a parent still spreads the arrivals around', () => {
   const graph = synthGraph(40, 60)
-  const sources = new Set(sprout(graph, 8, 0).edges.slice(graph.edges.length).map(e => e.source))
+  const sources = new Set(
+    sprout(graph, 8, 0)
+      .edges.slice(graph.edges.length)
+      .map(e => e.source)
+  )
   assert.ok(sources.size > 1)
 })
 

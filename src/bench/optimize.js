@@ -85,7 +85,8 @@ export function cullToBox(graph, positions, box) {
   const kept = new Set()
   const nodes = graph.nodes.filter(n => {
     const at = positions[n.id]
-    if (!at || at.x < box.minX || at.x > box.maxX || at.y < box.minY || at.y > box.maxY) return false
+    if (!at || at.x < box.minX || at.x > box.maxX || at.y < box.minY || at.y > box.maxY)
+      return false
     kept.add(n.id)
     return true
   })

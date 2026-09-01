@@ -54,7 +54,12 @@ export function forceLayout(graph, options) {
     // `distanceMax` is what keeps this from being O(n²) in practice: without a
     // cutoff, Barnes-Hut still walks far-away quadtree cells that contribute
     // nothing at these scales.
-    .force('charge', forceManyBody().strength(-160).distanceMax(NODE_SPACING * 12))
+    .force(
+      'charge',
+      forceManyBody()
+        .strength(-160)
+        .distanceMax(NODE_SPACING * 12)
+    )
     .force('centre', forceCenter(0, 0))
     .stop()
 
@@ -65,7 +70,9 @@ export function forceLayout(graph, options) {
   }
 
   const positions = {}
-  nodes.forEach(n => { positions[n.id] = { x: n.x, y: n.y } })
+  nodes.forEach(n => {
+    positions[n.id] = { x: n.x, y: n.y }
+  })
 
   return {
     positions,

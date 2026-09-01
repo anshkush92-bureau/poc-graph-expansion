@@ -173,7 +173,12 @@ export function layoutRadial(graph, prev) {
   }
   roots.forEach(measure)
   // Anything unreachable from a root still needs a place.
-  graph.nodes.forEach(n => { if (!seen.has(n.id)) { roots.push(n.id); measure(n.id) } })
+  graph.nodes.forEach(n => {
+    if (!seen.has(n.id)) {
+      roots.push(n.id)
+      measure(n.id)
+    }
+  })
 
   const byDepth = new Map()
   depth.forEach((d, id) => {
@@ -238,9 +243,11 @@ export function layoutRadial(graph, prev) {
       // A whole circle has no left and right edge to fan between, so the slots
       // are laid out from -90° instead — same convention as the cold pass.
       const full = w >= Math.PI - 1e-9
-      const slots = kids.map((_, i) => (full
-        ? -Math.PI / 2 + (2 * Math.PI * i) / kids.length
-        : pa - w + ((i + 0.5) * 2 * w) / kids.length))
+      const slots = kids.map((_, i) =>
+        full
+          ? -Math.PI / 2 + (2 * Math.PI * i) / kids.length
+          : pa - w + ((i + 0.5) * 2 * w) / kids.length
+      )
 
       // Siblings already placed hold their angle; each newcomer takes whichever
       // remaining slot sits furthest from all of them, so a second expansion
@@ -252,7 +259,10 @@ export function layoutRadial(graph, prev) {
         slots.forEach((s, i) => {
           if (s === null) return
           const clearance = taken.length ? Math.min(...taken.map(t => Math.abs(arc(s - t)))) : 0
-          if (clearance > score) { score = clearance; best = i }
+          if (clearance > score) {
+            score = clearance
+            best = i
+          }
         })
         angle.set(kid, slots[best])
         taken.push(slots[best])
@@ -263,7 +273,7 @@ export function layoutRadial(graph, prev) {
     // Ring by ring outward, so a parent always has its angle before its
     // children ask for it.
     for (let d = 0; d <= deepest; d++) {
-      (byDepth.get(d) || []).forEach(id => {
+      ;(byDepth.get(d) || []).forEach(id => {
         // A node detached from every root — a delete can leave one — has no
         // parent to inherit a wedge from, so it takes the top of its ring and
         // pass 2 widens the ring if that crowds anything.
@@ -293,7 +303,8 @@ export function layoutRadial(graph, prev) {
     if (ids.length > 1) {
       const sorted = ids.map(id => angle.get(id)).sort((a, b) => a - b)
       let tightest = Infinity
-      for (let i = 1; i < sorted.length; i++) tightest = Math.min(tightest, sorted[i] - sorted[i - 1])
+      for (let i = 1; i < sorted.length; i++)
+        tightest = Math.min(tightest, sorted[i] - sorted[i - 1])
       // close the circle
       tightest = Math.min(tightest, sorted[0] + 2 * Math.PI - sorted[sorted.length - 1])
       if (tightest > 0) needed = NODE_SPACING / tightest

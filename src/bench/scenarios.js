@@ -26,7 +26,17 @@ import { ENTITY, ROOT, relationLabel } from '../graph/data.js'
 import { layoutRadial } from '../graph/ops.js'
 import { synthGraph } from '../graph/synth.js'
 import { optimise } from './optimize.js'
-import { heapMB, nextPaint, round, sampleFrames, sleep, startFrames, summarise, watchLongTasks, collectGarbage } from './probes.js'
+import {
+  heapMB,
+  nextPaint,
+  round,
+  sampleFrames,
+  sleep,
+  startFrames,
+  summarise,
+  watchLongTasks,
+  collectGarbage
+} from './probes.js'
 import { runLayout } from './runLayout.js'
 
 const EMPTY = { nodes: [ROOT], edges: [] }
@@ -101,9 +111,33 @@ export function prune(graph, count) {
 // side by side and have the sizes cancel out: what is left between them is the
 // scenario, not the dial. Where a library separates is further up, and the dial
 // goes to 50,000 — but a comparison starts from one size for all of them.
-const nodesKnob = (value = 1000) => ({ key: 'nodes', label: 'Nodes', type: 'number', min: 0, max: 50000, step: 1, value })
-const edgesKnob = (value = 1500) => ({ key: 'edges', label: 'Edges', type: 'number', min: 0, max: 150000, step: 1, value })
-const secondsKnob = (value = 10) => ({ key: 'seconds', label: 'Seconds', type: 'number', min: 1, max: 60, step: 1, value })
+const nodesKnob = (value = 1000) => ({
+  key: 'nodes',
+  label: 'Nodes',
+  type: 'number',
+  min: 0,
+  max: 50000,
+  step: 1,
+  value
+})
+const edgesKnob = (value = 1500) => ({
+  key: 'edges',
+  label: 'Edges',
+  type: 'number',
+  min: 0,
+  max: 150000,
+  step: 1,
+  value
+})
+const secondsKnob = (value = 10) => ({
+  key: 'seconds',
+  label: 'Seconds',
+  type: 'number',
+  min: 1,
+  max: 60,
+  step: 1,
+  value
+})
 
 export const SCENARIOS = [
   // ══════════════════════════════════════════════════════════════════════════
@@ -112,7 +146,7 @@ export const SCENARIOS = [
     label: 'Hairball',
     blurb:
       'One dense graph dropped in on a cold pane. Reports where the time went — building the ' +
-      'data, laying it out, the engine\'s own update, and the wait until pixels exist — plus what ' +
+      "data, laying it out, the engine's own update, and the wait until pixels exist — plus what " +
       'it cost in heap. At the default 1,000 / 1,500 all eight should manage it; turn the dial up ' +
       'to find where each one stops, which is what it is for.',
     knobs: [nodesKnob(), edgesKnob()],
@@ -175,7 +209,15 @@ export const SCENARIOS = [
     knobs: [
       nodesKnob(),
       edgesKnob(),
-      { key: 'expandBy', label: 'Nodes per click', type: 'number', min: 0, max: 2000, step: 1, value: 25 },
+      {
+        key: 'expandBy',
+        label: 'Nodes per click',
+        type: 'number',
+        min: 0,
+        max: 2000,
+        step: 1,
+        value: 25
+      },
       { key: 'clicks', label: 'Expansions', type: 'number', min: 1, max: 200, step: 1, value: 20 }
     ],
     async run(ctx) {
@@ -265,8 +307,24 @@ export const SCENARIOS = [
     knobs: [
       // The base graph is built at base × 1.5 edges, so 1,000 here is the same
       // 1,000 / 1,500 the other five scenarios start from.
-      { key: 'base', label: 'Base nodes', type: 'number', min: 0, max: 20000, step: 1, value: 1000 },
-      { key: 'rate', label: 'Nodes / sec', type: 'number', min: 0, max: 5000, step: 10, value: 500 },
+      {
+        key: 'base',
+        label: 'Base nodes',
+        type: 'number',
+        min: 0,
+        max: 20000,
+        step: 1,
+        value: 1000
+      },
+      {
+        key: 'rate',
+        label: 'Nodes / sec',
+        type: 'number',
+        min: 0,
+        max: 5000,
+        step: 10,
+        value: 500
+      },
       secondsKnob(20)
     ],
     async run(ctx) {
@@ -360,7 +418,10 @@ export const SCENARIOS = [
           // above zero here did not come back.
           leakMB: heapEmpty == null ? null : Math.round((heapAfterDrain - heapEmpty) * 100) / 100
         },
-        note: heapEmpty == null ? 'Heap columns need Chromium — performance.memory is absent here.' : undefined
+        note:
+          heapEmpty == null
+            ? 'Heap columns need Chromium — performance.memory is absent here.'
+            : undefined
       }
     }
   },
@@ -437,12 +498,26 @@ export const SCENARIOS = [
     knobs: [
       nodesKnob(),
       edgesKnob(),
-      { key: 'mode', label: 'Solver', type: 'choice', options: ['force', 'radial'], value: 'force' },
+      {
+        key: 'mode',
+        label: 'Solver',
+        type: 'choice',
+        options: ['force', 'radial'],
+        value: 'force'
+      },
       { key: 'worker', label: 'In a Web Worker', type: 'toggle', value: false },
       // α of 0 never satisfies d3's stopping rule, so the run is capped by
       // `maxTicks` instead and reports `converged: false` — the honest answer to
       // "what does this cost if you never stop it", not a hang.
-      { key: 'alphaMin', label: 'Convergence α', type: 'number', min: 0, max: 0.2, step: 0.005, value: 0.02 }
+      {
+        key: 'alphaMin',
+        label: 'Convergence α',
+        type: 'number',
+        min: 0,
+        max: 0.2,
+        step: 0.005,
+        value: 0.02
+      }
     ],
     async run(ctx) {
       const graph = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
@@ -517,7 +592,15 @@ export const SCENARIOS = [
       edgesKnob(),
       { key: 'lod', label: 'Level of detail (drop labels)', type: 'toggle', value: true },
       { key: 'cull', label: 'Viewport culling', type: 'toggle', value: true },
-      { key: 'fraction', label: 'Visible fraction', type: 'number', min: 0, max: 1, step: 0.05, value: 0.5 },
+      {
+        key: 'fraction',
+        label: 'Visible fraction',
+        type: 'number',
+        min: 0,
+        max: 1,
+        step: 0.05,
+        value: 0.5
+      },
       secondsKnob(10)
     ],
     async run(ctx) {
@@ -570,7 +653,9 @@ export const SCENARIOS = [
           dropped: frames.dropped,
           blockedMs: blocking && blocking.blockedMs
         },
-        note: view ? undefined : 'No viewport on this engine — frame numbers here are the idle cost of holding the graph, not of moving it.'
+        note: view
+          ? undefined
+          : 'No viewport on this engine — frame numbers here are the idle cost of holding the graph, not of moving it.'
       }
     }
   },
@@ -588,7 +673,15 @@ export const SCENARIOS = [
     knobs: [
       nodesKnob(),
       edgesKnob(),
-      { key: 'debounce', label: 'Debounce (ms, 0 = off)', type: 'number', min: 0, max: 200, step: 5, value: 0 },
+      {
+        key: 'debounce',
+        label: 'Debounce (ms, 0 = off)',
+        type: 'number',
+        min: 0,
+        max: 200,
+        step: 5,
+        value: 0
+      },
       secondsKnob(8)
     ],
     async run(ctx) {
@@ -618,15 +711,23 @@ export const SCENARIOS = [
         const pointer = Object.assign({ pointerType: 'mouse', isPrimary: true }, init)
         if (target !== over) {
           if (over) {
-            over.dispatchEvent(new MouseEvent('mouseout', Object.assign({ relatedTarget: target }, init)))
-            over.dispatchEvent(new PointerEvent('pointerout', Object.assign({ relatedTarget: target }, pointer)))
+            over.dispatchEvent(
+              new MouseEvent('mouseout', Object.assign({ relatedTarget: target }, init))
+            )
+            over.dispatchEvent(
+              new PointerEvent('pointerout', Object.assign({ relatedTarget: target }, pointer))
+            )
           }
-          target.dispatchEvent(new MouseEvent('mouseover', Object.assign({ relatedTarget: over }, init)))
+          target.dispatchEvent(
+            new MouseEvent('mouseover', Object.assign({ relatedTarget: over }, init))
+          )
           // v-network-graph listens for `@node:pointerover`, not a mouse event,
           // and reported no hover at all until this line existed. Both families
           // are dispatched because the eight split roughly evenly on which one
           // they bind.
-          target.dispatchEvent(new PointerEvent('pointerover', Object.assign({ relatedTarget: over }, pointer)))
+          target.dispatchEvent(
+            new PointerEvent('pointerover', Object.assign({ relatedTarget: over }, pointer))
+          )
           over = target
         }
         target.dispatchEvent(new MouseEvent('mousemove', init))

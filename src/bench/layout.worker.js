@@ -26,9 +26,10 @@ self.onmessage = event => {
     // Radial takes no `prev`: the incremental path is O(n²) and exists to keep
     // an expansion from re-arranging the screen, which is not what a one-shot
     // layout benchmark is measuring.
-    const result = mode === 'force'
-      ? forceLayout(graph, options)
-      : { positions: layoutRadial(graph, null), ticks: null, alpha: null, converged: true }
+    const result =
+      mode === 'force'
+        ? forceLayout(graph, options)
+        : { positions: layoutRadial(graph, null), ticks: null, alpha: null, converged: true }
 
     self.postMessage({
       id,

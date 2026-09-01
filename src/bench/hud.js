@@ -21,7 +21,16 @@
 import { useEffect, useState } from 'react'
 import { heapMB, summarise } from './probes.js'
 
-export const IDLE = { frames: 0, fps: 0, p50: null, p95: null, worst: null, dropped: 0, heapMB: null, blockedMs: null }
+export const IDLE = {
+  frames: 0,
+  fps: 0,
+  p50: null,
+  p95: null,
+  worst: null,
+  dropped: 0,
+  heapMB: null,
+  blockedMs: null
+}
 
 // ~3 seconds at 60 Hz. Long enough that one stutter does not own the gauge,
 // short enough that the gauge still answers "what is it doing *now*".
@@ -52,7 +61,9 @@ export function useHud(active) {
     let observer = null
     try {
       observer = new PerformanceObserver(list => {
-        list.getEntries().forEach(entry => { blocked += entry.duration })
+        list.getEntries().forEach(entry => {
+          blocked += entry.duration
+        })
       })
       observer.observe({ entryTypes: ['longtask'] })
     } catch (err) {
@@ -75,10 +86,12 @@ export function useHud(active) {
         reported = now
         const window = Math.round(blocked)
         blocked = 0
-        setHud(Object.assign({}, summarise(deltas), {
-          heapMB: heapMB(),
-          blockedMs: observer ? window : null
-        }))
+        setHud(
+          Object.assign({}, summarise(deltas), {
+            heapMB: heapMB(),
+            blockedMs: observer ? window : null
+          })
+        )
       }
 
       if (live) requestAnimationFrame(tick)

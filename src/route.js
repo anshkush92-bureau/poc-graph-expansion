@@ -24,7 +24,10 @@ const KEYS = MODES.map(m => m[0])
  * bookmark from a renamed engine should land somewhere useful.
  */
 export function parseRoute(hash) {
-  const parts = String(hash || '').replace(/^#\/?/, '').split('/').filter(Boolean)
+  const parts = String(hash || '')
+    .replace(/^#\/?/, '')
+    .split('/')
+    .filter(Boolean)
   const mode = KEYS.indexOf(parts[0]) === -1 ? 'explore' : parts[0]
   return { mode, arg: mode === 'lab' && parts[1] ? parts[1] : null }
 }

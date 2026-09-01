@@ -55,9 +55,10 @@ const forTransfer = graph => ({
 
 export function layoutOnMain(graph, mode, options) {
   const started = performance.now()
-  const result = mode === 'force'
-    ? forceLayout(graph, options)
-    : { positions: layoutRadial(graph, null), ticks: null, alpha: null, converged: true }
+  const result =
+    mode === 'force'
+      ? forceLayout(graph, options)
+      : { positions: layoutRadial(graph, null), ticks: null, alpha: null, converged: true }
   const totalMs = Math.round(performance.now() - started)
   return {
     positions: result.positions,
@@ -100,5 +101,10 @@ export function layoutInWorker(graph, mode, options) {
   })
 }
 
-export const runLayout = (graph, { mode = 'radial', worker: offThread = false, ...options } = {}) =>
-  (offThread ? layoutInWorker(graph, mode, options) : Promise.resolve(layoutOnMain(graph, mode, options)))
+export const runLayout = (
+  graph,
+  { mode = 'radial', worker: offThread = false, ...options } = {}
+) =>
+  offThread
+    ? layoutInWorker(graph, mode, options)
+    : Promise.resolve(layoutOnMain(graph, mode, options))

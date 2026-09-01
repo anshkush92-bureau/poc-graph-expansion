@@ -42,14 +42,22 @@ export default function BenchView() {
   // scenario's knobs were undefined, which flips every input from uncontrolled
   // to controlled and React warns about it. Deriving them during render means
   // a knob is never undefined in the first place.
-  const [knobState, setKnobState] = useState({ key: SCENARIOS[0].key, values: defaultKnobs(SCENARIOS[0]) })
+  const [knobState, setKnobState] = useState({
+    key: SCENARIOS[0].key,
+    values: defaultKnobs(SCENARIOS[0])
+  })
   const knobs = knobState.key === scenarioKey ? knobState.values : defaultKnobs(scenario)
-  const setKnob = useCallback((key, value) => {
-    setKnobState(prev => ({
-      key: scenarioKey,
-      values: Object.assign({}, prev.key === scenarioKey ? prev.values : defaultKnobs(scenario), { [key]: value })
-    }))
-  }, [scenario, scenarioKey])
+  const setKnob = useCallback(
+    (key, value) => {
+      setKnobState(prev => ({
+        key: scenarioKey,
+        values: Object.assign({}, prev.key === scenarioKey ? prev.values : defaultKnobs(scenario), {
+          [key]: value
+        })
+      }))
+    },
+    [scenario, scenarioKey]
+  )
 
   // The paint backend, for the three engines that have more than one. Derived
   // during render off the same pattern as the knobs above: an effect that reset
@@ -59,7 +67,10 @@ export default function BenchView() {
   // It exists here and not only in the lab because otherwise every row in the
   // matrix is the engine's *default* backend and the SVG/WebGL halves of three
   // libraries go unmeasured — which was exactly the hole in the first pass.
-  const [rendererState, setRendererState] = useState({ key: 'echarts', value: ENGINES.echarts.renderers[0] })
+  const [rendererState, setRendererState] = useState({
+    key: 'echarts',
+    value: ENGINES.echarts.renderers[0]
+  })
   const renderer = rendererState.key === engine ? rendererState.value : ENGINES[engine].renderers[0]
 
   const [results, setResults] = useState(loadResults)
@@ -69,43 +80,53 @@ export default function BenchView() {
   const { data, paneRef, paneProps, clear, makeCtx, begin, cancel, aborted } = usePane()
 
   /** Mounts an engine and waits until its pane is alive and has painted once. */
-  const ready = useCallback(async key => {
-    setEngine(key)
-    // A tick for React to swap the lazy component in before the first show.
-    await sleep(0)
-    await clear()
-  }, [clear])
+  const ready = useCallback(
+    async key => {
+      setEngine(key)
+      // A tick for React to swap the lazy component in before the first show.
+      await sleep(0)
+      await clear()
+    },
+    [clear]
+  )
 
-  const runOne = useCallback(async (engineKey, scen, values) => {
-    const row = await runScenario(engineKey, scen, values, makeCtx(values))
-    // Recomputed from the engine being run rather than read off the closure:
-    // `runEverything` walks the engines itself, and its closure's `renderer`
-    // belongs to whichever engine was selected when the run started.
-    row.renderer = rendererState.key === engineKey ? rendererState.value : ENGINES[engineKey].renderers[0]
-    setResults(saveResult(row))
-    return row
-  }, [makeCtx, rendererState])
+  const runOne = useCallback(
+    async (engineKey, scen, values) => {
+      const row = await runScenario(engineKey, scen, values, makeCtx(values))
+      // Recomputed from the engine being run rather than read off the closure:
+      // `runEverything` walks the engines itself, and its closure's `renderer`
+      // belongs to whichever engine was selected when the run started.
+      row.renderer =
+        rendererState.key === engineKey ? rendererState.value : ENGINES[engineKey].renderers[0]
+      setResults(saveResult(row))
+      return row
+    },
+    [makeCtx, rendererState]
+  )
 
-  const run = useCallback(async engineKeys => {
-    if (running) return
-    begin()
-    setRunning(true)
-    try {
-      for (let i = 0; i < engineKeys.length; i++) {
-        if (aborted()) break
-        const key = engineKeys[i]
-        setStatus(`${ENGINES[key].name} · ${scenario.label} (${i + 1}/${engineKeys.length})`)
-        await ready(key)
-        await runOne(key, scenario, knobs)
-        // A beat between engines so the previous one's teardown and any
-        // collection it triggers land outside the next one's measurement.
-        await sleep(400)
+  const run = useCallback(
+    async engineKeys => {
+      if (running) return
+      begin()
+      setRunning(true)
+      try {
+        for (let i = 0; i < engineKeys.length; i++) {
+          if (aborted()) break
+          const key = engineKeys[i]
+          setStatus(`${ENGINES[key].name} · ${scenario.label} (${i + 1}/${engineKeys.length})`)
+          await ready(key)
+          await runOne(key, scenario, knobs)
+          // A beat between engines so the previous one's teardown and any
+          // collection it triggers land outside the next one's measurement.
+          await sleep(400)
+        }
+      } finally {
+        setStatus(null)
+        setRunning(false)
       }
-    } finally {
-      setStatus(null)
-      setRunning(false)
-    }
-  }, [aborted, begin, knobs, ready, running, runOne, scenario])
+    },
+    [aborted, begin, knobs, ready, running, runOne, scenario]
+  )
 
   const runEverything = useCallback(async () => {
     if (running) return
@@ -119,7 +140,9 @@ export default function BenchView() {
         for (let s = 0; s < SCENARIOS.length; s++) {
           if (aborted()) break
           const scen = SCENARIOS[s]
-          setStatus(`${ENGINES[key].name} · ${scen.label} (engine ${e + 1}/${ENGINE_KEYS.length}, scenario ${s + 1}/${SCENARIOS.length})`)
+          setStatus(
+            `${ENGINES[key].name} · ${scen.label} (engine ${e + 1}/${ENGINE_KEYS.length}, scenario ${s + 1}/${SCENARIOS.length})`
+          )
           await runOne(key, scen, defaultKnobs(scen))
           await sleep(300)
         }
@@ -133,10 +156,11 @@ export default function BenchView() {
 
   const { name, lib, Component } = ENGINES[engine]
   const rows = useMemo(
-    () => Object.keys(results)
-      .map(k => results[k])
-      .filter(r => r.scenario === scenarioKey)
-      .sort((a, b) => ENGINE_KEYS.indexOf(a.engine) - ENGINE_KEYS.indexOf(b.engine)),
+    () =>
+      Object.keys(results)
+        .map(k => results[k])
+        .filter(r => r.scenario === scenarioKey)
+        .sort((a, b) => ENGINE_KEYS.indexOf(a.engine) - ENGINE_KEYS.indexOf(b.engine)),
     [results, scenarioKey]
   )
 
@@ -148,7 +172,9 @@ export default function BenchView() {
             <span>Engine</span>
             <select value={engine} onChange={e => setEngine(e.target.value)} disabled={running}>
               {ENGINE_KEYS.map(key => (
-                <option key={key} value={key}>{ENGINES[key].name}</option>
+                <option key={key} value={key}>
+                  {ENGINES[key].name}
+                </option>
               ))}
             </select>
           </label>
@@ -160,18 +186,35 @@ export default function BenchView() {
               disabled={running || ENGINES[engine].renderers.length < 2}
               onChange={e => setRendererState({ key: engine, value: e.target.value })}
             >
-              {ENGINES[engine].renderers.map(r => <option key={r} value={r}>{r}</option>)}
+              {ENGINES[engine].renderers.map(r => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </label>
 
           <label className="jump">
             <span>Scenario</span>
-            <select value={scenarioKey} onChange={e => setScenarioKey(e.target.value)} disabled={running}>
-              {SCENARIOS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+            <select
+              value={scenarioKey}
+              onChange={e => setScenarioKey(e.target.value)}
+              disabled={running}
+            >
+              {SCENARIOS.map(s => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
             </select>
           </label>
 
-          <button type="button" className="btn btn--primary" disabled={running} onClick={() => run([engine])}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={running}
+            onClick={() => run([engine])}
+          >
             Run
           </button>
           <button type="button" className="btn" disabled={running} onClick={() => run(ENGINE_KEYS)}>
@@ -180,7 +223,11 @@ export default function BenchView() {
           <button type="button" className="btn" disabled={running} onClick={runEverything}>
             Everything
           </button>
-          {running && <button type="button" className="btn btn--danger" onClick={cancel}>Stop</button>}
+          {running && (
+            <button type="button" className="btn btn--danger" onClick={cancel}>
+              Stop
+            </button>
+          )}
           {status && <span className="bench__status">{status}</span>}
         </div>
 
@@ -202,9 +249,12 @@ export default function BenchView() {
       <section className="pane pane--bench">
         <header className="pane__bar">
           <b className="pane__name">{name}</b>
-          <span className="pane__lib">{lib} · {renderer}</span>
+          <span className="pane__lib">
+            {lib} · {renderer}
+          </span>
           <span className="pane__stat">
-            {data.graph.nodes.length.toLocaleString()} nodes · {data.graph.edges.length.toLocaleString()} links
+            {data.graph.nodes.length.toLocaleString()} nodes ·{' '}
+            {data.graph.edges.length.toLocaleString()} links
           </span>
         </header>
         <div className="pane__body" ref={paneRef}>

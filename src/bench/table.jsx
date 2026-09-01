@@ -28,7 +28,11 @@ export function Knob({ knob, value, disabled, onChange }) {
       <label className="jump">
         <span>{knob.label}</span>
         <select value={value} disabled={disabled} onChange={e => onChange(e.target.value)}>
-          {knob.options.map(o => <option key={o} value={o}>{o}</option>)}
+          {knob.options.map(o => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
         </select>
       </label>
     )
@@ -81,7 +85,11 @@ export function ResultTable({ rows, scenario }) {
   }, [rows])
 
   if (!rows.length) {
-    return <p className="bench__empty">No results for {scenario.label} yet. Run an engine, or run all eight.</p>
+    return (
+      <p className="bench__empty">
+        No results for {scenario.label} yet. Run an engine, or run all eight.
+      </p>
+    )
   }
 
   return (
@@ -90,12 +98,17 @@ export function ResultTable({ rows, scenario }) {
         <thead>
           <tr>
             <th>Engine</th>
-            {columns.map(c => <th key={c}>{c}</th>)}
+            {columns.map(c => (
+              <th key={c}>{c}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
           {rows.map(row => (
-            <tr key={row.engine} className={row.failed ? 'is-failed' : row.unsupported ? 'is-na' : ''}>
+            <tr
+              key={row.engine}
+              className={row.failed ? 'is-failed' : row.unsupported ? 'is-na' : ''}
+            >
               <th scope="row">{ENGINES[row.engine].name}</th>
               {row.unsupported || row.failed ? (
                 <td colSpan={columns.length} className="grid__note">
@@ -108,9 +121,13 @@ export function ResultTable({ rows, scenario }) {
           ))}
         </tbody>
       </table>
-      {rows.filter(r => r.note).map(r => (
-        <p key={r.engine} className="bench__note"><b>{ENGINES[r.engine].name}</b> — {r.note}</p>
-      ))}
+      {rows
+        .filter(r => r.note)
+        .map(r => (
+          <p key={r.engine} className="bench__note">
+            <b>{ENGINES[r.engine].name}</b> — {r.note}
+          </p>
+        ))}
     </div>
   )
 }
@@ -119,6 +136,7 @@ export function ResultTable({ rows, scenario }) {
 export function format(value) {
   if (value == null) return '—'
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
-  if (typeof value === 'number') return Number.isInteger(value) ? value.toLocaleString() : String(value)
+  if (typeof value === 'number')
+    return Number.isInteger(value) ? value.toLocaleString() : String(value)
   return String(value)
 }

@@ -87,7 +87,19 @@ function axisBox(points, width, height) {
   return { minX, maxX, minY, maxY }
 }
 
-function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVersion, onNodeClick, onNodeHover, onBackgroundClick, onStat, onViewport }) {
+function FusionGraph({
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  onNodeClick,
+  onNodeHover,
+  onBackgroundClick,
+  onStat,
+  onViewport
+}) {
   const frame = useRef(null)
   const chart = useRef(null)
 
@@ -346,22 +358,24 @@ function FusionGraph({ graph, positions, hidden, isExpanded, isPending, statusVe
       // the instance then stays blank even once links arrive. An unexpanded
       // root is exactly that case, and so is the state Reset returns to.
       if (links.length) {
-        dataSource.connectors = [{
-          stdThickness: '1',
-          connector: links.map(link => ({
-            from: link.from,
-            to: link.to,
-            label: link.label || '',
-            color: link.loop ? LOOP : link.synthetic ? SYNTH : EDGE,
-            alpha: '90',
-            // Connectors are straight lines with no curvature control, so the
-            // three-segment loop reads as a flattened triangle here where
-            // ECharts can bow each segment out.
-            arrowAtStart: '0',
-            arrowAtEnd: link.arrow ? '1' : '0',
-            strength: '1'
-          }))
-        }]
+        dataSource.connectors = [
+          {
+            stdThickness: '1',
+            connector: links.map(link => ({
+              from: link.from,
+              to: link.to,
+              label: link.label || '',
+              color: link.loop ? LOOP : link.synthetic ? SYNTH : EDGE,
+              alpha: '90',
+              // Connectors are straight lines with no curvature control, so the
+              // three-segment loop reads as a flattened triangle here where
+              // ECharts can bow each segment out.
+              arrowAtStart: '0',
+              arrowAtEnd: link.arrow ? '1' : '0',
+              strength: '1'
+            }))
+          }
+        ]
       }
 
       return dataSource

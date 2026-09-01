@@ -53,8 +53,8 @@ function LabIndex() {
       <p className="bench__blurb">
         One page per library, each with the whole rig exposed: graph size, force layout on or off
         the main thread, level of detail, viewport culling, live streaming and hover debounce — plus
-        a live frame/heap gauge and the seven scripted scenarios scoped to that engine alone.
-        Every page is its own URL, so a run that takes the tab down survives a reload.
+        a live frame/heap gauge and the seven scripted scenarios scoped to that engine alone. Every
+        page is its own URL, so a run that takes the tab down survives a reload.
       </p>
       <div className="lab__cards">
         {ENGINE_KEYS.map(key => {
@@ -63,7 +63,11 @@ function LabIndex() {
             <a className="lab__card" key={key} href={routeHash('lab', key)}>
               <b>{e.name}</b>
               <span className="lab__card-lib">{e.lib}</span>
-              <span className={'lab__surface lab__surface--' + e.surface.split('/')[0].split('+')[0]}>{e.surface}</span>
+              <span
+                className={'lab__surface lab__surface--' + e.surface.split('/')[0].split('+')[0]}
+              >
+                {e.surface}
+              </span>
               <span className="lab__card-note">{e.note}</span>
             </a>
           )
@@ -89,7 +93,21 @@ const SOLVER = { type: 'choice', label: 'Solver', options: ['radial', 'force'] }
 function LabPane({ engineKey }) {
   const engine = ENGINES[engineKey]
   const Renderer = engine.Component
-  const { data, paneRef, paneProps, show, push, makeCtx, begin, cancel, lastStat, viewport, hoverCount, resetHover, setHoverDebounce } = usePane()
+  const {
+    data,
+    paneRef,
+    paneProps,
+    show,
+    push,
+    makeCtx,
+    begin,
+    cancel,
+    lastStat,
+    viewport,
+    hoverCount,
+    resetHover,
+    setHoverDebounce
+  } = usePane()
 
   // ── Manual knobs ─────────────────────────────────────────────────────────
   // `initial` is what Build makes; expansion adds to it. Kept apart because the
@@ -144,21 +162,31 @@ function LabPane({ engineKey }) {
   // ── Scripted runs, scoped to this engine ─────────────────────────────────
   const [scenarioKey, setScenarioKey] = useState(SCENARIOS[0].key)
   const scenario = useMemo(() => SCENARIOS.find(s => s.key === scenarioKey), [scenarioKey])
-  const [knobState, setKnobState] = useState({ key: SCENARIOS[0].key, values: defaultKnobs(SCENARIOS[0]) })
+  const [knobState, setKnobState] = useState({
+    key: SCENARIOS[0].key,
+    values: defaultKnobs(SCENARIOS[0])
+  })
   const knobs = knobState.key === scenarioKey ? knobState.values : defaultKnobs(scenario)
-  const setKnob = useCallback((key, value) => {
-    setKnobState(prev => ({
-      key: scenarioKey,
-      values: Object.assign({}, prev.key === scenarioKey ? prev.values : defaultKnobs(scenario), { [key]: value })
-    }))
-  }, [scenario, scenarioKey])
+  const setKnob = useCallback(
+    (key, value) => {
+      setKnobState(prev => ({
+        key: scenarioKey,
+        values: Object.assign({}, prev.key === scenarioKey ? prev.values : defaultKnobs(scenario), {
+          [key]: value
+        })
+      }))
+    },
+    [scenario, scenarioKey]
+  )
   const [running, setRunning] = useState(false)
   const [results, setResults] = useState(loadResults)
 
   // The gauge stands down whenever something else is doing the measuring.
   const hud = useHud(!running && !busy)
 
-  useEffect(() => { setHoverDebounce(debounce) }, [debounce, setHoverDebounce])
+  useEffect(() => {
+    setHoverDebounce(debounce)
+  }, [debounce, setHoverDebounce])
 
   /**
    * Lay a graph out, cut it down, put it on screen, and report every leg of it
@@ -169,39 +197,42 @@ function LabPane({ engineKey }) {
    * engine spent turning the graph into its own elements, and `ttfrMs` is what
    * you actually waited. One total would hide which of the four is your problem.
    */
-  const apply = useCallback(async (full, buildMs) => {
-    busyRef.current = true
-    setBusy(true)
-    try {
-      const laid = await runLayout(full, { mode: layoutMode, worker, alphaMin })
-      // Positions come from the whole graph, then the cut is applied — laying
-      // out only the survivors would rearrange them, and you would be looking at
-      // a different graph rather than a cropped one.
-      const { graph, drawn } = optimise(full, laid.positions, { lod, cull, fraction })
-      posRef.current = laid.positions
-      const handed = performance.now()
-      await show(graph, laid.positions)
-      setReport({
-        nodes: full.nodes.length,
-        edges: full.edges.length,
-        buildMs: buildMs == null ? null : buildMs,
-        layout: layoutMode,
-        where: worker ? 'worker' : 'main',
-        solveMs: laid.solveMs,
-        transferMs: laid.transferMs,
-        ticks: laid.ticks,
-        converged: laid.converged,
-        drawnNodes: drawn.nodes,
-        drawnEdges: drawn.edges,
-        kept: Math.round((1000 * drawn.nodes) / Math.max(1, full.nodes.length)) / 10 + '%',
-        updateMs: lastStat(),
-        ttfrMs: Math.round(performance.now() - handed)
-      })
-    } finally {
-      busyRef.current = false
-      setBusy(false)
-    }
-  }, [alphaMin, cull, fraction, lastStat, layoutMode, lod, show, worker])
+  const apply = useCallback(
+    async (full, buildMs) => {
+      busyRef.current = true
+      setBusy(true)
+      try {
+        const laid = await runLayout(full, { mode: layoutMode, worker, alphaMin })
+        // Positions come from the whole graph, then the cut is applied — laying
+        // out only the survivors would rearrange them, and you would be looking at
+        // a different graph rather than a cropped one.
+        const { graph, drawn } = optimise(full, laid.positions, { lod, cull, fraction })
+        posRef.current = laid.positions
+        const handed = performance.now()
+        await show(graph, laid.positions)
+        setReport({
+          nodes: full.nodes.length,
+          edges: full.edges.length,
+          buildMs: buildMs == null ? null : buildMs,
+          layout: layoutMode,
+          where: worker ? 'worker' : 'main',
+          solveMs: laid.solveMs,
+          transferMs: laid.transferMs,
+          ticks: laid.ticks,
+          converged: laid.converged,
+          drawnNodes: drawn.nodes,
+          drawnEdges: drawn.edges,
+          kept: Math.round((1000 * drawn.nodes) / Math.max(1, full.nodes.length)) / 10 + '%',
+          updateMs: lastStat(),
+          ttfrMs: Math.round(performance.now() - handed)
+        })
+      } finally {
+        busyRef.current = false
+        setBusy(false)
+      }
+    },
+    [alphaMin, cull, fraction, lastStat, layoutMode, lod, show, worker]
+  )
 
   const build = useCallback(() => {
     setStreaming(false)
@@ -235,62 +266,68 @@ function LabPane({ engineKey }) {
   // One identity for the life of the page (every mutable input is read through
   // `live` or a ref), so the engine under test is never re-rendered just because
   // a slider moved.
-  const expandFrom = useCallback(async id => {
-    const graph = fullRef.current
-    if (!graph || busyRef.current) return
-    // Re-expanding is a no-op rather than a second helping — the same rule
-    // `useGraph` enforces, and without it a double-click doubles the level.
-    if (expandedRef.current.has(id)) return
-    const node = graph.nodes.find(n => n.id === id)
-    if (!node) return
+  const expandFrom = useCallback(
+    async id => {
+      const graph = fullRef.current
+      if (!graph || busyRef.current) return
+      // Re-expanding is a no-op rather than a second helping — the same rule
+      // `useGraph` enforces, and without it a double-click doubles the level.
+      if (expandedRef.current.has(id)) return
+      const node = graph.nodes.find(n => n.id === id)
+      if (!node) return
 
-    const { expandBy: by, lod: l, cull: c, fraction: f } = live.current
-    if (by < 1) return
+      const { expandBy: by, lod: l, cull: c, fraction: f } = live.current
+      if (by < 1) return
 
-    busyRef.current = true
-    setBusy(true)
-    try {
-      const t0 = performance.now()
-      const grown = sprout(graph, by, seqRef.current, node)
-      seqRef.current += by
-      expandedRef.current.add(id)
-      const positions = layoutRadial(grown, posRef.current)
-      const expandMs = Math.round(performance.now() - t0)
-      fullRef.current = grown
-      posRef.current = positions
-      setStatusVersion(v => v + 1)
+      busyRef.current = true
+      setBusy(true)
+      try {
+        const t0 = performance.now()
+        const grown = sprout(graph, by, seqRef.current, node)
+        seqRef.current += by
+        expandedRef.current.add(id)
+        const positions = layoutRadial(grown, posRef.current)
+        const expandMs = Math.round(performance.now() - t0)
+        fullRef.current = grown
+        posRef.current = positions
+        setStatusVersion(v => v + 1)
 
-      const { graph: cut, drawn } = optimise(grown, positions, { lod: l, cull: c, fraction: f })
-      const handed = performance.now()
-      await show(cut, positions)
-      setReport({
-        nodes: grown.nodes.length,
-        edges: grown.edges.length,
-        expandedFrom: id,
-        addedNodes: by,
-        expandMs,
-        drawnNodes: drawn.nodes,
-        drawnEdges: drawn.edges,
-        updateMs: lastStat(),
-        ttfrMs: Math.round(performance.now() - handed)
-      })
-    } finally {
-      busyRef.current = false
-      setBusy(false)
-    }
-  }, [lastStat, show])
+        const { graph: cut, drawn } = optimise(grown, positions, { lod: l, cull: c, fraction: f })
+        const handed = performance.now()
+        await show(cut, positions)
+        setReport({
+          nodes: grown.nodes.length,
+          edges: grown.edges.length,
+          expandedFrom: id,
+          addedNodes: by,
+          expandMs,
+          drawnNodes: drawn.nodes,
+          drawnEdges: drawn.edges,
+          updateMs: lastStat(),
+          ttfrMs: Math.round(performance.now() - handed)
+        })
+      } finally {
+        busyRef.current = false
+        setBusy(false)
+      }
+    },
+    [lastStat, show]
+  )
 
   // Stable too, and read through the ref rather than closed over: renderers
   // memoise on it, and a fresh function each render would re-run their data
   // effect — a full re-derive of the scene — on every gauge tick.
   const isExpanded = useCallback(id => expandedRef.current.has(id), [])
 
-  const zoom = useCallback(what => {
-    const handle = viewport()
-    if (!handle) return
-    if (what === 'fit') handle.fit()
-    else handle.zoomBy(what)
-  }, [viewport])
+  const zoom = useCallback(
+    what => {
+      const handle = viewport()
+      if (!handle) return
+      if (what === 'fit') handle.fit()
+      else handle.zoomBy(what)
+    },
+    [viewport]
+  )
 
   // ── The stream ───────────────────────────────────────────────────────────
   //
@@ -343,9 +380,10 @@ function LabPane({ engineKey }) {
   }, [begin, debounce, engineKey, knobs, makeCtx, running, scenario, setHoverDebounce])
 
   const rows = useMemo(
-    () => Object.keys(results)
-      .map(k => results[k])
-      .filter(r => r.engine === engineKey && r.scenario === scenarioKey),
+    () =>
+      Object.keys(results)
+        .map(k => results[k])
+        .filter(r => r.engine === engineKey && r.scenario === scenarioKey),
     [engineKey, results, scenarioKey]
   )
 
@@ -361,7 +399,9 @@ function LabPane({ engineKey }) {
   return (
     <div className="lab">
       <div className="lab__nav">
-        <a className="btn" href={routeHash('lab')}>← All libraries</a>
+        <a className="btn" href={routeHash('lab')}>
+          ← All libraries
+        </a>
         {ENGINE_KEYS.map(key => (
           <a
             key={key}
@@ -376,16 +416,40 @@ function LabPane({ engineKey }) {
       <header className="lab__head">
         <h2>{engine.name}</h2>
         <span className="pane__lib">{engine.lib}</span>
-        <span className={'lab__surface lab__surface--' + engine.surface.split('/')[0].split('+')[0]}>{engine.surface}</span>
+        <span
+          className={'lab__surface lab__surface--' + engine.surface.split('/')[0].split('+')[0]}
+        >
+          {engine.surface}
+        </span>
         <p className="lab__note">{engine.note}</p>
       </header>
 
       <div className="lab__grid">
-        <Group title="Graph" hint="Build makes a spanning tree over `initial nodes` first, then adds cross-links until it reaches `edges` — so the edge dial is a target with a floor at initial − 1, and asking for fewer changes nothing. There is no total-nodes dial because the total is a result: what Build made, plus everything you have clicked into. Drag the initial count up until this engine gives out — that number is the finding.">
-          <Knob knob={num('Initial nodes', 0, 50000, 1)} value={initial} disabled={locked} onChange={setInitial} />
-          <Knob knob={num('Edges', 0, 150000, 1)} value={edges} disabled={locked} onChange={setEdges} />
-          <Knob knob={num('Expand by (per click)', 0, 2000, 1)} value={expandBy} disabled={locked} onChange={setExpandBy} />
-          <button type="button" className="btn btn--primary" disabled={locked} onClick={build}>Build</button>
+        <Group
+          title="Graph"
+          hint="Build makes a spanning tree over `initial nodes` first, then adds cross-links until it reaches `edges` — so the edge dial is a target with a floor at initial − 1, and asking for fewer changes nothing. There is no total-nodes dial because the total is a result: what Build made, plus everything you have clicked into. Drag the initial count up until this engine gives out — that number is the finding."
+        >
+          <Knob
+            knob={num('Initial nodes', 0, 50000, 1)}
+            value={initial}
+            disabled={locked}
+            onChange={setInitial}
+          />
+          <Knob
+            knob={num('Edges', 0, 150000, 1)}
+            value={edges}
+            disabled={locked}
+            onChange={setEdges}
+          />
+          <Knob
+            knob={num('Expand by (per click)', 0, 2000, 1)}
+            value={expandBy}
+            disabled={locked}
+            onChange={setExpandBy}
+          />
+          <button type="button" className="btn btn--primary" disabled={locked} onClick={build}>
+            Build
+          </button>
           <p className="lab__hint">
             {built.toLocaleString()} built + {grown.toLocaleString()} expanded ={' '}
             <b>{(built + grown).toLocaleString()}</b> nodes, {liveEdges.toLocaleString()} edges
@@ -395,22 +459,41 @@ function LabPane({ engineKey }) {
           </p>
         </Group>
 
-        <Group title="Interaction" hint="Click any node to hang `expand by` new neighbours off it — laid out incrementally, so nothing already on screen moves. Panning, wheel-zoom and node drag are the library's own; the buttons drive the same viewport handle the scripted zoom test uses, so they are comparable across engines.">
+        <Group
+          title="Interaction"
+          hint="Click any node to hang `expand by` new neighbours off it — laid out incrementally, so nothing already on screen moves. Panning, wheel-zoom and node drag are the library's own; the buttons drive the same viewport handle the scripted zoom test uses, so they are comparable across engines."
+        >
           {engine.caps.viewport ? (
             <React.Fragment>
-              <button type="button" className="btn" onClick={() => zoom(1.25)}>Zoom in</button>
-              <button type="button" className="btn" onClick={() => zoom(0.8)}>Zoom out</button>
-              <button type="button" className="btn" onClick={() => zoom('fit')}>Fit</button>
+              <button type="button" className="btn" onClick={() => zoom(1.25)}>
+                Zoom in
+              </button>
+              <button type="button" className="btn" onClick={() => zoom(0.8)}>
+                Zoom out
+              </button>
+              <button type="button" className="btn" onClick={() => zoom('fit')}>
+                Fit
+              </button>
             </React.Fragment>
           ) : (
-            <p className="lab__hint">No viewport API at all in this library — pan and zoom are the finding, not an omission.</p>
+            <p className="lab__hint">
+              No viewport API at all in this library — pan and zoom are the finding, not an
+              omission.
+            </p>
           )}
-          <p className="lab__hint">expanded: {expandedRef.current.size} node{expandedRef.current.size === 1 ? '' : 's'}</p>
+          <p className="lab__hint">
+            expanded: {expandedRef.current.size} node{expandedRef.current.size === 1 ? '' : 's'}
+          </p>
         </Group>
 
-        <Group title="Renderer" hint={engine.renderers.length > 1
-          ? 'The same code path with a different paint backend. Switching remounts the pane — none of these can swap it on a live instance — so the graph is redrawn from scratch and the viewport resets.'
-          : 'This library has exactly one backend. That is the finding for it.'}>
+        <Group
+          title="Renderer"
+          hint={
+            engine.renderers.length > 1
+              ? 'The same code path with a different paint backend. Switching remounts the pane — none of these can swap it on a live instance — so the graph is redrawn from scratch and the viewport resets.'
+              : 'This library has exactly one backend. That is the finding for it.'
+          }
+        >
           <Knob
             knob={{ type: 'choice', label: 'Paint backend', options: engine.renderers }}
             value={renderer}
@@ -419,24 +502,67 @@ function LabPane({ engineKey }) {
           />
         </Group>
 
-        <Group title="Layout & worker" hint="Identical d3-force either way, so the only variable is where it runs. Watch the gauge, not the solve time — off the main thread the solve costs the same and the tab stays at 60.">
+        <Group
+          title="Layout & worker"
+          hint="Identical d3-force either way, so the only variable is where it runs. Watch the gauge, not the solve time — off the main thread the solve costs the same and the tab stays at 60."
+        >
           <Knob knob={SOLVER} value={layoutMode} disabled={locked} onChange={setLayoutMode} />
-          <Knob knob={{ type: 'toggle', label: 'In a Web Worker' }} value={worker} disabled={locked} onChange={setWorker} />
+          <Knob
+            knob={{ type: 'toggle', label: 'In a Web Worker' }}
+            value={worker}
+            disabled={locked}
+            onChange={setWorker}
+          />
           {layoutMode === 'force' && (
-            <Knob knob={num('Convergence α', 0, 0.2, 0.005)} value={alphaMin} disabled={locked} onChange={setAlphaMin} />
+            <Knob
+              knob={num('Convergence α', 0, 0.2, 0.005)}
+              value={alphaMin}
+              disabled={locked}
+              onChange={setAlphaMin}
+            />
           )}
-          <button type="button" className="btn" disabled={locked} onClick={redraw}>Re-layout</button>
+          <button type="button" className="btn" disabled={locked} onClick={redraw}>
+            Re-layout
+          </button>
         </Group>
 
-        <Group title="LOD & culling" hint="Both applied in the shared layer, so this engine gets exactly the help every other one gets. Read any speed-up next to `kept` below — “three times faster” means nothing without how much stopped being drawn. A visible fraction of 0 keeps nothing, which is the floor the rest of the readings sit on.">
-          <Knob knob={{ type: 'toggle', label: 'Level of detail (drop labels)' }} value={lod} disabled={locked} onChange={setLod} />
-          <Knob knob={{ type: 'toggle', label: 'Viewport culling' }} value={cull} disabled={locked} onChange={setCull} />
-          <Knob knob={num('Visible fraction', 0, 1, 0.05)} value={fraction} disabled={locked || !cull} onChange={setFraction} />
-          <button type="button" className="btn" disabled={locked} onClick={redraw}>Apply</button>
+        <Group
+          title="LOD & culling"
+          hint="Both applied in the shared layer, so this engine gets exactly the help every other one gets. Read any speed-up next to `kept` below — “three times faster” means nothing without how much stopped being drawn. A visible fraction of 0 keeps nothing, which is the floor the rest of the readings sit on."
+        >
+          <Knob
+            knob={{ type: 'toggle', label: 'Level of detail (drop labels)' }}
+            value={lod}
+            disabled={locked}
+            onChange={setLod}
+          />
+          <Knob
+            knob={{ type: 'toggle', label: 'Viewport culling' }}
+            value={cull}
+            disabled={locked}
+            onChange={setCull}
+          />
+          <Knob
+            knob={num('Visible fraction', 0, 1, 0.05)}
+            value={fraction}
+            disabled={locked || !cull}
+            onChange={setFraction}
+          />
+          <button type="button" className="btn" disabled={locked} onClick={redraw}>
+            Apply
+          </button>
         </Group>
 
-        <Group title="Streaming" hint="Nodes arriving and expiring at a fixed rate, the way a live feed behaves. Node count stays flat, so what you are watching is churn. Leave it running and watch the heap. At 0 nothing is pushed — that is the idle cost of holding this graph, which is what a churn reading should be compared against.">
-          <Knob knob={num('Nodes / sec', 0, 5000, 10)} value={rate} disabled={running} onChange={setRate} />
+        <Group
+          title="Streaming"
+          hint="Nodes arriving and expiring at a fixed rate, the way a live feed behaves. Node count stays flat, so what you are watching is churn. Leave it running and watch the heap. At 0 nothing is pushed — that is the idle cost of holding this graph, which is what a churn reading should be compared against."
+        >
+          <Knob
+            knob={num('Nodes / sec', 0, 5000, 10)}
+            value={rate}
+            disabled={running}
+            onChange={setRate}
+          />
           <button
             type="button"
             className={'btn' + (streaming ? ' btn--danger' : '')}
@@ -447,8 +573,16 @@ function LabPane({ engineKey }) {
           </button>
         </Group>
 
-        <Group title="Hover" hint="Move the pointer over the pane yourself. The counter is every callback this engine fired; the debounce is on the React state update the real hover card does, not on the engine.">
-          <Knob knob={num('Debounce (ms)', 0, 200, 5)} value={debounce} disabled={running} onChange={setDebounce} />
+        <Group
+          title="Hover"
+          hint="Move the pointer over the pane yourself. The counter is every callback this engine fired; the debounce is on the React state update the real hover card does, not on the engine."
+        >
+          <Knob
+            knob={num('Debounce (ms)', 0, 200, 5)}
+            value={debounce}
+            disabled={running}
+            onChange={setDebounce}
+          />
         </Group>
       </div>
 
@@ -459,7 +593,8 @@ function LabPane({ engineKey }) {
           <b className="pane__name">{engine.name}</b>
           <span className="pane__lib">{renderer}</span>
           <span className="pane__stat">
-            {data.graph.nodes.length.toLocaleString()} drawn nodes · {data.graph.edges.length.toLocaleString()} links
+            {data.graph.nodes.length.toLocaleString()} drawn nodes ·{' '}
+            {data.graph.edges.length.toLocaleString()} links
           </span>
           {streaming && <span className="lab__live">streaming {rate}/s</span>}
         </header>
@@ -487,7 +622,10 @@ function LabPane({ engineKey }) {
           <h3>Last build</h3>
           <dl className="lab__stats">
             {Object.keys(report).map(key => (
-              <div key={key}><dt>{key}</dt><dd>{format(report[key])}</dd></div>
+              <div key={key}>
+                <dt>{key}</dt>
+                <dd>{format(report[key])}</dd>
+              </div>
             ))}
           </dl>
         </section>
@@ -498,20 +636,43 @@ function LabPane({ engineKey }) {
         <div className="bench__row">
           <label className="jump">
             <span>Scenario</span>
-            <select value={scenarioKey} disabled={locked} onChange={e => setScenarioKey(e.target.value)}>
-              {SCENARIOS.map(s => <option key={s.key} value={s.key}>{s.label}</option>)}
+            <select
+              value={scenarioKey}
+              disabled={locked}
+              onChange={e => setScenarioKey(e.target.value)}
+            >
+              {SCENARIOS.map(s => (
+                <option key={s.key} value={s.key}>
+                  {s.label}
+                </option>
+              ))}
             </select>
           </label>
-          <button type="button" className="btn btn--primary" disabled={locked} onClick={runScripted}>
+          <button
+            type="button"
+            className="btn btn--primary"
+            disabled={locked}
+            onClick={runScripted}
+          >
             Run on {engine.name}
           </button>
-          {running && <button type="button" className="btn btn--danger" onClick={cancel}>Stop</button>}
+          {running && (
+            <button type="button" className="btn btn--danger" onClick={cancel}>
+              Stop
+            </button>
+          )}
           {running && <span className="bench__status">running — the gauge is paused</span>}
         </div>
         <p className="bench__blurb">{scenario.blurb}</p>
         <div className="bench__knobs">
           {scenario.knobs.map(knob => (
-            <Knob key={knob.key} knob={knob} value={knobs[knob.key]} disabled={locked} onChange={v => setKnob(knob.key, v)} />
+            <Knob
+              key={knob.key}
+              knob={knob}
+              value={knobs[knob.key]}
+              disabled={locked}
+              onChange={v => setKnob(knob.key, v)}
+            />
           ))}
         </div>
         <ResultTable rows={rows} scenario={scenario} />
@@ -528,7 +689,9 @@ function LabPane({ engineKey }) {
             {CAP_ROWS.map(([capKey, label]) => (
               <tr key={capKey}>
                 <th scope="row">{label}</th>
-                <td className={engine.caps[capKey] ? '' : 'is-na'}>{engine.caps[capKey] || 'none'}</td>
+                <td className={engine.caps[capKey] ? '' : 'is-na'}>
+                  {engine.caps[capKey] || 'none'}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -565,7 +728,9 @@ function Gauge({ hud, live, hovers, onResetHovers }) {
           <dd>{format(value)}</dd>
         </div>
       ))}
-      <button type="button" className="btn" onClick={onResetHovers}>Reset hovers</button>
+      <button type="button" className="btn" onClick={onResetHovers}>
+        Reset hovers
+      </button>
     </div>
   )
 }

@@ -45,13 +45,16 @@ export function usePane() {
   const hoverTimer = useRef(null)
   const [, setHoverId] = useState(null)
 
-  useEffect(() => () => {
-    abort.current.aborted = true
-    clearTimeout(hoverTimer.current)
-    // Leaving a solver running in a worker nobody is listening to keeps a core
-    // busy for the rest of the session.
-    stopWorker()
-  }, [])
+  useEffect(
+    () => () => {
+      abort.current.aborted = true
+      clearTimeout(hoverTimer.current)
+      // Leaving a solver running in a worker nobody is listening to keeps a core
+      // busy for the rest of the session.
+      stopWorker()
+    },
+    []
+  )
 
   // A read seam for the hover counter, and it is not a convenience.
   //
@@ -66,7 +69,9 @@ export function usePane() {
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
     window.__benchHovers = () => hoverCount.current
-    return () => { delete window.__benchHovers }
+    return () => {
+      delete window.__benchHovers
+    }
   }, [])
 
   const onStat = useCallback(ms => {
@@ -80,7 +85,9 @@ export function usePane() {
     nextPaint().then(() => resolve(ms))
   }, [])
 
-  const onViewport = useCallback(api => { viewport.current = api }, [])
+  const onViewport = useCallback(api => {
+    viewport.current = api
+  }, [])
 
   const onNodeHover = useCallback(id => {
     hoverCount.current += 1
@@ -119,42 +126,54 @@ export function usePane() {
    * property of the explore view, and deriving it at 50,000 nodes would put the
    * app's own cost inside the engine's measurement.
    */
-  const paneProps = useMemo(() => ({
-    hidden: EMPTY_HIDDEN,
-    isExpanded: NEVER,
-    isPending: NEVER,
-    statusVersion: 0,
-    shapeSet: 'type',
-    edgeStyle: 'arrow',
-    onNodeClick: noop,
-    onNodeHover,
-    onEdgeClick: noop,
-    onBackgroundClick: noop,
-    onStat,
-    onViewport
-  }), [noop, onNodeHover, onStat, onViewport])
+  const paneProps = useMemo(
+    () => ({
+      hidden: EMPTY_HIDDEN,
+      isExpanded: NEVER,
+      isPending: NEVER,
+      statusVersion: 0,
+      shapeSet: 'type',
+      edgeStyle: 'arrow',
+      onNodeClick: noop,
+      onNodeHover,
+      onEdgeClick: noop,
+      onBackgroundClick: noop,
+      onStat,
+      onViewport
+    }),
+    [noop, onNodeHover, onStat, onViewport]
+  )
 
   /**
    * A fresh scenario context. Built per run rather than memoised, because
    * `signal` has to be the *current* abort token — a stale one means Stop stops
    * nothing.
    */
-  const makeCtx = useCallback(knobs => ({
-    knobs,
-    show,
-    push,
-    lastStat: () => lastStat.current,
-    viewport: () => viewport.current,
-    pane: () => paneRef.current,
-    hover: {
-      count: () => hoverCount.current,
-      reset: () => { hoverCount.current = 0 },
-      setDebounce: ms => { hoverDebounce.current = ms }
-    },
-    signal: abort.current
-  }), [push, show])
+  const makeCtx = useCallback(
+    knobs => ({
+      knobs,
+      show,
+      push,
+      lastStat: () => lastStat.current,
+      viewport: () => viewport.current,
+      pane: () => paneRef.current,
+      hover: {
+        count: () => hoverCount.current,
+        reset: () => {
+          hoverCount.current = 0
+        },
+        setDebounce: ms => {
+          hoverDebounce.current = ms
+        }
+      },
+      signal: abort.current
+    }),
+    [push, show]
+  )
 
-  const begin = useCallback(() => { abort.current = { aborted: false } }, [])
+  const begin = useCallback(() => {
+    abort.current = { aborted: false }
+  }, [])
 
   const cancel = useCallback(() => {
     abort.current.aborted = true
@@ -165,26 +184,36 @@ export function usePane() {
 
   // Ref readers, memoised once. A fresh identity each render would make every
   // `useCallback` downstream that depends on one rebuild on every render.
-  const readers = useMemo(() => ({
-    aborted: () => abort.current.aborted,
-    lastStat: () => lastStat.current,
-    viewport: () => viewport.current,
-    hoverCount: () => hoverCount.current,
-    resetHover: () => { hoverCount.current = 0 },
-    setHoverDebounce: ms => { hoverDebounce.current = ms }
-  }), [])
+  const readers = useMemo(
+    () => ({
+      aborted: () => abort.current.aborted,
+      lastStat: () => lastStat.current,
+      viewport: () => viewport.current,
+      hoverCount: () => hoverCount.current,
+      resetHover: () => {
+        hoverCount.current = 0
+      },
+      setHoverDebounce: ms => {
+        hoverDebounce.current = ms
+      }
+    }),
+    []
+  )
 
-  return Object.assign({
-    data,
-    paneRef,
-    paneProps,
-    show,
-    push,
-    clear,
-    makeCtx,
-    begin,
-    cancel
-  }, readers)
+  return Object.assign(
+    {
+      data,
+      paneRef,
+      paneProps,
+      show,
+      push,
+      clear,
+      makeCtx,
+      begin,
+      cancel
+    },
+    readers
+  )
 }
 
 /**

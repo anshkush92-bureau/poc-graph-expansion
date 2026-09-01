@@ -67,8 +67,19 @@ const OPTIONS = {
 }
 
 function NvlGraph({
-  graph, positions, hidden, isExpanded, isPending, statusVersion, renderer = 'canvas',
-  onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  renderer = 'canvas',
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
 }) {
   const frame = useRef(null)
   // The wrapper's ref, once mounted, is not the NVL instance itself but a
@@ -93,9 +104,11 @@ function NvlGraph({
   // live, so a stable ref (evaluated once, on first render) matches that
   // contract instead of reacting to a prop that in practice never changes
   // under a mounted instance.
-  const nvlOptions = useRef(Object.assign({}, OPTIONS, {
-    renderer: renderer === 'webgl' ? 'webgl' : 'canvas'
-  })).current
+  const nvlOptions = useRef(
+    Object.assign({}, OPTIONS, {
+      renderer: renderer === 'webgl' ? 'webgl' : 'canvas'
+    })
+  ).current
 
   const mouseEventCallbacks = useRef({
     onNodeClick: node => handlers.current.onNodeClick(node.id),
@@ -132,7 +145,9 @@ function NvlGraph({
           const at = nvl.current.getPan()
           nvl.current.setPan(at.x + dx, at.y + dy)
         },
-        fit: () => { if (nvl.current && shown.current.length) nvl.current.fit(shown.current) }
+        fit: () => {
+          if (nvl.current && shown.current.length) nvl.current.fit(shown.current)
+        }
       })
     }
 
@@ -166,30 +181,35 @@ function NvlGraph({
   const scene = useMemo(() => {
     const started = performance.now()
 
-    const nodes = graph.nodes.filter(n => positions[n.id]).map(node => {
-      const meta = ENTITY[node.type]
-      const behind = hidden.get(node.id) || 0
-      return {
-        id: node.id,
-        x: positions[node.id].x,
-        y: positions[node.id].y,
-        // Without this the free layout still lets a drag drift a node; pinned
-        // keeps the shared arrangement exactly as the other panes draw it.
-        pinned: true,
-        size: node.level === 0 ? 19 : node.flagged ? 14 : 11,
-        color: nodeColor(meta.color, { explored: isExpanded(node.id), pending: isPending(node.id) }),
-        caption: `${meta.tag} ${node.name}` + (behind > 0 ? `  +${behind}` : ''),
-        captionAlign: 'bottom',
-        // Flagged nodes borrow NVL's *selection* ring, because a node has no
-        // border of its own: the public `Node` type is id, color, size, caption,
-        // captionAlign, x, y, pinned, selected, icon — there is no stroke colour
-        // or stroke width to set. So the ring is NVL's selection blue rather
-        // than the app's alert red, and the pulse the ECharts and FusionCharts
-        // panes animate has no equivalent here at all. Both are properties of
-        // the library, not of this file.
-        selected: !!node.flagged
-      }
-    })
+    const nodes = graph.nodes
+      .filter(n => positions[n.id])
+      .map(node => {
+        const meta = ENTITY[node.type]
+        const behind = hidden.get(node.id) || 0
+        return {
+          id: node.id,
+          x: positions[node.id].x,
+          y: positions[node.id].y,
+          // Without this the free layout still lets a drag drift a node; pinned
+          // keeps the shared arrangement exactly as the other panes draw it.
+          pinned: true,
+          size: node.level === 0 ? 19 : node.flagged ? 14 : 11,
+          color: nodeColor(meta.color, {
+            explored: isExpanded(node.id),
+            pending: isPending(node.id)
+          }),
+          caption: `${meta.tag} ${node.name}` + (behind > 0 ? `  +${behind}` : ''),
+          captionAlign: 'bottom',
+          // Flagged nodes borrow NVL's *selection* ring, because a node has no
+          // border of its own: the public `Node` type is id, color, size, caption,
+          // captionAlign, x, y, pinned, selected, icon — there is no stroke colour
+          // or stroke width to set. So the ring is NVL's selection blue rather
+          // than the app's alert red, and the pulse the ECharts and FusionCharts
+          // panes animate has no equivalent here at all. Both are properties of
+          // the library, not of this file.
+          selected: !!node.flagged
+        }
+      })
 
     const rels = graph.edges.map(edge => ({
       id: edge.id,

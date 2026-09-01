@@ -22,15 +22,40 @@ import { clearResults, loadResults } from './store.js'
 /** The one number worth ranking each scenario on, and which way is better. */
 const HEADLINE = {
   hairball: { metric: 'ttfrMs', label: 'time to first render', unit: 'ms', lowerIsBetter: true },
-  stream: { metric: 'fps', label: 'frames per second under churn', unit: 'fps', lowerIsBetter: false },
-  zoompan: { metric: 'frameP95', label: '95th-percentile frame time', unit: 'ms', lowerIsBetter: true },
-  layout: { metric: 'worstFrameMs', label: 'longest frozen frame during layout', unit: 'ms', lowerIsBetter: true },
-  optimise: { metric: 'frameP95', label: '95th-percentile frame time, optimised', unit: 'ms', lowerIsBetter: true },
+  stream: {
+    metric: 'fps',
+    label: 'frames per second under churn',
+    unit: 'fps',
+    lowerIsBetter: false
+  },
+  zoompan: {
+    metric: 'frameP95',
+    label: '95th-percentile frame time',
+    unit: 'ms',
+    lowerIsBetter: true
+  },
+  layout: {
+    metric: 'worstFrameMs',
+    label: 'longest frozen frame during layout',
+    unit: 'ms',
+    lowerIsBetter: true
+  },
+  optimise: {
+    metric: 'frameP95',
+    label: '95th-percentile frame time, optimised',
+    unit: 'ms',
+    lowerIsBetter: true
+  },
   // Not `callbacksPerMove`: 1.0 there means the engine reported every
   // transition, which is correct rather than bad, and ranking on it would put
   // the engine that silently drops hovers at the top. What the debounce is
   // there to protect is the frame time, so that is what gets ranked.
-  hover: { metric: 'frameP95', label: '95th-percentile frame time under hover traffic', unit: 'ms', lowerIsBetter: true }
+  hover: {
+    metric: 'frameP95',
+    label: '95th-percentile frame time under hover traffic',
+    unit: 'ms',
+    lowerIsBetter: true
+  }
 }
 
 export default function Compare() {
@@ -38,7 +63,9 @@ export default function Compare() {
 
   const byScenario = useMemo(() => {
     const out = {}
-    SCENARIOS.forEach(s => { out[s.key] = [] })
+    SCENARIOS.forEach(s => {
+      out[s.key] = []
+    })
     Object.keys(results).forEach(key => {
       const row = results[key]
       if (out[row.scenario]) out[row.scenario].push(row)
@@ -54,7 +81,8 @@ export default function Compare() {
   const exportJson = () => {
     // A plain data: URL rather than a Blob — the whole export is a few kilobytes
     // of JSON and this needs no cleanup, no object URL to revoke, and no library.
-    const href = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(results, null, 2))
+    const href =
+      'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(results, null, 2))
     const a = document.createElement('a')
     a.href = href
     a.download = 'graph-bench-results.json'
@@ -69,12 +97,16 @@ export default function Compare() {
             ? `${measured} result${measured === 1 ? '' : 's'} across ${ENGINE_KEYS.length} engines and ${SCENARIOS.length} scenarios.`
             : 'Nothing measured yet — run a scenario on the Bench tab.'}
         </p>
-        <button type="button" className="btn" onClick={exportJson} disabled={!measured}>Export JSON</button>
+        <button type="button" className="btn" onClick={exportJson} disabled={!measured}>
+          Export JSON
+        </button>
         <button
           type="button"
           className="btn btn--danger"
           disabled={!measured}
-          onClick={() => { if (confirm('Discard every stored result?')) setResults(clearResults()) }}
+          onClick={() => {
+            if (confirm('Discard every stored result?')) setResults(clearResults())
+          }}
         >
           Clear
         </button>
@@ -84,8 +116,8 @@ export default function Compare() {
         <section className="compare__block">
           <h2>Headline</h2>
           <p className="compare__sub">
-            One number per scenario, named so it can be argued with. Blank means that engine has
-            not run that scenario, or reported it unsupported.
+            One number per scenario, named so it can be argued with. Blank means that engine has not
+            run that scenario, or reported it unsupported.
           </p>
           <div className="bench__results">
             <table className="grid">
@@ -96,7 +128,9 @@ export default function Compare() {
                   {SCENARIOS.map(s => (
                     <th key={s.key}>
                       {s.label}
-                      <small>{HEADLINE[s.key].label} ({HEADLINE[s.key].unit})</small>
+                      <small>
+                        {HEADLINE[s.key].label} ({HEADLINE[s.key].unit})
+                      </small>
                     </th>
                   ))}
                 </tr>
@@ -109,13 +143,21 @@ export default function Compare() {
                     {SCENARIOS.map(s => {
                       const row = byScenario[s.key].find(r => r.engine === key)
                       const best = bestFor(byScenario[s.key], HEADLINE[s.key])
-                      const value = row && !row.unsupported && !row.failed && row.metrics
-                        ? row.metrics[HEADLINE[s.key].metric]
-                        : null
+                      const value =
+                        row && !row.unsupported && !row.failed && row.metrics
+                          ? row.metrics[HEADLINE[s.key].metric]
+                          : null
                       const isBest = value != null && value === best
                       return (
-                        <td key={s.key} className={isBest ? 'is-best' : row && row.failed ? 'is-failed' : ''}>
-                          {row && row.failed ? 'failed' : row && row.unsupported ? 'n/a' : format(value)}
+                        <td
+                          key={s.key}
+                          className={isBest ? 'is-best' : row && row.failed ? 'is-failed' : ''}
+                        >
+                          {row && row.failed
+                            ? 'failed'
+                            : row && row.unsupported
+                              ? 'n/a'
+                              : format(value)}
                         </td>
                       )
                     })}
@@ -141,7 +183,9 @@ export default function Compare() {
             <thead>
               <tr>
                 <th>Capability</th>
-                {ENGINE_KEYS.map(key => <th key={key}>{ENGINES[key].name}</th>)}
+                {ENGINE_KEYS.map(key => (
+                  <th key={key}>{ENGINES[key].name}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
@@ -151,7 +195,9 @@ export default function Compare() {
                   {ENGINE_KEYS.map(key => {
                     const value = ENGINES[key].caps[capKey]
                     return (
-                      <td key={key} className={value ? '' : 'is-na'}>{value || 'none'}</td>
+                      <td key={key} className={value ? '' : 'is-na'}>
+                        {value || 'none'}
+                      </td>
                     )
                   })}
                 </tr>

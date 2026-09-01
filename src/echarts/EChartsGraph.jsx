@@ -124,7 +124,15 @@ const RICH = {
   name: { fontFamily: 'Inter Tight, sans-serif', fontSize: 11, color: '#9AA2B1' },
   // The "+N links hidden" badge. ECharts graph nodes have no overlay or badge
   // hook of any kind, so it has to live inside the label as a rich-text run.
-  hid: { fontFamily: MONO, fontSize: 10, fontWeight: 700, color: INK, backgroundColor: BONE, padding: [3, 5, 2, 5], borderRadius: 9 }
+  hid: {
+    fontFamily: MONO,
+    fontSize: 10,
+    fontWeight: 700,
+    color: INK,
+    backgroundColor: BONE,
+    padding: [3, 5, 2, 5],
+    borderRadius: 9
+  }
 }
 
 // A stable identity, so a caller that ships no overrides does not invalidate the
@@ -139,7 +147,24 @@ const EDGE_LABEL = {
   padding: [2, 3, 1, 3]
 }
 
-function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusVersion, shapeSet, edgeStyle, edgeOverrides = NO_OVERRIDES, renderer = 'canvas', onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport }) {
+function EChartsGraph({
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  shapeSet,
+  edgeStyle,
+  edgeOverrides = NO_OVERRIDES,
+  renderer = 'canvas',
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
+}) {
   const frame = useRef(null)
   const chart = useRef(null)
   const layer = useRef(null)
@@ -233,7 +258,9 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
     if (onViewport) {
       onViewport({
         zoomBy: factor => {
-          const box = frame.current ? frame.current.getBoundingClientRect() : { width: 0, height: 0 }
+          const box = frame.current
+            ? frame.current.getBoundingClientRect()
+            : { width: 0, height: 0 }
           instance.dispatchAction({
             type: 'graphRoam',
             seriesId: 'graph',
@@ -242,7 +269,8 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
             originY: box.height / 2
           })
         },
-        panBy: (dx, dy) => instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', dx, dy }),
+        panBy: (dx, dy) =>
+          instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', dx, dy }),
         // No fit action exists — the series fits its own bounding box whenever
         // an option is pushed without a roam transform, and there is no way to
         // ask for that without a `setOption`. Resetting the roam is the closest
@@ -346,7 +374,8 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
             opacity: pending ? 0.55 : 1
           },
           label: {
-            formatter: `{tag|${meta.tag}}{name|${node.name}}` + (behind > 0 ? `  {hid|+${behind}}` : '')
+            formatter:
+              `{tag|${meta.tag}}{name|${node.name}}` + (behind > 0 ? `  {hid|+${behind}}` : '')
           }
         }
       })
@@ -355,7 +384,13 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
       // three links have endpoints to attach to. `symbolSize: 0` is what makes
       // them invisible, and carrying no `id` is what makes them unclickable.
       pivots.forEach(pivot => {
-        nodes.push({ name: pivot.id, x: pivot.x, y: pivot.y, symbolSize: 0, label: { show: false } })
+        nodes.push({
+          name: pivot.id,
+          x: pivot.x,
+          y: pivot.y,
+          symbolSize: 0,
+          label: { show: false }
+        })
       })
 
       return nodes
@@ -379,51 +414,56 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
     // preset nor a click is allowed to overwrite it.
     const levelOf = new Map(graph.nodes.map(node => [node.id, node.level]))
 
-    const buildLinks = () => links.map(link => {
-      // The override key drops the `#out` / `#over` / `#back` suffix STEP 3 adds,
-      // so clicking any one leg of a loop restyles all three. Without this a
-      // loop would come apart into a dotted arc and two solid stubs.
-      const edgeId = link.id.split('#')[0]
+    const buildLinks = () =>
+      links.map(link => {
+        // The override key drops the `#out` / `#over` / `#back` suffix STEP 3 adds,
+        // so clicking any one leg of a loop restyles all three. Without this a
+        // loop would come apart into a dotted arc and two solid stubs.
+        const edgeId = link.id.split('#')[0]
 
-      const chosen = edgeOverrides.get(edgeId) || rule.styleOf(link, {
-        // A loop's middle leg leaves a pivot, not a node, so there is no hop
-        // distance to report. -1 rather than 0, which would read as "the root".
-        level: levelOf.has(link.from) ? levelOf.get(link.from) : -1
+        const chosen =
+          edgeOverrides.get(edgeId) ||
+          rule.styleOf(link, {
+            // A loop's middle leg leaves a pivot, not a node, so there is no hop
+            // distance to report. -1 rather than 0, which would read as "the root".
+            level: levelOf.has(link.from) ? levelOf.get(link.from) : -1
+          })
+        const style = EDGE_STYLES[chosen] || EDGE_STYLES.arrow
+
+        // `arrow` is set by STEP 3 — the two invisible legs of a loop carry no
+        // head, only the segment landing back on the node does. Copied, not
+        // shared: handing the same array instance to every link means one
+        // in-place edit anywhere downstream restyles the whole graph.
+        let ends = link.arrow ? style.ends.slice() : ['none', 'none']
+        // A loop with no arrowhead is unreadable — it becomes an arc floating over
+        // a node with nothing to say which end it returns to. So a headless style
+        // keeps its tail but borrows a head for the closing segment only.
+        if (link.loop && link.arrow && ends[1] === 'none') ends[1] = 'arrow'
+
+        return {
+          source: link.from,
+          target: link.to,
+          // Not `id`: ECharts uses a data item's `id` to match items across a
+          // `setOption`, and three loop legs sharing one would collapse them.
+          edgeId,
+          symbol: ends,
+          // Per link, not per series — the series-level `edgeSymbolSize` below is
+          // only a fallback now. A style with a `circle` tail needs a non-zero
+          // tail size, and a style without one must not reserve space for it.
+          symbolSize: [ends[0] === 'none' ? 0 : 5, 9],
+          lineStyle: Object.assign({}, style.line, {
+            color: link.loop ? LOOP : link.synthetic ? SYNTH : EDGE,
+            // A straight run between the loop pivots would read as a triangle; a
+            // little curvature on each of the three makes it read as a loop. The
+            // loop's own bow wins over the style's — a style is about ordinary
+            // relationships and would flatten the loop back into a triangle.
+            curveness: link.loop ? 0.16 : style.curveness
+          }),
+          label: link.label
+            ? Object.assign({ show: true, formatter: link.label }, EDGE_LABEL)
+            : { show: false }
+        }
       })
-      const style = EDGE_STYLES[chosen] || EDGE_STYLES.arrow
-
-      // `arrow` is set by STEP 3 — the two invisible legs of a loop carry no
-      // head, only the segment landing back on the node does. Copied, not
-      // shared: handing the same array instance to every link means one
-      // in-place edit anywhere downstream restyles the whole graph.
-      let ends = link.arrow ? style.ends.slice() : ['none', 'none']
-      // A loop with no arrowhead is unreadable — it becomes an arc floating over
-      // a node with nothing to say which end it returns to. So a headless style
-      // keeps its tail but borrows a head for the closing segment only.
-      if (link.loop && link.arrow && ends[1] === 'none') ends[1] = 'arrow'
-
-      return {
-        source: link.from,
-        target: link.to,
-        // Not `id`: ECharts uses a data item's `id` to match items across a
-        // `setOption`, and three loop legs sharing one would collapse them.
-        edgeId,
-        symbol: ends,
-        // Per link, not per series — the series-level `edgeSymbolSize` below is
-        // only a fallback now. A style with a `circle` tail needs a non-zero
-        // tail size, and a style without one must not reserve space for it.
-        symbolSize: [ends[0] === 'none' ? 0 : 5, 9],
-        lineStyle: Object.assign({}, style.line, {
-          color: link.loop ? LOOP : link.synthetic ? SYNTH : EDGE,
-          // A straight run between the loop pivots would read as a triangle; a
-          // little curvature on each of the three makes it read as a loop. The
-          // loop's own bow wins over the style's — a style is about ordinary
-          // relationships and would flatten the loop back into a triangle.
-          curveness: link.loop ? 0.16 : style.curveness
-        }),
-        label: link.label ? Object.assign({ show: true, formatter: link.label }, EDGE_LABEL) : { show: false }
-      }
-    })
 
     // ── STEP 6 · ASSEMBLE THE OPTION ──────────────────────────────────────
     // One plain object describing the whole chart. Nothing has been drawn yet,
@@ -547,7 +587,18 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
     place.current()
 
     if (onStat) onStat(Math.round(performance.now() - started))
-  }, [graph, positions, hidden, statusVersion, isExpanded, isPending, shapes, rule, edgeOverrides, onStat])
+  }, [
+    graph,
+    positions,
+    hidden,
+    statusVersion,
+    isExpanded,
+    isPending,
+    shapes,
+    rule,
+    edgeOverrides,
+    onStat
+  ])
 
   return (
     <React.Fragment>
@@ -557,9 +608,11 @@ function EChartsGraph({ graph, positions, hidden, isExpanded, isPending, statusV
       {/* Decoration only — `pointer-events: none` in the stylesheet keeps these
           from eating the clicks meant for the node underneath. */}
       <div className="rings" ref={layer} aria-hidden="true">
-        {graph.nodes.filter(node => node.flagged).map(node => (
-          <i key={node.id} className="ring" data-node={node.id} />
-        ))}
+        {graph.nodes
+          .filter(node => node.flagged)
+          .map(node => (
+            <i key={node.id} className="ring" data-node={node.id} />
+          ))}
       </div>
     </React.Fragment>
   )

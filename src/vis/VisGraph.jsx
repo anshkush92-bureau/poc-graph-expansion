@@ -58,7 +58,14 @@ const nodeFor = (node, positions, hidden, explored, pending) => {
       hover: { background: mix(meta.color, BONE, 0.4), border: BONE }
     },
     borderWidth: node.flagged ? 3 : 1,
-    font: { color: BONE, size: 11, face: 'Inter Tight', strokeWidth: 3, strokeColor: INK, vadjust: 2 }
+    font: {
+      color: BONE,
+      size: 11,
+      face: 'Inter Tight',
+      strokeWidth: 3,
+      strokeColor: INK,
+      vadjust: 2
+    }
   }
 }
 
@@ -69,7 +76,14 @@ const edgeFor = edge => ({
   label: edge.label || '',
   arrows: { to: { enabled: true, scaleFactor: 0.5 } },
   color: { color: isSelfEdge(edge) ? LOOP : EDGE, highlight: BONE, opacity: 0.9 },
-  font: { color: '#6B7385', size: 9, face: 'Inter Tight', strokeWidth: 3, strokeColor: INK, align: 'top' },
+  font: {
+    color: '#6B7385',
+    size: 9,
+    face: 'Inter Tight',
+    strokeWidth: 3,
+    strokeColor: INK,
+    align: 'top'
+  },
   // Loops arch above the node, matching where the other engines put theirs, so
   // a self-edge reads the same whichever pane you are looking at.
   selfReference: { size: 22, angle: Math.PI / 2, renderBehindTheNode: false }
@@ -93,8 +107,18 @@ const OPTIONS = {
 }
 
 function VisGraph({
-  graph, positions, hidden, isExpanded, isPending, statusVersion,
-  onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
 }) {
   const frame = useRef(null)
   const net = useRef(null)
@@ -119,7 +143,9 @@ function VisGraph({
     edges.current = new DataSet([])
     const instance = new Network(el, { nodes: nodes.current, edges: edges.current }, OPTIONS)
 
-    const track = event => { pointer.current = { x: event.clientX, y: event.clientY } }
+    const track = event => {
+      pointer.current = { x: event.clientX, y: event.clientY }
+    }
     el.addEventListener('mousemove', track)
 
     instance.on('click', params => {
@@ -140,11 +166,15 @@ function VisGraph({
     // of pixels into world units first, since `position` is in graph space.
     if (onViewport) {
       onViewport({
-        zoomBy: factor => instance.moveTo({ scale: instance.getScale() * factor, animation: false }),
+        zoomBy: factor =>
+          instance.moveTo({ scale: instance.getScale() * factor, animation: false }),
         panBy: (dx, dy) => {
           const scale = instance.getScale() || 1
           const at = instance.getViewPosition()
-          instance.moveTo({ position: { x: at.x + dx / scale, y: at.y + dy / scale }, animation: false })
+          instance.moveTo({
+            position: { x: at.x + dx / scale, y: at.y + dy / scale },
+            animation: false
+          })
         },
         fit: () => refit.current()
       })
@@ -197,9 +227,11 @@ function VisGraph({
     if (goneNodes.length) nodes.current.remove(goneNodes)
     if (goneEdges.length) edges.current.remove(goneEdges)
 
-    nodes.current.update(graph.nodes
-      .filter(n => positions[n.id])
-      .map(n => nodeFor(n, positions, hidden, isExpanded(n.id), isPending(n.id))))
+    nodes.current.update(
+      graph.nodes
+        .filter(n => positions[n.id])
+        .map(n => nodeFor(n, positions, hidden, isExpanded(n.id), isPending(n.id)))
+    )
     edges.current.update(graph.edges.map(edgeFor))
 
     if (fitted.current !== graph.nodes.length) {

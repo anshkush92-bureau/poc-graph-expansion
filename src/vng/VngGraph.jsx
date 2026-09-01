@@ -107,8 +107,18 @@ const CONFIGS = {
 }
 
 function VngGraph({
-  graph, positions, hidden, isExpanded, isPending, statusVersion,
-  onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
 }) {
   const frame = useRef(null)
   // The Vue side: the app, the reactive store it renders, and a ref to the
@@ -144,28 +154,31 @@ function VngGraph({
     let panZoom = null
     const configs = Object.assign({}, CONFIGS, {
       view: Object.assign({}, CONFIGS.view, {
-        onSvgPanZoomInitialized: made => { panZoom = made }
+        onSvgPanZoomInitialized: made => {
+          panZoom = made
+        }
       })
     })
 
     const app = createApp({
-      render: () => h(VNetworkGraph, {
-        ref: graphRef,
-        nodes: state.nodes,
-        edges: state.edges,
-        layouts: state.layouts,
-        configs,
-        // Vue event names containing a colon do not camel-case, so the prop key
-        // is the handler name spelled out. `@node:click` in a template is
-        // `'onNode:click'` here.
-        'onNode:click': ({ node, event }) =>
-          handlers.current.onNodeClick(node, { x: event.clientX, y: event.clientY }),
-        'onNode:pointerover': ({ node, event }) =>
-          handlers.current.onNodeHover(node, { x: event.clientX, y: event.clientY }),
-        'onNode:pointerout': () => handlers.current.onNodeHover(null, null),
-        'onEdge:click': ({ edge }) => handlers.current.onEdgeClick(edge),
-        'onView:click': () => handlers.current.onBackgroundClick()
-      })
+      render: () =>
+        h(VNetworkGraph, {
+          ref: graphRef,
+          nodes: state.nodes,
+          edges: state.edges,
+          layouts: state.layouts,
+          configs,
+          // Vue event names containing a colon do not camel-case, so the prop key
+          // is the handler name spelled out. `@node:click` in a template is
+          // `'onNode:click'` here.
+          'onNode:click': ({ node, event }) =>
+            handlers.current.onNodeClick(node, { x: event.clientX, y: event.clientY }),
+          'onNode:pointerover': ({ node, event }) =>
+            handlers.current.onNodeHover(node, { x: event.clientX, y: event.clientY }),
+          'onNode:pointerout': () => handlers.current.onNodeHover(null, null),
+          'onEdge:click': ({ edge }) => handlers.current.onEdgeClick(edge),
+          'onView:click': () => handlers.current.onBackgroundClick()
+        })
     })
     app.use(VNetworkGraphPlugin)
     app.mount(frame.current)
@@ -176,9 +189,15 @@ function VngGraph({
 
     if (onViewport) {
       onViewport({
-        zoomBy: factor => { if (panZoom) panZoom.zoomBy(factor) },
-        panBy: (dx, dy) => { if (panZoom) panZoom.panBy({ x: dx, y: dy }) },
-        fit: () => { if (graphRef.value) graphRef.value.fitToContents() }
+        zoomBy: factor => {
+          if (panZoom) panZoom.zoomBy(factor)
+        },
+        panBy: (dx, dy) => {
+          if (panZoom) panZoom.panBy({ x: dx, y: dy })
+        },
+        fit: () => {
+          if (graphRef.value) graphRef.value.fitToContents()
+        }
       })
     }
 
@@ -223,7 +242,10 @@ function VngGraph({
       nodes[node.id] = {
         name: `${meta.tag} ${node.name}` + (behind > 0 ? `  +${behind}` : ''),
         size: node.level === 0 ? 19 : node.flagged ? 14 : 11,
-        color: nodeColor(meta.color, { explored: isExpanded(node.id), pending: isPending(node.id) }),
+        color: nodeColor(meta.color, {
+          explored: isExpanded(node.id),
+          pending: isPending(node.id)
+        }),
         hoverColor: mix(meta.color, BONE, 0.4),
         strokeWidth: node.flagged ? 3 : 1,
         strokeColor: node.flagged ? FLARE : mix(meta.color, INK, 0.4)
@@ -266,10 +288,9 @@ function VngGraph({
       {refused > 0 && (
         <p className="refusal">
           <b>{refused.toLocaleString()} nodes</b>
-          v-network-graph draws one Vue component per node and per edge in SVG.
-          Past ~{CEILING} it blocks the main thread for seconds, and by 500 the
-          tab stops responding — so this pane declines rather than freezing the
-          page. That ceiling is the result for this engine.
+          v-network-graph draws one Vue component per node and per edge in SVG. Past ~{CEILING} it
+          blocks the main thread for seconds, and by 500 the tab stops responding — so this pane
+          declines rather than freezing the page. That ceiling is the result for this engine.
         </p>
       )}
     </React.Fragment>

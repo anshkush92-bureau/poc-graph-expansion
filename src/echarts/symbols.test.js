@@ -9,12 +9,17 @@ import { ENTITY, ROOT } from '../graph/data.js'
 
 // One node per entity type, at every depth the layout can reach, flagged and
 // not — between them these cover every branch in every `shapeOf`.
-const NODES = Object.keys(ENTITY).flatMap(type =>
-  [0, 1, 2, 3, 4, 5, 9].flatMap(level =>
-    [{ risk: 10, flagged: false }, { risk: 70, flagged: false }, { risk: 95, flagged: true }]
-      .map(risk => Object.assign({ id: `${type}-${level}`, type, level, name: type }, risk))
+const NODES = Object.keys(ENTITY)
+  .flatMap(type =>
+    [0, 1, 2, 3, 4, 5, 9].flatMap(level =>
+      [
+        { risk: 10, flagged: false },
+        { risk: 70, flagged: false },
+        { risk: 95, flagged: true }
+      ].map(risk => Object.assign({ id: `${type}-${level}`, type, level, name: type }, risk))
+    )
   )
-).concat(ROOT, { id: 'x', type: 'nonsense', level: 1, risk: 0, flagged: false })
+  .concat(ROOT, { id: 'x', type: 'nonsense', level: 1, risk: 0, flagged: false })
 
 test('every shape a set can return exists in SHAPE', () => {
   Object.keys(SHAPE_SETS).forEach(setKey => {
@@ -30,10 +35,11 @@ test('every shape a set can return exists in SHAPE', () => {
 // Same hazard on the edge side: the renderer does `EDGE_STYLES[chosen]`, and a
 // rule returning a key that isn't there falls back silently — every edge looks
 // solid and nobody can tell the rule is broken.
-const LINKS = ['SHARED_BY', 'SEEN_ON', 'PAIRED_WITH', 'REPEAT_ATTEMPT', 'RELATED_TO', ''].flatMap(label =>
-  [{}, { loop: true }, { synthetic: true }].map(kind =>
-    Object.assign({ id: 'a->b', from: 'a', to: 'b', label, arrow: true }, kind)
-  )
+const LINKS = ['SHARED_BY', 'SEEN_ON', 'PAIRED_WITH', 'REPEAT_ATTEMPT', 'RELATED_TO', ''].flatMap(
+  label =>
+    [{}, { loop: true }, { synthetic: true }].map(kind =>
+      Object.assign({ id: 'a->b', from: 'a', to: 'b', label, arrow: true }, kind)
+    )
 )
 
 test('every style a rule can return exists in EDGE_STYLES', () => {

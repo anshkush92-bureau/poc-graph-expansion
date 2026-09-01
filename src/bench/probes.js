@@ -160,7 +160,7 @@ export function watchLongTasks() {
  * is a leak signal rather than a snapshot.
  */
 export const heapMB = () =>
-  (performance.memory ? round(performance.memory.usedJSHeapSize / (1024 * 1024), 2) : null)
+  performance.memory ? round(performance.memory.usedJSHeapSize / (1024 * 1024), 2) : null
 
 /**
  * Resolves once the change you just made has actually been painted.

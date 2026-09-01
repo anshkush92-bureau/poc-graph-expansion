@@ -1,5 +1,10 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { ArrowOverlay, BezierConnector, StateMachineConnector, newInstance } from '@jsplumb/browser-ui'
+import {
+  ArrowOverlay,
+  BezierConnector,
+  StateMachineConnector,
+  newInstance
+} from '@jsplumb/browser-ui'
 import { ENTITY } from '../graph/data.js'
 import { isSelfEdge } from '../graph/ops.js'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.js'
@@ -47,16 +52,27 @@ const MIN_SPAN = 700
 
 const sizeOf = node => (node.level === 0 ? 38 : node.flagged ? 28 : 22)
 
-const connectorFor = edge => (isSelfEdge(edge)
-  // A bezier between an element and itself has no direction to bow in and
-  // renders as a dot under the node. The state-machine connector is jsPlumb's
-  // answer to exactly this case and draws a proper loop.
-  ? { type: StateMachineConnector.type, options: { curviness: 12, loopbackRadius: 26 } }
-  : { type: BezierConnector.type, options: { curviness: 28 } })
+const connectorFor = edge =>
+  isSelfEdge(edge)
+    ? // A bezier between an element and itself has no direction to bow in and
+      // renders as a dot under the node. The state-machine connector is jsPlumb's
+      // answer to exactly this case and draws a proper loop.
+      { type: StateMachineConnector.type, options: { curviness: 12, loopbackRadius: 26 } }
+    : { type: BezierConnector.type, options: { curviness: 28 } }
 
 function JsPlumbGraph({
-  graph, positions, hidden, isExpanded, isPending, statusVersion,
-  onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
 }) {
   const frame = useRef(null)
   const surface = useRef(null)
@@ -88,10 +104,14 @@ function JsPlumbGraph({
     })
 
     instance.bind('connection:click', connection =>
-      handlers.current.onEdgeClick(connection.getData().edgeId))
+      handlers.current.onEdgeClick(connection.getData().edgeId)
+    )
 
     plumb.current = instance
-    return () => { instance.destroy(); plumb.current = null }
+    return () => {
+      instance.destroy()
+      plumb.current = null
+    }
   }, [])
 
   /**
@@ -181,16 +201,19 @@ function JsPlumbGraph({
   useEffect(() => {
     if (!onViewport) return undefined
     onViewport({
-      zoomBy: factor => setView(v => {
-        const box = frame.current ? frame.current.getBoundingClientRect() : { width: 0, height: 0 }
-        const cx = box.width / 2
-        const cy = box.height / 2
-        return {
-          scale: v.scale * factor,
-          x: cx - (cx - v.x) * factor,
-          y: cy - (cy - v.y) * factor
-        }
-      }),
+      zoomBy: factor =>
+        setView(v => {
+          const box = frame.current
+            ? frame.current.getBoundingClientRect()
+            : { width: 0, height: 0 }
+          const cx = box.width / 2
+          const cy = box.height / 2
+          return {
+            scale: v.scale * factor,
+            x: cx - (cx - v.x) * factor,
+            y: cy - (cy - v.y) * factor
+          }
+        }),
       panBy: (dx, dy) => setView(v => Object.assign({}, v, { x: v.x + dx, y: v.y + dy })),
       // The fit *is* the layout effect above, and the only way to ask for it is
       // to tell it the box changed.
@@ -208,7 +231,9 @@ function JsPlumbGraph({
     <div
       className="canvas plumb"
       ref={frame}
-      onClick={event => { if (event.target === frame.current) handlers.current.onBackgroundClick() }}
+      onClick={event => {
+        if (event.target === frame.current) handlers.current.onBackgroundClick()
+      }}
     >
       <div
         className="plumb__surface"
@@ -231,12 +256,17 @@ function JsPlumbGraph({
                 top: at.y - size / 2,
                 width: size,
                 height: size,
-                background: nodeColor(meta.color, { explored: isExpanded(node.id), pending: isPending(node.id) }),
+                background: nodeColor(meta.color, {
+                  explored: isExpanded(node.id),
+                  pending: isPending(node.id)
+                }),
                 borderColor: node.flagged ? FLARE : mix(meta.color, INK, 0.4),
                 opacity: isPending(node.id) ? 0.55 : 1
               }}
               onClick={() => handlers.current.onNodeClick(node.id)}
-              onMouseEnter={e => handlers.current.onNodeHover(node.id, { x: e.clientX, y: e.clientY })}
+              onMouseEnter={e =>
+                handlers.current.onNodeHover(node.id, { x: e.clientX, y: e.clientY })
+              }
               onMouseLeave={() => handlers.current.onNodeHover(null, null)}
             >
               {/* Counter-scaled so captions stay legible as the fit zooms out.
@@ -244,8 +274,12 @@ function JsPlumbGraph({
                   engine does better than every canvas pane — but it also means
                   the browser lays out one element per node, and at a few
                   thousand nodes that is the ceiling. */}
-              <span className="plumb__label" style={{ transform: `translateX(-50%) scale(${1 / view.scale})` }}>
-                {meta.tag} {node.name}{behind > 0 ? `  +${behind}` : ''}
+              <span
+                className="plumb__label"
+                style={{ transform: `translateX(-50%) scale(${1 / view.scale})` }}
+              >
+                {meta.tag} {node.name}
+                {behind > 0 ? `  +${behind}` : ''}
               </span>
             </div>
           )

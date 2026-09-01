@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ROOT, degreeOf, fetchNeighbors, selfEdgeFor } from './data.js'
-import { NODE_SPACING, hiddenCount, hiddenCounts, isSelfEdge, layoutRadial, mergeGraph, neighborsOf, pathToRoot, removeNode } from './ops.js'
+import {
+  NODE_SPACING,
+  hiddenCount,
+  hiddenCounts,
+  isSelfEdge,
+  layoutRadial,
+  mergeGraph,
+  neighborsOf,
+  pathToRoot,
+  removeNode
+} from './ops.js'
 import { withLoops } from './loops.js'
 
 const radius = p => Math.hypot(p.x, p.y)
@@ -20,7 +30,10 @@ const AT = { a: { x: 0, y: 0 }, b: { x: 400, y: 0 } }
 test('an ordinary edge passes through as one arrowed link, with no pivots', () => {
   const { links, pivots } = withLoops({ nodes: LOOP_GRAPH.nodes, edges: [LOOP_GRAPH.edges[0]] }, AT)
   assert.equal(pivots.length, 0)
-  assert.deepEqual(links.map(l => [l.from, l.to, l.arrow]), [['a', 'b', true]])
+  assert.deepEqual(
+    links.map(l => [l.from, l.to, l.arrow]),
+    [['a', 'b', true]]
+  )
 })
 
 test('a self-edge becomes a three-segment loop that starts and ends on its node', () => {
@@ -31,7 +44,11 @@ test('a self-edge becomes a three-segment loop that starts and ends on its node'
   assert.equal(pivots.length, 2)
   assert.equal(loop[0].from, 'b', 'leaves the node')
   assert.equal(loop[2].to, 'b', 'returns to the same node')
-  assert.deepEqual(loop.map(l => l.from).slice(1), loop.map(l => l.to).slice(0, 2), 'segments join end to end')
+  assert.deepEqual(
+    loop.map(l => l.from).slice(1),
+    loop.map(l => l.to).slice(0, 2),
+    'segments join end to end'
+  )
 
   // Every endpoint that is not the node itself must be a pivot we emitted, or
   // the renderers draw a link to a node that does not exist.
@@ -43,8 +60,14 @@ test('a self-edge becomes a three-segment loop that starts and ends on its node'
 
 test('only the returning segment is arrowed, and only the middle one is labelled', () => {
   const loop = withLoops(LOOP_GRAPH, AT).links.filter(l => l.loop)
-  assert.deepEqual(loop.map(l => !!l.arrow), [false, false, true])
-  assert.deepEqual(loop.map(l => l.label), ['', 'REPEAT_ATTEMPT', ''])
+  assert.deepEqual(
+    loop.map(l => !!l.arrow),
+    [false, false, true]
+  )
+  assert.deepEqual(
+    loop.map(l => l.label),
+    ['', 'REPEAT_ATTEMPT', '']
+  )
 })
 
 test('a loop stays inside the elbow room the layout guarantees each node', () => {
@@ -70,7 +93,11 @@ test('link and pivot ids stay unique across several loops', () => {
 test('a self-edge on an unpositioned node is dropped, not drawn to the origin', () => {
   const { links, pivots } = withLoops(LOOP_GRAPH, { a: AT.a })
   assert.equal(pivots.length, 0)
-  assert.deepEqual(links.map(l => l.id), ['a->b'], 'only the positioned edge survives')
+  assert.deepEqual(
+    links.map(l => l.id),
+    ['a->b'],
+    'only the positioned edge survives'
+  )
 })
 
 /** Expands every node that still has neighbours, `rounds` times over. */
@@ -99,7 +126,10 @@ test('expansion is recursive — a child expands to its own level', async () => 
   const l1 = mergeGraph(empty, await fetchNeighbors(ROOT))
   const child = l1.nodes.find(n => n.level === 1)
   const l2 = mergeGraph(l1, await fetchNeighbors(child))
-  assert.ok(l2.nodes.some(n => n.level === 2), 'level 2 reached')
+  assert.ok(
+    l2.nodes.some(n => n.level === 2),
+    'level 2 reached'
+  )
   assert.ok(l2.nodes.length > l1.nodes.length)
 })
 
@@ -111,7 +141,10 @@ test('delete removes the node and every edge touching it, keeping descendants', 
   assert.ok(grandchildren > 0)
 
   const after = removeNode(l2, child.id)
-  assert.equal(after.nodes.find(n => n.id === child.id), undefined)
+  assert.equal(
+    after.nodes.find(n => n.id === child.id),
+    undefined
+  )
   assert.equal(after.edges.filter(e => e.source === child.id || e.target === child.id).length, 0)
   assert.equal(after.nodes.filter(n => n.level === 2).length, grandchildren)
 })
@@ -134,7 +167,10 @@ test('pathToRoot returns the chain from the root down', async () => {
 test('neighborsOf reports direction', async () => {
   const l1 = mergeGraph(empty, await fetchNeighbors(ROOT))
   const child = l1.nodes.find(n => n.level === 1)
-  assert.deepEqual(neighborsOf(l1, child.id).map(n => n.direction), ['in'])
+  assert.deepEqual(
+    neighborsOf(l1, child.id).map(n => n.direction),
+    ['in']
+  )
   assert.ok(neighborsOf(l1, ROOT.id).every(n => n.direction === 'out'))
 })
 
@@ -158,7 +194,10 @@ test('a self-edge does not cost its node its place as a layout root', () => {
 })
 
 test('a self-edge does not truncate pathToRoot', () => {
-  assert.deepEqual(pathToRoot(looped, child.id).map(n => n.id), [ROOT.id, child.id])
+  assert.deepEqual(
+    pathToRoot(looped, child.id).map(n => n.id),
+    [ROOT.id, child.id]
+  )
 })
 
 test('a self-edge does not count as a mapped onward link', () => {
@@ -188,9 +227,14 @@ test('layoutRadial places every node, root centred, children on outer rings', as
   const pos = layoutRadial(l2)
   assert.equal(Object.keys(pos).length, l2.nodes.length, 'no node left unpositioned')
   assert.equal(radius(pos[ROOT.id]), 0, 'root at the centre')
-  l2.edges.filter(e => !isSelfEdge(e)).forEach(e => {
-    assert.ok(radius(pos[e.target]) > radius(pos[e.source]) + 1, `${e.target} sits outside ${e.source}`)
-  })
+  l2.edges
+    .filter(e => !isSelfEdge(e))
+    .forEach(e => {
+      assert.ok(
+        radius(pos[e.target]) > radius(pos[e.source]) + 1,
+        `${e.target} sits outside ${e.source}`
+      )
+    })
 })
 
 // --- incremental layout: the whole point is that an expansion is an append ---
@@ -237,8 +281,14 @@ test('growing incrementally stays overlap-free', async () => {
   let pair = null
   for (let i = 0; i < g.nodes.length; i++) {
     for (let j = i + 1; j < g.nodes.length; j++) {
-      const d = Math.hypot(pos[g.nodes[i].id].x - pos[g.nodes[j].id].x, pos[g.nodes[i].id].y - pos[g.nodes[j].id].y)
-      if (d < worst) { worst = d; pair = [g.nodes[i].id, g.nodes[j].id] }
+      const d = Math.hypot(
+        pos[g.nodes[i].id].x - pos[g.nodes[j].id].x,
+        pos[g.nodes[i].id].y - pos[g.nodes[j].id].y
+      )
+      if (d < worst) {
+        worst = d
+        pair = [g.nodes[i].id, g.nodes[j].id]
+      }
     }
   }
   assert.ok(worst > 76, `closest pair ${pair} was ${worst.toFixed(1)}px apart, discs are 76px`)
@@ -268,7 +318,10 @@ test('layoutRadial stays compact and overlap-free as the graph grows', async () 
       const a = pos[big.nodes[i].id]
       const b = pos[big.nodes[j].id]
       const d = Math.hypot(a.x - b.x, a.y - b.y)
-      if (d < worst) { worst = d; pair = [big.nodes[i].id, big.nodes[j].id] }
+      if (d < worst) {
+        worst = d
+        pair = [big.nodes[i].id, big.nodes[j].id]
+      }
     }
   }
   assert.ok(worst > 76, `closest pair ${pair} was ${worst.toFixed(1)}px apart, discs are 76px`)
@@ -278,11 +331,20 @@ test('layoutRadial stays compact and overlap-free as the graph grows', async () 
   // radius enormously and the graph rendered as a single sweeping arc.
   const ceiling = (NODE_SPACING * big.nodes.length) / (2 * Math.PI)
   const outermost = Math.max(...big.nodes.map(n => radius(pos[n.id])))
-  assert.ok(outermost <= ceiling, `outer ring ${outermost.toFixed(0)}px exceeds ${ceiling.toFixed(0)}px for ${big.nodes.length} nodes`)
+  assert.ok(
+    outermost <= ceiling,
+    `outer ring ${outermost.toFixed(0)}px exceeds ${ceiling.toFixed(0)}px for ${big.nodes.length} nodes`
+  )
 
   // The occupied angles must cover most of the circle, not one narrow arc.
-  const filled = new Set(big.nodes
-    .filter(n => radius(pos[n.id]) > 1)
-    .map(n => Math.floor(((Math.atan2(pos[n.id].y, pos[n.id].x) + Math.PI * 3) % (Math.PI * 2)) / (Math.PI / 6))))
+  const filled = new Set(
+    big.nodes
+      .filter(n => radius(pos[n.id]) > 1)
+      .map(n =>
+        Math.floor(
+          ((Math.atan2(pos[n.id].y, pos[n.id].x) + Math.PI * 3) % (Math.PI * 2)) / (Math.PI / 6)
+        )
+      )
+  )
   assert.ok(filled.size >= 9, `nodes only occupy ${filled.size}/12 sectors of the circle`)
 })

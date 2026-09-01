@@ -32,13 +32,20 @@ const branchingFor = count => Math.max(2, Math.ceil(Math.pow(count, 0.25)))
 
 function nameFor(type, seq) {
   switch (type) {
-    case 'account': return `acct_${seq}`
-    case 'device': return ['iPhone 14', 'Pixel 7', 'Win/Chrome', 'macOS/Safari'][seq % 4]
-    case 'phone': return `+91 ${seq}${(seq * 7) % 100000}`
-    case 'email': return `user${seq}@${['proton.me', 'gmail.com', 'mailinator.com'][seq % 3]}`
-    case 'ip': return `10.${seq % 255}.${(seq * 3) % 255}.${(seq * 11) % 255}`
-    case 'card': return `**** ${String(seq).padStart(4, '0')}`
-    default: return String(seq)
+    case 'account':
+      return `acct_${seq}`
+    case 'device':
+      return ['iPhone 14', 'Pixel 7', 'Win/Chrome', 'macOS/Safari'][seq % 4]
+    case 'phone':
+      return `+91 ${seq}${(seq * 7) % 100000}`
+    case 'email':
+      return `user${seq}@${['proton.me', 'gmail.com', 'mailinator.com'][seq % 3]}`
+    case 'ip':
+      return `10.${seq % 255}.${(seq * 3) % 255}.${(seq * 11) % 255}`
+    case 'card':
+      return `**** ${String(seq).padStart(4, '0')}`
+    default:
+      return String(seq)
   }
 }
 

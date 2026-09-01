@@ -58,7 +58,7 @@ const STYLE = [
       'text-outline-color': INK,
       'text-outline-width': 2,
       'min-zoomed-font-size': 8 // Cytoscape's own LOD: stop drawing text that
-    }                           // would be unreadable rather than draw mush.
+    } // would be unreadable rather than draw mush.
   },
   {
     selector: 'edge',
@@ -100,8 +100,19 @@ const dataFor = (node, hidden, explored, pending) => {
 }
 
 function CytoscapeGraph({
-  graph, positions, hidden, isExpanded, isPending, statusVersion, renderer = 'canvas',
-  onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  renderer = 'canvas',
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
 }) {
   const frame = useRef(null)
   const cy = useRef(null)
@@ -135,7 +146,9 @@ function CytoscapeGraph({
     // a node to read the graph underneath must not expand it.
     instance.on('tap', 'node', evt => handlers.current.onNodeClick(evt.target.id()))
     instance.on('tap', 'edge', evt => handlers.current.onEdgeClick(evt.target.id()))
-    instance.on('tap', evt => { if (evt.target === instance) handlers.current.onBackgroundClick() })
+    instance.on('tap', evt => {
+      if (evt.target === instance) handlers.current.onBackgroundClick()
+    })
 
     instance.on('mouseover', 'node', evt => {
       const e = evt.originalEvent
@@ -151,10 +164,11 @@ function CytoscapeGraph({
     // test of drawing nothing.
     if (onViewport) {
       onViewport({
-        zoomBy: factor => instance.zoom({
-          level: instance.zoom() * factor,
-          renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 }
-        }),
+        zoomBy: factor =>
+          instance.zoom({
+            level: instance.zoom() * factor,
+            renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 }
+          }),
         panBy: (dx, dy) => instance.panBy({ x: dx, y: dy }),
         fit: () => refit.current()
       })
@@ -221,7 +235,12 @@ function CytoscapeGraph({
           existing.toggleClass('pending', pending)
           return
         }
-        instance.add({ group: 'nodes', data, position: { x: at.x, y: at.y }, classes: pending ? 'pending' : '' })
+        instance.add({
+          group: 'nodes',
+          data,
+          position: { x: at.x, y: at.y },
+          classes: pending ? 'pending' : ''
+        })
       })
 
       graph.edges.forEach(edge => {

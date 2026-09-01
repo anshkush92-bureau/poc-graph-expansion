@@ -6,7 +6,16 @@ import { ENTITY } from '../graph/data.js'
  * nothing more. The degree readout is the point — it says how much is still
  * hidden behind the node before you spend a click finding out.
  */
-export default function HoverCard({ node, shown, hidden, explored, at, onOpen, onHold, onRelease }) {
+export default function HoverCard({
+  node,
+  shown,
+  hidden,
+  explored,
+  at,
+  onOpen,
+  onHold,
+  onRelease
+}) {
   const meta = ENTITY[node.type]
   const total = shown + hidden
   const style = {
@@ -27,34 +36,55 @@ export default function HoverCard({ node, shown, hidden, explored, at, onOpen, o
 
       <div className="degree">
         <div className="degree__bar" style={{ '--accent': meta.color }}>
-          {total === 0
-            ? <span className="degree__none" />
-            : Array.from({ length: total }, (_, i) => (
-                <span key={i} className={i < shown ? 'degree__seg is-mapped' : 'degree__seg'} />
-              ))}
+          {total === 0 ? (
+            <span className="degree__none" />
+          ) : (
+            Array.from({ length: total }, (_, i) => (
+              <span key={i} className={i < shown ? 'degree__seg is-mapped' : 'degree__seg'} />
+            ))
+          )}
         </div>
         <p className="degree__read">
-          {total === 0
-            ? 'no onward links'
-            : <React.Fragment><b>{shown}</b> of <b>{total}</b> links mapped</React.Fragment>}
+          {total === 0 ? (
+            'no onward links'
+          ) : (
+            <React.Fragment>
+              <b>{shown}</b> of <b>{total}</b> links mapped
+            </React.Fragment>
+          )}
         </p>
       </div>
 
       <dl className="peek__stats">
-        <div><dt>Risk</dt><dd>{node.risk}</dd></div>
-        <div><dt>Events</dt><dd>{node.events}</dd></div>
-        <div><dt>Level</dt><dd>{node.level}</dd></div>
+        <div>
+          <dt>Risk</dt>
+          <dd>{node.risk}</dd>
+        </div>
+        <div>
+          <dt>Events</dt>
+          <dd>{node.events}</dd>
+        </div>
+        <div>
+          <dt>Level</dt>
+          <dd>{node.level}</dd>
+        </div>
       </dl>
 
       <div className="peek__actions">
-        <button type="button" onClick={() => onOpen('details')}>Open details</button>
-        <button type="button" onClick={() => onOpen('trace')}>Trace connections</button>
+        <button type="button" onClick={() => onOpen('details')}>
+          Open details
+        </button>
+        <button type="button" onClick={() => onOpen('trace')}>
+          Trace connections
+        </button>
       </div>
 
       <p className="peek__hint">
         {hidden > 0
           ? `Click the node to pull in ${hidden} more`
-          : explored ? 'Fully expanded' : 'Nothing left to expand'}
+          : explored
+            ? 'Fully expanded'
+            : 'Nothing left to expand'}
       </p>
     </div>
   )

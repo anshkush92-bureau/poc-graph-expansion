@@ -63,7 +63,9 @@ export default function App() {
   }, [])
   // Writing the hash is the only way modes change; the listener above turns that
   // back into state, so there is one source of truth rather than two that drift.
-  const setMode = useCallback(key => { window.location.hash = routeHash(key) }, [])
+  const setMode = useCallback(key => {
+    window.location.hash = routeHash(key)
+  }, [])
   const mode = route.mode
   // A list, not a single key: the whole reason this exists is putting two or
   // three libraries side by side on the identical graph. Order is selection
@@ -77,7 +79,8 @@ export default function App() {
   // picker for those edges only, so "everything solid except this one dashed
   // path" needs no rule written for it.
   const [edgeOverrides, setEdgeOverrides] = useState(new Map())
-  const { graph, isExpanded, isPending, statusVersion, expand, addNode, deleteNode, reset, load } = useGraph()
+  const { graph, isExpanded, isPending, statusVersion, expand, addNode, deleteNode, reset, load } =
+    useGraph()
 
   // The stress dial. Held as text-free numbers and only applied on Build, so
   // dragging a slider does not rebuild a 5,000-node graph on every pixel.
@@ -90,7 +93,7 @@ export default function App() {
   const [wantEdges, setWantEdges] = useState(180)
   const [incremental, setIncremental] = useState(true)
 
-  const [hover, setHover] = useState(null)   // { id, at }
+  const [hover, setHover] = useState(null) // { id, at }
   const [selected, setSelected] = useState(null) // { id, tab }
   const closeTimer = useRef(null)
 
@@ -103,7 +106,8 @@ export default function App() {
     // One stable callback per engine, created once. A fresh identity would
     // break each renderer's memo and re-run its update effect on every render.
     ENGINE_KEYS.forEach(key => {
-      out[key] = ms => setStats(prev => (prev[key] === ms ? prev : Object.assign({}, prev, { [key]: ms })))
+      out[key] = ms =>
+        setStats(prev => (prev[key] === ms ? prev : Object.assign({}, prev, { [key]: ms })))
     })
     return out
   }, [])
@@ -150,20 +154,23 @@ export default function App() {
     closeTimer.current = setTimeout(() => setHover(null), 180)
   }, [])
 
-  const onNodeClick = useCallback(id => {
-    const node = byId.get(id)
-    if (!node) return
-    expand(node)
-    // The card has to go, and not on the usual delay.
-    //
-    // It is a real element sitting down-right of the node, so it covers the
-    // nodes there. Left open after a click it swallows the next one: the
-    // pointer travels from the expanded node onto the card, the renderer under
-    // it never sees an enter, and the node beneath is simply unclickable. The
-    // card is also stale the moment the graph grows.
-    clearTimeout(closeTimer.current)
-    setHover(null)
-  }, [byId, expand])
+  const onNodeClick = useCallback(
+    id => {
+      const node = byId.get(id)
+      if (!node) return
+      expand(node)
+      // The card has to go, and not on the usual delay.
+      //
+      // It is a real element sitting down-right of the node, so it covers the
+      // nodes there. Left open after a click it swallows the next one: the
+      // pointer travels from the expanded node onto the card, the renderer under
+      // it never sees an enter, and the node beneath is simply unclickable. The
+      // card is also stale the moment the graph grows.
+      clearTimeout(closeTimer.current)
+      setHover(null)
+    },
+    [byId, expand]
+  )
 
   // Clicking an edge walks it through the style list, then off the end back to
   // whatever the picker says. No extra UI: the graph is the control surface, and
@@ -184,16 +191,22 @@ export default function App() {
     setHover(null)
   }, [])
 
-  const handleDelete = useCallback(node => {
-    if (deleteNode(node.id)) {
-      setSelected(null)
-      setHover(null)
-    }
-  }, [deleteNode])
+  const handleDelete = useCallback(
+    node => {
+      if (deleteNode(node.id)) {
+        setSelected(null)
+        setHover(null)
+      }
+    },
+    [deleteNode]
+  )
 
-  const handleAdd = useCallback((parent, type) => {
-    addNode(parent, type)
-  }, [addNode])
+  const handleAdd = useCallback(
+    (parent, type) => {
+      addNode(parent, type)
+    },
+    [addNode]
+  )
 
   // Toggling a pane. The last one cannot be turned off — an empty stage is a
   // broken screen, not a valid selection.
@@ -286,10 +299,25 @@ export default function App() {
 
       <div className="strip">
         <dl className="counts">
-          <div><dt>nodes</dt><dd>{graph.nodes.length}</dd></div>
-          <div><dt>links</dt><dd>{graph.edges.length}</dd></div>
-          <div><dt>depth</dt><dd>{deepest}<span className="counts__of">/{MAX_DEPTH}</span></dd></div>
-          <div><dt>panes</dt><dd>{engines.length}</dd></div>
+          <div>
+            <dt>nodes</dt>
+            <dd>{graph.nodes.length}</dd>
+          </div>
+          <div>
+            <dt>links</dt>
+            <dd>{graph.edges.length}</dd>
+          </div>
+          <div>
+            <dt>depth</dt>
+            <dd>
+              {deepest}
+              <span className="counts__of">/{MAX_DEPTH}</span>
+            </dd>
+          </div>
+          <div>
+            <dt>panes</dt>
+            <dd>{engines.length}</dd>
+          </div>
         </dl>
 
         <div className="strip__tools">
@@ -302,7 +330,9 @@ export default function App() {
                 <span>Nodes</span>
                 <select value={shapeSet} onChange={e => setShapeSet(e.target.value)}>
                   {Object.keys(SHAPE_SETS).map(key => (
-                    <option key={key} value={key}>{SHAPE_SETS[key].label}</option>
+                    <option key={key} value={key}>
+                      {SHAPE_SETS[key].label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -310,7 +340,9 @@ export default function App() {
                 <span>Edges</span>
                 <select value={edgeStyle} onChange={e => setEdgeStyle(e.target.value)}>
                   {Object.keys(EDGE_RULES).map(key => (
-                    <option key={key} value={key}>{EDGE_RULES[key].label}</option>
+                    <option key={key} value={key}>
+                      {EDGE_RULES[key].label}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -327,17 +359,23 @@ export default function App() {
             <span>Inspect</span>
             <select
               value={selected ? selected.id : ''}
-              onChange={e => setSelected(e.target.value ? { id: e.target.value, tab: 'details' } : null)}
+              onChange={e =>
+                setSelected(e.target.value ? { id: e.target.value, tab: 'details' } : null)
+              }
             >
               <option value="">Pick a node…</option>
               {/* Capped: a native select with 5,000 options locks the tab open.
                   Past that the hover card is the way in. */}
               {graph.nodes.slice(0, 300).map(n => (
-                <option key={n.id} value={n.id}>{ENTITY[n.type].tag} · {n.name}</option>
+                <option key={n.id} value={n.id}>
+                  {ENTITY[n.type].tag} · {n.name}
+                </option>
               ))}
             </select>
           </label>
-          <button type="button" className="btn" onClick={handleReset}>Reset</button>
+          <button type="button" className="btn" onClick={handleReset}>
+            Reset
+          </button>
         </div>
       </div>
 
@@ -346,10 +384,16 @@ export default function App() {
       <div className="rig">
         <Dial label="Nodes" max={MAX_NODES} value={wantNodes} onChange={setWantNodes} />
         <Dial label="Edges" max={MAX_EDGES} value={wantEdges} onChange={setWantEdges} />
-        <button type="button" className="btn btn--primary" onClick={build}>Build graph</button>
+        <button type="button" className="btn btn--primary" onClick={build}>
+          Build graph
+        </button>
 
         <label className="rig__check">
-          <input type="checkbox" checked={incremental} onChange={e => setIncremental(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={incremental}
+            onChange={e => setIncremental(e.target.checked)}
+          />
           <span>Incremental layout</span>
         </label>
 
@@ -372,7 +416,9 @@ export default function App() {
                 <header className="pane__bar">
                   <b className="pane__name">{name}</b>
                   <span className="pane__lib">{lib}</span>
-                  <span className="pane__stat">{stats[key] == null ? '—' : `${stats[key]} ms`}</span>
+                  <span className="pane__stat">
+                    {stats[key] == null ? '—' : `${stats[key]} ms`}
+                  </span>
                   {engines.length > 1 && (
                     <button
                       type="button"
@@ -413,12 +459,14 @@ export default function App() {
 
         <ul className="legend">
           {Object.keys(ENTITY).map(t => (
-            <li key={t} style={{ '--accent': ENTITY[t].color }}>{ENTITY[t].label}</li>
+            <li key={t} style={{ '--accent': ENTITY[t].color }}>
+              {ENTITY[t].label}
+            </li>
           ))}
           <li className="legend__rule">
             Bright = links still hidden. Click a node to expand a level
-            {showsEcharts && ', or an edge to restyle just that edge'}. Every pane
-            draws the same graph at the same coordinates — only the drawing differs.
+            {showsEcharts && ', or an edge to restyle just that edge'}. Every pane draws the same
+            graph at the same coordinates — only the drawing differs.
           </li>
         </ul>
       </main>
@@ -432,7 +480,10 @@ export default function App() {
           explored={isExpanded(hoverNode.id)}
           onHold={holdCard}
           onRelease={releaseCard}
-          onOpen={tab => { setSelected({ id: hoverNode.id, tab }); setHover(null) }}
+          onOpen={tab => {
+            setSelected({ id: hoverNode.id, tab })
+            setHover(null)
+          }}
         />
       )}
 

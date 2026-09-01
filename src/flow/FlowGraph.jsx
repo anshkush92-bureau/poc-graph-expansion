@@ -112,8 +112,18 @@ const EDGE_TYPES = { selfloop: SelfLoopEdge }
 const FIT = { padding: 0.15, maxZoom: 1 }
 
 function FlowCanvas({
-  graph, positions, hidden, isExpanded, isPending, statusVersion,
-  onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick, onStat, onViewport
+  graph,
+  positions,
+  hidden,
+  isExpanded,
+  isPending,
+  statusVersion,
+  onNodeClick,
+  onNodeHover,
+  onEdgeClick,
+  onBackgroundClick,
+  onStat,
+  onViewport
 }) {
   const { fitView, setViewport, getViewport } = useReactFlow()
   const fitted = useRef(-1)
@@ -128,10 +138,7 @@ function FlowCanvas({
   // Controlled mode: React Flow only applies a change (drag included) back
   // onto `nodes` if something is listening here. `applyNodeChanges` is the
   // library's own reducer for the change objects it emits.
-  const onNodesChange = useCallback(
-    changes => setNodes(nds => applyNodeChanges(changes, nds)),
-    []
-  )
+  const onNodesChange = useCallback(changes => setNodes(nds => applyNodeChanges(changes, nds)), [])
 
   useEffect(() => {
     const started = performance.now()
@@ -220,9 +227,7 @@ function FlowCanvas({
     onViewport({
       zoomBy: factor => {
         const { x, y, zoom } = getViewport()
-        const box = frame.current
-          ? frame.current.getBoundingClientRect()
-          : { width: 0, height: 0 }
+        const box = frame.current ? frame.current.getBoundingClientRect() : { width: 0, height: 0 }
         const cx = box.width / 2
         const cy = box.height / 2
         setViewport({ x: cx - (cx - x) * factor, y: cy - (cy - y) * factor, zoom: zoom * factor })

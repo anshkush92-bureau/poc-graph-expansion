@@ -47,16 +47,20 @@ export function useGraph() {
       events: 0,
       synthetic: true
     }
-    setGraph(g => mergeGraph(g, {
-      nodes: [child],
-      edges: [{
-        id: `${parent.id}->${child.id}`,
-        source: parent.id,
-        target: child.id,
-        label: relationLabel(parent.type, type),
-        synthetic: true
-      }]
-    }))
+    setGraph(g =>
+      mergeGraph(g, {
+        nodes: [child],
+        edges: [
+          {
+            id: `${parent.id}->${child.id}`,
+            source: parent.id,
+            target: child.id,
+            label: relationLabel(parent.type, type),
+            synthetic: true
+          }
+        ]
+      })
+    )
     return child
   }, [])
 
