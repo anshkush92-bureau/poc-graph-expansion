@@ -200,11 +200,12 @@ function NvlGraph({
       width: 1
     }))
 
-    // What this measures changed with the rewrite: it used to include NVL's
-    // own add/update/remove calls, made directly from this file. Now that
-    // work happens inside the wrapper's own effect, invisible from here, so
-    // this is the cost of preparing the frame, not of NVL drawing it.
-    return { nodes, rels, ms: performance.now() - started }
+    // The timestamp, not the elapsed time, is what this memo hands back. NVL's
+    // own add/update work now happens inside InteractiveNvlWrapper's effect,
+    // which React commits before this component's own effect below runs — so
+    // reading the clock there, against this `started`, still spans mapping
+    // *and* the hand-off into NVL, matching what the other seven panes time.
+    return { nodes, rels, started }
   }, [graph, positions, hidden, statusVersion, isExpanded, isPending])
 
   useEffect(() => {
@@ -217,7 +218,7 @@ function NvlGraph({
       refit.current()
     }
 
-    if (onStat) onStat(Math.round(scene.ms))
+    if (onStat) onStat(Math.round(performance.now() - scene.started))
   }, [scene, graph.nodes.length, onStat])
 
   return (
