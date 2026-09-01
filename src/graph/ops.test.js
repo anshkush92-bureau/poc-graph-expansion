@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { ROOT, degreeOf, fetchNeighbors, selfEdgeFor } from './data.js'
+import { ENTITY, ROOT, degreeOf, fetchNeighbors, selfEdgeFor } from './data.js'
 import {
   NODE_SPACING,
   hiddenCount,
@@ -15,6 +15,20 @@ import {
 import { withLoops } from './loops.js'
 
 const radius = p => Math.hypot(p.x, p.y)
+
+// Characterizes makeNode's current behaviour, via fetchNeighbors, before the
+// TS conversion adds a runtime guard there. Every entity type can be a parent,
+// and every child must come back with a valid type — never a throw, today.
+test('fetchNeighbors returns a valid-typed child for every entity type, with no throw', async () => {
+  for (const type of Object.keys(ENTITY)) {
+    const parent = { id: `${type}-parent`, type, level: 0, name: type, risk: 0, events: 0 }
+    const { nodes } = await fetchNeighbors(parent)
+    assert.ok(nodes.length > 0, `${type} has children to check`)
+    nodes.forEach(n =>
+      assert.ok(ENTITY[n.type], `${type} child has a valid entity type, got ${n.type}`)
+    )
+  }
+})
 
 // --- self-loop expansion, which both renderers depend on being well-formed ---
 
