@@ -76,8 +76,16 @@ export default function BenchView() {
     key: 'echarts',
     value: ENGINES.echarts.renderers[0]!
   })
-  const renderer =
-    rendererState.key === engine ? rendererState.value : ENGINES[engine].renderers[0]!
+  // The backend for one engine: whatever is picked if the picker is pointing at
+  // it, its default otherwise. Written as a function of the engine rather than
+  // read off `renderer` below, because `run` walks the engines itself and its
+  // closure's selection belongs to whichever one was showing when it started.
+  const rendererFor = useCallback(
+    (key: EngineKey) =>
+      rendererState.key === key ? rendererState.value : ENGINES[key].renderers[0],
+    [rendererState]
+  )
+  const renderer = rendererFor(engine)
 
   const [results, setResults] = useState(loadResults)
   const [status, setStatus] = useState<string | null>(null)
@@ -98,16 +106,17 @@ export default function BenchView() {
 
   const runOne = useCallback(
     async (engineKey: EngineKey, scen: Scenario, values: Knobs) => {
-      const row = await runScenario(engineKey, scen, values, makeCtx(values))
-      // Recomputed from the engine being run rather than read off the closure:
-      // `runEverything` walks the engines itself, and its closure's `renderer`
-      // belongs to whichever engine was selected when the run started.
-      row.renderer =
-        rendererState.key === engineKey ? rendererState.value : ENGINES[engineKey].renderers[0]!
+      const row = await runScenario(
+        engineKey,
+        rendererFor(engineKey),
+        scen,
+        values,
+        makeCtx(values)
+      )
       setResults(saveResult(row))
       return row
     },
-    [makeCtx, rendererState]
+    [makeCtx, rendererFor]
   )
 
   const run = useCallback(

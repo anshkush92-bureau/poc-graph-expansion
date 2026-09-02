@@ -10,11 +10,13 @@ import assert from 'node:assert/strict'
 import { test } from 'vitest'
 import { synthGraph } from '../graph/synth.ts'
 import { layoutRadial } from '../graph/ops.ts'
-import { summarise } from './probes.ts'
+import { domNodes, latency, summarise, watchLag } from './probes.ts'
 import { centreBox, cullToBox, optimise, stripLabels } from './optimize.ts'
 import { forceLayout } from './force.ts'
 import { sprout, trend } from './scenarios.ts'
+import { loadResults, rowKey, saveResult } from './store.ts'
 import type { Graph, GraphNode } from '../engine/types.ts'
+import type { BenchResult, Metrics } from './types.ts'
 
 test('summarise: a steady 60fps stream reports 60 and drops nothing', () => {
   const deltas = new Array(120).fill(1000 / 60)
@@ -191,4 +193,141 @@ test('sprout without a parent still spreads the arrivals around', () => {
       .map(e => e.source)
   )
   assert.ok(sources.size > 1)
+})
+
+// ── The new comparison columns ──────────────────────────────────────────────
+//
+// `watchLag` and `latency` do run in node — one is a timer chain and the other
+// takes the interaction to fire as an argument — so the part worth checking is
+// checkable here: that a busy main thread actually moves the number, and that
+// a quiet one does not. What still needs a browser is whether each of the eight
+// engines populates the column at all.
+
+const busy = (ms: number): void => {
+  const until = performance.now() + ms
+  while (performance.now() < until) {
+    /* deliberately hogging the thread — that is the thing being detected */
+  }
+}
+
+test('domNodes: counts what the pane holds, and stays null without one', () => {
+  const pane = { querySelectorAll: () => ({ length: 4210 }) } as unknown as Element
+  assert.equal(domNodes(pane), 4210)
+  assert.equal(domNodes(null), null)
+})
+
+test('watchLag: a quiet thread reports close to nothing', async () => {
+  const lag = watchLag(8)
+  await new Promise(r => setTimeout(r, 200))
+  const out = lag.stop()
+  assert.ok(out.samples > 5, `expected samples, got ${out.samples}`)
+  // The floor is the scheduler's own noise. Generous, because CI is not quiet.
+  assert.ok((out.p95 ?? 0) < 25, `idle p95 was ${out.p95}`)
+})
+
+test('watchLag: work on the thread shows up as lag, which is the whole point', async () => {
+  const lag = watchLag(8)
+  await new Promise(r => setTimeout(r, 40))
+  busy(120)
+  await new Promise(r => setTimeout(r, 40))
+  const out = lag.stop()
+  // The task queued behind a 120 ms hog waits most of 120 ms for its turn.
+  assert.ok((out.worst ?? 0) > 80, `worst was ${out.worst}, expected the hog to show`)
+})
+
+test('latency: measures the work between the event and the paint', async () => {
+  const raf = (globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame
+  ;(globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame = (
+    cb: (t: number) => void
+  ) => setTimeout(() => cb(performance.now()), 8)
+  try {
+    const out = await latency(3, () => busy(40), 0)
+    assert.equal(out.samples, 3)
+    assert.ok((out.p50 ?? 0) >= 40, `p50 was ${out.p50}, expected the 40 ms handler`)
+  } finally {
+    ;(globalThis as { requestAnimationFrame?: unknown }).requestAnimationFrame = raf
+  }
+})
+
+// ── The store ───────────────────────────────────────────────────────────────
+//
+// Worth a test for one reason: the results key used to be (engine, scenario),
+// so measuring Cytoscape's WebGL path silently erased its canvas number. The
+// backend is in the key now, and these are the two halves of that.
+
+/**
+ * localStorage, which the node environment does not have. A Map behind the two
+ * methods the store actually calls is the whole of what it needs.
+ */
+const memoryStorage = () => {
+  const map = new Map<string, string>()
+  const storage = {
+    getItem: (key: string) => map.get(key) ?? null,
+    setItem: (key: string, value: string) => void map.set(key, value)
+  }
+  ;(globalThis as { localStorage?: unknown }).localStorage = storage
+  return storage
+}
+
+const bench = (engine: BenchResult['engine'], renderer: string, metrics: Metrics): BenchResult => ({
+  engine,
+  renderer,
+  scenario: 'hairball',
+  knobs: {},
+  at: 0,
+  metrics
+})
+
+test('saveResult: two paint backends of one engine are two rows, not one', () => {
+  memoryStorage()
+  saveResult(bench('cytoscape', 'canvas', { ttfrMs: 100 }))
+  const all = saveResult(bench('cytoscape', 'webgl', { ttfrMs: 40 }))
+  assert.equal(all[rowKey('cytoscape', 'hairball', 'canvas')]?.metrics.ttfrMs, 100)
+  assert.equal(all[rowKey('cytoscape', 'hairball', 'webgl')]?.metrics.ttfrMs, 40)
+})
+
+test('saveResult: the same triple twice is still one row, the newer one', () => {
+  memoryStorage()
+  saveResult(bench('vis', 'canvas', { ttfrMs: 100 }))
+  const all = saveResult(bench('vis', 'canvas', { ttfrMs: 40 }))
+  assert.equal(Object.keys(all).length, 1)
+  assert.equal(all[rowKey('vis', 'hairball', 'canvas')]?.metrics.ttfrMs, 40)
+})
+
+test('loadResults: a row stored before the backend was recorded reads as the default', () => {
+  // The literal key is this store's own, and the row is the shape the previous
+  // format wrote: no `renderer` at all. Those runs happened on the engine's
+  // default backend, and throwing them away for not saying so loses real
+  // measurements.
+  memoryStorage().setItem(
+    'graph-bench-results-v1',
+    JSON.stringify({
+      'cytoscape::hairball': {
+        engine: 'cytoscape',
+        scenario: 'hairball',
+        knobs: {},
+        at: 0,
+        metrics: { ttfrMs: 100 }
+      }
+    })
+  )
+  const all = loadResults()
+  assert.deepEqual(Object.keys(all), [rowKey('cytoscape', 'hairball', 'canvas')])
+  assert.equal(all[rowKey('cytoscape', 'hairball', 'canvas')]?.renderer, 'canvas')
+})
+
+test('loadResults: a row naming a library this build dropped is not returned', () => {
+  memoryStorage().setItem(
+    'graph-bench-results-v1',
+    JSON.stringify({
+      'sigma::hairball::canvas': {
+        engine: 'sigma',
+        scenario: 'hairball',
+        knobs: {},
+        at: 0,
+        metrics: {}
+      }
+    })
+  )
+  assert.deepEqual(Object.keys(loadResults()), [])
 })

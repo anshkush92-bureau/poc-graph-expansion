@@ -1,7 +1,7 @@
 # The ECharts rendering pipeline
 
 How a click becomes a drawn node, file by file. Every step is also marked in
-[EChartsGraph.jsx](src/echarts/EChartsGraph.jsx) as `STEP n`, so the code and this
+[EChartsGraph.tsx](src/echarts/EChartsGraph.tsx) as `STEP n`, so the code and this
 document can be read side by side.
 
 ---
@@ -9,21 +9,21 @@ document can be read side by side.
 ## 1. The file map
 
 ```
-src/graph/data.js        the backend stand-in + the entity dictionary
-src/graph/useGraph.js    the only mutable state in the app
-src/App.jsx             ─┬─ owns state, renders the chrome, picks the engine
+src/graph/data.ts        the backend stand-in + the entity dictionary
+src/graph/useGraph.ts    the only mutable state in the app
+src/App.tsx             ─┬─ owns state, renders the chrome, picks the engine
                          │
-src/echarts/symbols.js  ─┤  the shape + edge-style catalog (no echarts import)
-src/echarts/EChartsGraph.jsx ─── the React↔ECharts bridge. Everything below.
-src/graph/ops.js         layoutRadial — ids → coordinates (called by App)
-src/graph/loops.js       withLoops — self-edges → drawable links
-src/ui/theme.js          nodeColor — the one place brightness is decided
+src/echarts/symbols.ts  ─┤  the shape + edge-style catalog (no echarts import)
+src/echarts/EChartsGraph.tsx ─── the React↔ECharts bridge. Everything below.
+src/graph/ops.ts         layoutRadial — ids → coordinates (called by App)
+src/graph/loops.ts       withLoops — self-edges → drawable links
+src/ui/theme.ts          nodeColor — the one place brightness is decided
 ```
 
 Data flows one way. Interaction flows back up as ids only:
 
 ```
-data.js → useGraph.js → App.jsx → EChartsGraph.jsx → <canvas>
+data.ts → useGraph.ts → App.tsx → EChartsGraph.tsx → <canvas>
               ▲                        │
               └──── onNodeClick(id) ───┘
 ```
@@ -53,7 +53,7 @@ icon font, no SVG assets**.
 
 Four representations, in order. Each one is derived; only the first is stored.
 
-### 2a. Domain model — `useGraph.js`
+### 2a. Domain model — `useGraph.ts`
 
 The only state. Holds **no visual information whatsoever**:
 
@@ -76,7 +76,7 @@ comparison honest. Expansion state lives beside it in a ref
 (`id -> 'pending' | 'done'`) so a second click landing mid-fetch cannot
 duplicate a level.
 
-### 2b. Geometry — `ops.js` → `layoutRadial(graph, prev)`
+### 2b. Geometry — `ops.ts` → `layoutRadial(graph, prev)`
 
 ```js
 positions = {
@@ -86,7 +86,7 @@ positions = {
 ```
 
 Root at the centre, one ring per hop, children fanned inside their parent's
-wedge. Called by `App.jsx`, not by the renderer — both tabs are handed the same
+wedge. Called by `App.tsx`, not by the renderer — both tabs are handed the same
 object, and the renderers are remounted on every engine switch while the layout
 has to remember what it placed last time.
 
@@ -97,7 +97,7 @@ expansion re-arranges the whole graph. With it, anything already placed keeps
 its exact coordinates and only the newcomers are positioned, in the free space
 inside their parent's wedge.
 
-Both behaviours are wanted, at different sizes, so `App.jsx` withholds `prev`
+Both behaviours are wanted, at different sizes, so `App.tsx` withholds `prev`
 until the graph passes `FREEZE_AT` (30 nodes). Small graphs get the cold pass:
 it is the tighter arrangement and the shuffle reads as settling. Past the
 threshold the layout freezes, because a rearrangement of 60 nodes reads as a
@@ -114,7 +114,7 @@ ECharts computes this for us in exactly zero cases: the graph series ships
 Coordinates are unitless — STEP 7 fits the bounding box to the viewport, so they
 only have to be correct *relative to each other*.
 
-### 2c. Drawable links — `loops.js` → `withLoops(graph, positions)`
+### 2c. Drawable links — `loops.ts` → `withLoops(graph, positions)`
 
 A self-edge (`source === target`) is not drawable in either engine: it collapses
 to a zero-length line hidden under the node's own symbol. So one self-edge is
@@ -140,7 +140,7 @@ absent from App's id→node map, so a click or hover that resolves to one finds
 nothing and no-ops. Worth knowing before adding an interaction that assumes
 every drawn symbol is a real entity.
 
-### 2d. ECharts option — `EChartsGraph.jsx`
+### 2d. ECharts option — `EChartsGraph.tsx`
 
 One plain object. Could be `JSON.stringify`'d and posted over a wire, which is
 the useful mental model: by the time `setOption` is called, nothing is left to
@@ -190,7 +190,7 @@ formatter.
 **`symbolSize` is a bounding box, not an area.** A triangle inscribed in a 22px
 box covers under half the ink of a 22px circle, so at one size a triangle reads
 as a *smaller node* rather than a *different node*. Hence `scale` per shape in
-[symbols.js](src/echarts/symbols.js) — it pushes the box out until the shapes
+[symbols.ts](src/echarts/symbols.ts) — it pushes the box out until the shapes
 look like siblings. `sizeOf()` is the single function both the symbol (STEP 4)
 and the pulse ring (STEP 8) call, because if they disagree the ring floats off
 the star.
@@ -208,8 +208,8 @@ radius, and why it is declared once at series level and inherited.
 | --- | --- | --- |
 | **0** | `echarts.init` on the empty div, bind every listener once, start the `ResizeObserver` | setup effect |
 | **1** | Read `graph` — domain shape, no visuals | data effect |
-| **2** | Read the `positions` prop — `layoutRadial` ran in App | `ops.js` |
-| **3** | `withLoops` → links + pivots | `loops.js` |
+| **2** | Read the `positions` prop — `layoutRadial` ran in App | `ops.ts` |
+| **3** | `withLoops` → links + pivots | `loops.ts` |
 | **4** | Build one data item per node — **shape resolves here** | `build()` |
 | **5** | Build one link per drawable edge — **line style resolves here** | `buildLinks()` |
 | **6** | Assemble the option object | `option()` |
@@ -289,7 +289,7 @@ arithmetic — `(roam - 1) × 0.6 + 1`, with `roam` read off
 
 ## 5. The customization catalog
 
-All of it lives in [src/echarts/symbols.js](src/echarts/symbols.js), which
+All of it lives in [src/echarts/symbols.ts](src/echarts/symbols.ts), which
 imports nothing — the whole file is strings and numbers the graph series accepts
 as-is. Adding a shape never touches the renderer.
 

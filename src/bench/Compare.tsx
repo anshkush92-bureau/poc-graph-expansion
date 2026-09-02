@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.ts'
 import { SCENARIOS } from './scenarios.ts'
-import { ResultTable, format } from './table.tsx'
+import { ResultTable, format, rowLabel } from './table.tsx'
 import { clearResults, loadResults } from './store.ts'
 import type { BenchResult, EngineKey, MetricValue } from './types.ts'
 
@@ -27,6 +27,19 @@ interface Headline {
  * ranks the engines on it. It is a convenience, not a verdict: the number it
  * ranks on is named in the header so it can be argued with.
  */
+
+/**
+ * The rows of the headline grid: one per (engine, paint backend), in registry
+ * order with each engine's default backend first.
+ *
+ * Not derived from what has been measured — an engine that has never run still
+ * gets its row, blank, and so does the WebGL half of one that has only been run
+ * on canvas. A grid that hides the cells nobody has filled in reads as if there
+ * were nothing left to measure.
+ */
+const HEADLINE_ROWS = ENGINE_KEYS.flatMap(engine =>
+  ENGINES[engine].renderers.map(renderer => ({ engine, renderer }))
+)
 
 const HEADLINE: Record<string, Headline> = {
   hairball: { metric: 'ttfrMs', label: 'time to first render', unit: 'ms', lowerIsBetter: true },
@@ -78,7 +91,14 @@ export default function Compare() {
       out[row.scenario]?.push(row)
     })
     Object.values(out).forEach(rows => {
-      rows.sort((a, b) => ENGINE_KEYS.indexOf(a.engine) - ENGINE_KEYS.indexOf(b.engine))
+      // Registry order, then the engine's own `renderers` order — so an
+      // engine's two backends land next to each other, default first.
+      rows.sort(
+        (a, b) =>
+          ENGINE_KEYS.indexOf(a.engine) - ENGINE_KEYS.indexOf(b.engine) ||
+          ENGINES[a.engine].renderers.indexOf(a.renderer) -
+            ENGINES[b.engine].renderers.indexOf(b.renderer)
+      )
     })
     return out
   }, [results])
@@ -143,14 +163,16 @@ export default function Compare() {
                 </tr>
               </thead>
               <tbody>
-                {ENGINE_KEYS.map(key => (
-                  <tr key={key}>
-                    <th scope="row">{ENGINES[key].name}</th>
+                {HEADLINE_ROWS.map(({ engine: key, renderer }) => (
+                  <tr key={key + '::' + renderer}>
+                    <th scope="row">{rowLabel({ engine: key, renderer })}</th>
                     <td className="grid__soft">{ENGINES[key].surface}</td>
                     {SCENARIOS.map(s => {
                       const headline = HEADLINE[s.key]
                       const scenarioRows = byScenario[s.key] ?? []
-                      const row = scenarioRows.find(r => r.engine === key)
+                      const row = scenarioRows.find(
+                        r => r.engine === key && r.renderer === renderer
+                      )
                       const best = headline ? bestFor(scenarioRows, headline) : null
                       const value =
                         row && !row.unsupported && !row.failed && row.metrics && headline

@@ -73,9 +73,16 @@ export interface ScenarioResult {
 export interface BenchResult extends ScenarioResult {
   engine: EngineKey
   scenario: string
+  /**
+   * The paint backend this row was measured on — one of the engine's declared
+   * `renderers`. Required, not optional: it is half of the row's identity in
+   * the store, and a row that does not name its backend is a row whose number
+   * cannot be attributed. `runScenario` takes it as an argument for the same
+   * reason, so neither caller can forget it.
+   */
+  renderer: string
   knobs: Knobs
   at: number
-  renderer?: string
 }
 
 // ── Scenarios ───────────────────────────────────────────────────────────────

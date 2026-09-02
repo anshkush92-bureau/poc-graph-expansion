@@ -83,6 +83,10 @@ export function Knob({
  * rather than a fixed list per scenario — a scenario that returns `unsupported`
  * carries fewer metrics than one that ran, and hard-coding the columns would
  * mean maintaining the same list in two places.
+ *
+ * One row per (engine, backend), so the three engines with two paint backends
+ * get two rows — which is the only way `cytoscape: webgl` is legible as its own
+ * measurement rather than an overwrite of the canvas one.
  */
 export function ResultTable({ rows, scenario }: { rows: BenchResult[]; scenario: Scenario }) {
   const columns = useMemo(() => {
@@ -117,10 +121,10 @@ export function ResultTable({ rows, scenario }: { rows: BenchResult[]; scenario:
         <tbody>
           {rows.map(row => (
             <tr
-              key={row.engine}
+              key={rowId(row)}
               className={row.failed ? 'is-failed' : row.unsupported ? 'is-na' : ''}
             >
-              <th scope="row">{ENGINES[row.engine].name}</th>
+              <th scope="row">{rowLabel(row)}</th>
               {row.unsupported || row.failed ? (
                 <td colSpan={columns.length} className="grid__note">
                   {row.failed ? `failed — ${row.failed}` : row.unsupported}
@@ -135,13 +139,29 @@ export function ResultTable({ rows, scenario }: { rows: BenchResult[]; scenario:
       {rows
         .filter(r => r.note)
         .map(r => (
-          <p key={r.engine} className="bench__note">
-            <b>{ENGINES[r.engine].name}</b> — {r.note}
+          <p key={rowId(r)} className="bench__note">
+            <b>{rowLabel(r)}</b> — {r.note}
           </p>
         ))}
     </div>
   )
 }
+
+/** Identity of a measured row: the engine and the backend it was drawn on. */
+export const rowId = (row: Pick<BenchResult, 'engine' | 'renderer'>): string =>
+  `${row.engine}::${row.renderer}`
+
+/**
+ * How a row names itself.
+ *
+ * The backend is appended only for the engines that have more than one, because
+ * "vis-network · canvas" is noise — canvas is the only thing vis-network draws
+ * to — while "Cytoscape.js · webgl" is the entire point of the row.
+ */
+export const rowLabel = (row: Pick<BenchResult, 'engine' | 'renderer'>): string =>
+  ENGINES[row.engine].renderers.length > 1
+    ? `${ENGINES[row.engine].name} · ${row.renderer}`
+    : ENGINES[row.engine].name
 
 /** `null` is "not measured", never "zero". The distinction is the whole point. */
 export function format(value: MetricValue): string {

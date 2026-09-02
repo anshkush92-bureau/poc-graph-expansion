@@ -221,7 +221,10 @@ and both the bench (**Backend**, next to Engine) and each lab page expose it as
 a knob. It belongs in the bench and not only in the lab because otherwise every
 row in the matrix is the engine's *default* backend, and the SVG and WebGL halves
 of three libraries go unmeasured — which was exactly the hole in the first pass.
-Each result row records the backend it ran on.
+Each result row records the backend it ran on, and is keyed by it: a row is one
+`(engine, scenario, backend)`, so running the WebGL leg adds a row beside the
+canvas one rather than replacing it. Both halves sit in the matrix together, and
+`Cytoscape.js · webgl` names itself in the table.
 
 | Engine | Backends | What the flag actually changes |
 |---|---|---|
@@ -316,7 +319,7 @@ the node.
 ## Running it
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 npm run dev            # http://localhost:5173
 ```
 
@@ -417,12 +420,17 @@ findings:
 - **Each library's own layout engine** — deliberately excluded; the shared
   `layoutRadial` and the shared d3-force keep the comparison about rendering.
 - **Each library's own culling and LOD** — same reason.
-- **Bundle size** — measured separately; see [`.sizeprobe/`](.sizeprobe/), and
-  note NVL is ~509 KB gzipped and FusionCharts ~897 KB.
+- **Bundle size** — measured separately, by
+  [`.bench-drivers/size.mjs`](.bench-drivers/size.mjs): `node
+  .bench-drivers/size.mjs` prints the marginal gzipped cost of selecting each
+  pane, on top of the shared baseline. FusionCharts is ~818 KB and NVL ~461 KB
+  against React Flow's ~59 KB, so the spread here is fourteenfold and wider than
+  any runtime column in this file. See
+  [METRICS.md](METRICS.md#bundlekb) for what is and is not counted.
 - **Accessibility, touch, and mobile GPUs.** Nothing here has been near a phone.
 - **API ergonomics and maintenance load** — how long it takes to build the thing
   you actually want. The per-engine notes in
-  [`src/engines.js`](src/engines.js) are the closest this repo comes, and they
+  [`src/engines.ts`](src/engines.ts) are the closest this repo comes, and they
   are worth reading before any of the numbers.
 
 ---

@@ -224,4 +224,96 @@ export const collectGarbage = async (): Promise<void> => {
   await sleep(60)
 }
 
+/**
+ * How many DOM elements the pane is holding.
+ *
+ * The mechanical answer to "why does this engine fall over at 20,000 nodes",
+ * and it costs one query. A canvas or WebGL pane reports a handful of elements
+ * whatever the graph size; a DOM pane reports several per node and pays for
+ * every one of them in style, layout and memory. Read alongside `ttfrMs` it
+ * turns a slow number into a reason.
+ */
+export const domNodes = (pane: Element | null): number | null =>
+  pane ? pane.querySelectorAll('*').length : null
+
+/** What {@link watchLag} and {@link latency} report. Deliberately not
+ * {@link FrameStats}: an `fps` over these samples would be meaningless. */
+export interface LagStats {
+  samples: number
+  p50: number | null
+  p95: number | null
+  worst: number | null
+}
+
+const lagStats = (samples: number[]): LagStats => {
+  const s = summarise(samples)
+  return { samples: s.frames, p50: s.p50, p95: s.p95, worst: s.worst }
+}
+
+/**
+ * How long a newly queued task waits before it runs — main-thread contention.
+ *
+ * This is the metric neither the frame sampler nor `longtask` can give. Frame
+ * deltas stay pinned at the display cadence however busy the thread is, and
+ * `longtask` only fires above 50 ms, so an engine that runs its own render or
+ * physics tick every frame — burning 8 ms of every 8 ms, forever, with nothing
+ * on screen changing — scores a clean 60 fps and 0 ms blocked. It shows up
+ * here, because every task the *app* queues now waits behind that tick.
+ *
+ * `setTimeout` rather than a `MessageChannel` ping-pong: the channel version
+ * saturates the event loop and perturbs the frame metrics it has to run beside.
+ * At 8 ms it is above the 4 ms nested-timer clamp, so the floor is the
+ * scheduler's own noise and not the clamp.
+ */
+export function watchLag(everyMs = 8): { stop(): LagStats } {
+  const lags: number[] = []
+  let live = true
+  let due = performance.now() + everyMs
+  const tick = () => {
+    if (!live) return
+    const now = performance.now()
+    lags.push(Math.max(0, now - due))
+    due = now + everyMs
+    setTimeout(tick, everyMs)
+  }
+  setTimeout(tick, everyMs)
+  return {
+    stop(): LagStats {
+      live = false
+      return lagStats(lags)
+    }
+  }
+}
+
+/**
+ * Input-to-paint latency: `fire()` dispatches one interaction, and the clock
+ * stops at the paint that answers it.
+ *
+ * The number a user calls "laggy", and the one `frameP95` is worst at hiding —
+ * an engine can present every frame inside its budget and still take 400 ms to
+ * show a hover, because the response is queued behind work rather than slow to
+ * draw. Reported as p95 over `samples` because a mean of a bimodal wait is a
+ * value that never actually occurred.
+ *
+ * There is a floor of one frame (`nextPaint` waits for the paint to be
+ * presented, not merely scheduled), so read these as a comparison between
+ * engines on one machine, never as an absolute.
+ */
+export async function latency(
+  samples: number,
+  fire: (i: number) => void,
+  gapMs = 32
+): Promise<LagStats> {
+  const waits: number[] = []
+  for (let i = 0; i < samples; i++) {
+    // A beat first, so consecutive samples do not merge into one task and turn
+    // the measurement into a queue-depth test.
+    await sleep(gapMs)
+    const at = performance.now()
+    fire(i)
+    waits.push((await nextPaint()) - at)
+  }
+  return lagStats(waits)
+}
+
 export { round }

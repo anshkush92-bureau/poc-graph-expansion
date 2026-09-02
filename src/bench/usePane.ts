@@ -245,6 +245,7 @@ export function usePane() {
  */
 export async function runScenario(
   engineKey: EngineKey,
+  renderer: string,
   scenario: Scenario,
   knobs: Knobs,
   ctx: BenchContext
@@ -256,5 +257,5 @@ export async function runScenario(
   } catch (err) {
     outcome = { failed: err instanceof Error ? err.message : String(err), metrics: {} }
   }
-  return { engine: engineKey, scenario: scenario.key, knobs, at: startedAt, ...outcome }
+  return { engine: engineKey, renderer, scenario: scenario.key, knobs, at: startedAt, ...outcome }
 }

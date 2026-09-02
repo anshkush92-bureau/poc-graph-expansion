@@ -1,5 +1,13 @@
 # The verdict
 
+> **Measured on the pre-migration stack, 2026-08-31 / 2026-09-01.** Every number below was
+> taken on React **16.14** with `react-flow-renderer` 9 and a hand-written
+> `@neo4j-nvl/base` wrapper, before this repo moved to React 19, `@xyflow/react`
+> 12, `@neo4j-nvl/react` and TypeScript. Nothing has been re-measured or
+> re-worded since: the numbers are the record of that run. What they say about
+> *renderer* behaviour still holds; the React-16-specific findings are the part
+> to re-measure.
+
 Eight graph libraries, one shared graph, two measured passes.
 
 **Pass 1** ran 7 scenarios × 8 engines at 1,000 / 1,500. **Pass 2** swept the
@@ -43,8 +51,8 @@ this repo's own props contract, not by any library.** At 20,000 nodes it costs
 measured**, and the shared incremental layout is only **25 ms** of it.
 
 Every renderer is handed `graph`, a whole new object, and re-derives its scene:
-[`VisGraph.jsx:200`](src/vis/VisGraph.jsx#L200) upserts all 20,000 nodes per
-click; [`CytoscapeGraph.jsx:210`](src/cytoscape/CytoscapeGraph.jsx#L210) rewrites
+[`VisGraph.tsx:200`](src/vis/VisGraph.tsx#L200) upserts all 20,000 nodes per
+click; [`CytoscapeGraph.tsx:210`](src/cytoscape/CytoscapeGraph.tsx#L210) rewrites
 `.data()` on all 20,000. Two independently written wrappers, same shape, because
 the contract offers no other. WebGL makes it *worse* (NVL 1,408 ms vs canvas
 1,045), which is what you would expect if the scene is re-uploaded whole each
@@ -239,7 +247,7 @@ Stated plainly, because a comparison's blind spots decide more than its rankings
   renders **no captions at all**, so the honest comparison is WebGL against
   *LOD-on canvas*, and that was not run.
 - **No customisation cost.** Custom glyphs, edge routing and rich labels are
-  capability-matrix entries in `src/engines.js`, not measurements — and they are
+  capability-matrix entries in `src/engines.ts`, not measurements — and they are
   exactly where a fast canvas engine gets slow. This is why the RFC asks for a
   spike in **two** engines, not one.
 - **Hover is diagnosed, not measured.** The six `unsupported` rows turned out to
@@ -266,7 +274,7 @@ corrected above. The lesson is in [METRICS.md](METRICS.md#leakmb).
 ## Reproducing
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 npm run build && npm run preview
 ```
 

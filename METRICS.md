@@ -5,7 +5,7 @@ report. For each one: what it is, exactly how it is computed and where, what
 it is for, how it lies, and how to present it without lying with it.
 
 Nothing here is a library-specific measurement. Every number comes from four
-primitives in [`src/bench/probes.js`](src/bench/probes.js) that know nothing
+primitives in [`src/bench/probes.ts`](src/bench/probes.ts) that know nothing
 about graphs, so the same arithmetic covers all eight engines — which is the
 only reason the rows are comparable at all. Anything engine-specific lives in
 that renderer's viewport handle, never in a probe.
@@ -35,7 +35,7 @@ figure here is a percentile, and why `p95` is the headline rather than `fps`.
 ## Frame metrics
 
 Produced by `summarise(deltas)`
-([probes.js:28](src/bench/probes.js#L28)), where `deltas` is the list of gaps
+([probes.ts:51](src/bench/probes.ts#L51)), where `deltas` is the list of gaps
 between consecutive `requestAnimationFrame` callbacks during the measured
 window. Two samplers feed it: `sampleFrames(ms, step)` for a fixed window with
 an interaction driven once per frame, and `startFrames()` for an open-ended one
@@ -66,7 +66,7 @@ genuinely informative (12 fps is 12 fps anywhere), and use `p95` for the rest.
 Median and 95th-percentile frame time. `p50` says what it usually feels like;
 `p95` says what the worst twentieth of frames feel like, which is what a person
 actually notices and complains about. **`p95` is the headline metric for four of
-the seven scenarios** ([Compare.jsx:23](src/bench/Compare.jsx#L23)) because it is
+the seven scenarios** ([Compare.tsx:31](src/bench/Compare.tsx#L31)) because it is
 unbounded — an engine three times better than the budget shows it, where `fps`
 would flatten it to 60.
 
@@ -86,7 +86,7 @@ Counting the slow frame itself would double-count it, since it is already in
 `p95` and `worst`.
 
 The 16.67 ms budget is hard-coded to 60 Hz
-([probes.js:10](src/bench/probes.js#L10)). On a 120 Hz display this
+([probes.ts:33](src/bench/probes.ts#L33)). On a 120 Hz display this
 under-reports by half. Say which display you measured on.
 
 ---
@@ -94,7 +94,7 @@ under-reports by half. Say which display you measured on.
 ## Main-thread blocking
 
 ### `blockedMs`, `longestTaskMs`, `count`
-From `watchLongTasks()` ([probes.js:123](src/bench/probes.js#L123)), a
+From `watchLongTasks()` ([probes.ts:151](src/bench/probes.ts#L151)), a
 `PerformanceObserver` on the `longtask` entry type — the browser's own record of
 tasks that occupied the main thread for over 50 ms.
 
@@ -121,13 +121,41 @@ because the observer callback lands on a later task, a long task at the very end
 of one window is usually counted in the next. Fine for a gauge, which is why the
 scripted scenarios do not read it that way.
 
+### `idleLagP95Ms`, `lagP95Ms`, `lagWorstMs`
+From `watchLag()` ([probes.ts](src/bench/probes.ts)): a chain of 8 ms timers
+runs for the window, and each one records how late it was. The reported number
+is the p95 of `actual − due`.
+
+This exists because **there is a gap the other two blocking metrics cannot
+see.** `blockedMs` only fires above 50 ms. Frame deltas stay pinned at the
+display cadence however busy the thread is. So an engine that runs its own
+render or physics tick every frame — burning 8 ms out of every 8 ms, forever,
+with nothing on screen changing — scores a clean 60 fps *and* 0 ms blocked, and
+every task the app queues from then on waits behind that tick. Lag is where it
+shows up.
+
+- `idleLagP95Ms` (hairball) is measured over a **quiet** two-second window with
+  the graph up and nothing driving it: the standing cost of holding the graph.
+  A number near the floor means the engine is genuinely idle when idle.
+- `lagP95Ms` (streaming, zoom & pan, LOD) is measured **during** the load, next
+  to the frame columns. Read them together: good frames with high lag is an
+  engine that paints on time but leaves the rest of the app unresponsive, which
+  is exactly what a user reports as "the click did nothing".
+
+8 ms rather than 0 because nested timers are clamped to 4 ms and the clamp would
+be larger than the thing being measured. `setTimeout` rather than a
+`MessageChannel` ping-pong — that version saturates the event loop and perturbs
+the frame metrics it has to run beside. The floor is the scheduler's own noise,
+so compare engines against each other on one machine and never quote an
+absolute.
+
 ---
 
 ## Memory
 
 ### `heapMB`
 `performance.memory.usedJSHeapSize ÷ 1024²`, to two decimals
-([probes.js:162](src/bench/probes.js#L162)). Reported as a **delta**, not an
+([probes.ts:191](src/bench/probes.ts#L191)). Reported as a **delta**, not an
 absolute: read before the scenario and again after, and the difference is what
 went in the table.
 
@@ -141,7 +169,7 @@ nobody runs with that flag, so treat heap deltas as indicative unless you did.
 
 ### `heapSlopeMBs`
 Least-squares slope of the per-second heap readings taken during the streaming
-run, in MB per sample ([scenarios.js:603](src/bench/scenarios.js#L603)):
+run, in MB per sample ([scenarios.ts:414](src/bench/scenarios.ts#L414)):
 
 ```
 slope = Σ(i − ī)(y_i − ȳ) ÷ Σ(i − ī)²
@@ -152,6 +180,14 @@ The streaming scenario adds and removes the same number of nodes per tick, so
 is a leak, and the slope catches it long before the drain test does. Returns
 `null` rather than a guess if any reading is missing or there are fewer than
 three of them.
+
+### `heapPerNodeKB`
+`heapMB × 1024 ÷ nodes`, two decimals. The same delta as `heapMB`, divided by
+the node count that produced it — because **the raw totals are not comparable
+across the dial.** 40 MB at 1,000 nodes and 40 MB at 50,000 are the same number
+and opposite findings, and only the second one scales. This is the column to
+read when comparing a 1k row against a 20k row; `heapMB` is the one to read
+within a single size.
 
 ### `baseMB`
 Empty pane to loaded: what this engine costs to hold the base graph, before any
@@ -179,6 +215,33 @@ not come back **once every node is gone** is.
 
 ---
 
+## DOM footprint
+
+### `domNodes`, `domPerNode`
+`pane.querySelectorAll('*').length` after the paint, and that count divided by
+the nodes in the graph. One query, no engine-specific API, so it is the identical
+measurement for all eight.
+
+This is not a performance number, it is the **mechanism behind** several of
+them. A canvas or WebGL pane reports a handful of elements at any graph size; a
+DOM pane reports several per node and pays for every one of them in style
+recalculation, layout, hit-testing and memory. Read next to `ttfrMs` it turns a
+slow number into a reason, and next to `heapPerNodeKB` it usually explains that
+too.
+
+Two comparisons are worth making deliberately:
+
+- **Hairball vs expansion at the same final size.** A pane that ends up holding
+  more elements per node after twenty incremental updates than it does on a cold
+  render is leaking DOM — which a heap delta may or may not catch, depending on
+  what the detached nodes still reference.
+- **Hairball vs LOD & culling.** Culling should cut `domNodes` on a DOM engine
+  roughly in proportion to `kept`. On a canvas engine it cuts nothing there, and
+  that is the finding: whatever culling bought, it did not buy it by holding
+  less.
+
+---
+
 ## Time-to-render
 
 The hairball scenario splits the wait into four legs on purpose. One total would
@@ -202,7 +265,7 @@ Wall clock from handing the graph over until the browser has presented it,
 including React's render and the paint. The one a user feels.
 
 The measurement hinges on `nextPaint()`
-([probes.js:174](src/bench/probes.js#L174)), which resolves after **two** rAF
+([probes.ts:205](src/bench/probes.ts#L205)), which resolves after **two** rAF
 callbacks, not one. A single rAF fires *before* the paint it belongs to, so it
 only proves the browser is about to draw. The second callback runs on the
 following frame, by which point the first has actually been presented. On the
@@ -214,8 +277,8 @@ DOM engines the gap between those two is most of the cost.
 
 ## Layout and the worker
 
-From `runLayout()` ([runLayout.js:103](src/bench/runLayout.js#L103)) and
-`forceLayout()` ([force.js:36](src/bench/force.js#L36)). The same d3-force
+From `runLayout()` ([runLayout.ts:142](src/bench/runLayout.ts#L142)) and
+`forceLayout()` ([force.ts:56](src/bench/force.ts#L56)). The same d3-force
 simulation runs either way, so the only variable the toggle changes is *where*.
 
 | Metric | Computation |
@@ -239,7 +302,7 @@ worker it stays at 60 throughout.
 ### `transferMs`
 The honest counterweight to "just put it in a worker". Graphs are stripped to
 `{id}` and `{id, source, target}` before crossing
-([runLayout.js:51](src/bench/runLayout.js#L51)) — sending whole nodes would
+([runLayout.ts:73](src/bench/runLayout.ts#L73)) — sending whole nodes would
 charge the worker path a serialisation cost the main-thread path never pays and
 flatter it in the wrong direction. Even stripped, at 50,000 nodes the boundary
 is not free, and this is what it costs.
@@ -310,7 +373,7 @@ these eight once a graph is being explored rather than loaded.
 
 ## Draw budget — LOD and culling
 
-From `optimise()` ([optimize.js:103](src/bench/optimize.js#L103)). Both
+From `optimise()` ([optimize.ts:119](src/bench/optimize.ts#L119)). Both
 optimisations are applied in the **shared layer**, not through each library's own
 feature, so every engine gets identical help.
 
@@ -343,23 +406,46 @@ ships the optimisation you would otherwise have written yourself"*.
 
 ## Interaction — hover and debounce
 
-The hover scenario ([scenarios.js:446](src/bench/scenarios.js#L446)) has a
+The hover scenario ([scenarios.ts:683](src/bench/scenarios.ts#L683)) has a
 calibration pass before it measures anything, and the reason is worth knowing:
 a node is about eleven pixels across on a fitted graph, so a blind sweep across
 the pane lands on one roughly never. The first version of this scenario reported
 "1 callback out of 181 moves" for every engine, which measured the geometry of
 the sweep and nothing about the library.
 
-So it walks a 56 × 28 grid and keeps the points that produced a callback — the
-engine's own hover callback is the oracle, which needs no engine-specific API and
-is the identical procedure for all eight.
+So it walks a grid and keeps the points that produced a callback — the engine's
+own hover callback is the oracle, which needs no engine-specific API and is the
+identical procedure for all eight. The grid is derived from the pane at roughly
+one sample every 4 px, which is what it takes not to step over an 11 px node; it
+was a fixed 56 × 28 and that was a bug, described in
+[COMPARISON.md](COMPARISON.md#what-this-file-still-cannot-tell-you).
 
 | Metric | Computation | What it tells you |
 |---|---|---|
-| `hitArea` | `hits ÷ 1568` grid points, as % | how much of the pane this engine will report a hover from |
+| `hitArea` | `hits ÷ grid points`, as % | how much of the pane this engine will report a hover from |
 | `pointerMoves` | synthetic pointer steps dispatched | the traffic, for context |
 | `hoverCallbacks` | callbacks the engine fired | raw chattiness |
 | `callbacksPerMove` | `hoverCallbacks ÷ pointerMoves`, 2 dp | see below |
+| `inputP50Ms` / `inputP95Ms` / `inputWorstMs` | pointer event → the paint that answers it | see below |
+
+### `inputP50Ms`, `inputP95Ms`, `inputWorstMs`
+From `latency()` ([probes.ts](src/bench/probes.ts)): 24 samples, each one a
+pointer event dispatched at a calibrated hit point with the clock stopping at
+the paint that answers it — `nextPaint()`, so the paint has been *presented* and
+not merely scheduled. Alternates on-node and off-node so every sample is a real
+transition, with the debounce off, which makes it the engine's own floor rather
+than the debounce's contribution.
+
+**This is the number a user calls "laggy", and `frameP95` is at its most
+misleading right here.** An engine can present every frame inside its budget
+while the response to the pointer sits in a queue behind the redraw: the
+animation is smooth and the hover card arrives 400 ms after the pointer did.
+Nothing in the frame columns distinguishes that from a hover card that arrived
+instantly.
+
+There is a floor of one frame by construction — about 8 ms on a 120 Hz panel,
+16 ms on a 60 Hz one — so these are comparative between engines on one machine
+and are not absolutes.
 
 ### `hitArea`
 A by-product worth reading on its own. A canvas engine hit-tests the drawn
@@ -381,9 +467,44 @@ one node would let every engine dedupe the run down to a single callback — the
 traffic a debounce absorbs is the *transitions*.
 
 The debounce is applied to the **React state update**, not to the engine
-([usePane.js:69](src/bench/usePane.js#L69)), because that is where the real
+([usePane.ts:107](src/bench/usePane.ts#L107)), because that is where the real
 hover card's cost is. Counting callbacks without the state update would measure
 how chatty the engine is and miss the half of the cost the debounce removes.
+
+---
+
+## Bundle cost — the one metric that is not a scenario
+
+### `bundleKB`
+Not measured in the browser at all. Every engine sits behind a `React.lazy` in
+[`src/engines.ts`](src/engines.ts), so the app build already emits exactly one
+chunk per engine; [`.bench-drivers/size.mjs`](.bench-drivers/size.mjs) builds
+with the Vite manifest on, walks the import graph, and gzips what it finds.
+
+```
+node .bench-drivers/size.mjs           # a markdown table
+node .bench-drivers/size.mjs --json    # the same numbers, machine-readable
+```
+
+Three decisions in it that change the number materially:
+
+- **Marginal, not total.** Everything reachable from the HTML entry — React, the
+  shared graph layer, the bench chrome — is subtracted, because it is paid for
+  before any engine is chosen. Counting it eight times would flatten the
+  differences the column exists to show.
+- **Siblings are excluded.** The shared store is dynamically imported from all
+  eight panes, so an unstopped walk from one pane reaches the other seven and
+  reports the union. It did, and all eight came out identical, which is the kind
+  of wrong number that looks like a working script.
+- **Gzip per file, not over a concatenation.** That is how they are served; one
+  stream would share a dictionary across files and under-report.
+
+Anything the build emitted that neither the entry nor any engine claimed is
+printed rather than folded in — in practice the libraries' own layout workers,
+fetched by `new Worker(new URL(...))` from inside `node_modules` and so invisible
+to the import graph. Cytoscape's is 152 KB gzipped, which is more than
+Cytoscape's own chunk. Deferred cost, not zero cost, and this repo uses the
+shared layout rather than theirs.
 
 ---
 
@@ -401,14 +522,16 @@ a spanning note instead of numbers.
 
 | Scenario | Headline metric | Also reports |
 |---|---|---|
-| Hairball | `ttfrMs` | `synthMs` `layoutMs` `updateMs` `heapMB` `blockedMs` `longestTaskMs` |
-| Streaming | `fps` | `frameP95` `worstFrameMs` `dropped` `pushedPerSec` `heapMB` `heapSlopeMBs` `leakMB` |
-| Zoom & pan | `frameP95` | `fps` `frameP50` `worstFrameMs` `dropped` `blockedMs` |
+| Hairball | `ttfrMs` | `synthMs` `layoutMs` `updateMs` `heapMB` `heapPerNodeKB` `domNodes` `domPerNode` `blockedMs` `longestTaskMs` `idleLagP95Ms` |
+| Expansion | `p50Ms` | `p95Ms` `worstMs` `firstMs` `lastMs` `layoutP95Ms` `updateP95Ms` `heapMB` `heapPerNodeKB` `domNodes` `domPerNode` `blockedMs` |
+| Streaming | `fps` | `frameP95` `worstFrameMs` `dropped` `pushedPerSec` `heapMB` `heapSlopeMBs` `leakMB` `lagP95Ms` `lagWorstMs` `domNodes` `domPerNode` |
+| Zoom & pan | `frameP95` | `fps` `frameP50` `worstFrameMs` `dropped` `blockedMs` `lagP95Ms` |
 | Layout & worker | `worstFrameMs` | `where` `solveMs` `transferMs` `ticks` `alpha` `converged` `framesDuring` |
-| LOD & culling | `frameP95` | `kept` `drawnNodes` `drawnEdges` `ttfrMs` `fps` `dropped` |
-| Hover & debounce | `frameP95` | `hitArea` `callbacksPerMove` `hoverCallbacks` `dropped` |
+| LOD & culling | `frameP95` | `kept` `drawnNodes` `drawnEdges` `ttfrMs` `fps` `dropped` `lagP95Ms` `domNodes` `domPerNode` |
+| Hover & debounce | `frameP95` | `inputP50Ms` `inputP95Ms` `inputWorstMs` `hitArea` `callbacksPerMove` `hoverCallbacks` `dropped` |
+| *(not a scenario)* | `bundleKB` | marginal gzipped cost of selecting the pane |
 
-Headlines are declared in [Compare.jsx:23](src/bench/Compare.jsx#L23) with the
+Headlines are declared in [Compare.tsx:31](src/bench/Compare.tsx#L31) with the
 metric named in the column header, so the choice can be argued with rather than
 taken on trust.
 
@@ -467,7 +590,8 @@ anyone can check:
 ### Run it more than once
 
 Everything here is a single-shot measurement written to `localStorage` and
-overwritten on re-run. Frame percentiles over a 10-second window are reasonably
+overwritten on re-run of the same engine, scenario and paint backend — a
+different backend is a different row, not an overwrite. Frame percentiles over a 10-second window are reasonably
 stable; heap deltas and first-render times are not. Run each engine three times,
 report the median, and say that you did. For anything you plan to publish, close
 every other tab: frame times and long tasks are properties of *the tab's main
@@ -477,7 +601,7 @@ thread*, and a Slack notification lands in your p95.
 
 ## Where to see them live
 
-The **lab** ([`src/bench/Lab.jsx`](src/bench/Lab.jsx), one page per library at
+The **lab** ([`src/bench/Lab.tsx`](src/bench/Lab.tsx), one page per library at
 `#/lab/<engine>`) puts the frame, blocking and heap readouts in a continuously
 sampled gauge and gives you the dials by hand. It stops the gauge while a
 scripted scenario runs — that scenario's row is the record, and two disagreeing

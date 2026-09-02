@@ -27,13 +27,16 @@ import { layoutRadial } from '../graph/ops.ts'
 import { synthGraph } from '../graph/synth.ts'
 import { optimise } from './optimize.ts'
 import {
+  domNodes,
   heapMB,
+  latency,
   nextPaint,
   round,
   sampleFrames,
   sleep,
   startFrames,
   summarise,
+  watchLag,
   watchLongTasks,
   collectGarbage
 } from './probes.ts'
@@ -58,6 +61,19 @@ const flag = (value: KnobValue | undefined): boolean => value === true
  */
 const delta = (after: number | null, before: number | null): number | null =>
   after == null || before == null ? null : Math.round((after - before) * 100) / 100
+
+/**
+ * A per-node figure from a total, in KB.
+ *
+ * Worth having because the raw totals are not comparable across the dial: 40 MB
+ * at 1,000 nodes and 40 MB at 50,000 are the same number and opposite findings,
+ * and only the second one scales. Same argument for elements per node.
+ */
+const perNodeKB = (mb: number | null, n: number): number | null =>
+  mb == null || !n ? null : round((mb * 1024) / n, 2)
+
+const per = (total: number | null, n: number): number | null =>
+  total == null || !n ? null : round(total / n, 2)
 
 /**
  * Adds `count` nodes hung off nodes already present, plus one cross-link each.
@@ -191,6 +207,15 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
 
       const blocking = tasks.stop()
       const heapAfter = heapMB()
+      const elements = domNodes(ctx.pane())
+
+      // A quiet window: the graph is up and nothing is driving it. An engine
+      // that keeps its own render or physics tick running costs the app every
+      // task it queues from here on, and this is the only column that sees it —
+      // frame deltas stay at the display cadence and `longtask` never fires.
+      const idle = watchLag()
+      await sleep(2000)
+      const idleLag = idle.stop()
 
       return {
         metrics: {
@@ -205,8 +230,17 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
           // React's render and the browser's paint. The one a user feels.
           ttfrMs: paintedMs,
           heapMB: delta(heapAfter, heapBefore),
+          // Per node, so this row can be read against a row from a different
+          // dial setting.
+          heapPerNodeKB: perNodeKB(delta(heapAfter, heapBefore), graph.nodes.length),
+          // What the pane is actually holding, and the mechanism behind
+          // `ttfrMs`: a canvas engine reports a handful of elements at any size,
+          // a DOM engine reports several per node.
+          domNodes: elements,
+          domPerNode: per(elements, graph.nodes.length),
           blockedMs: blocking && blocking.blockedMs,
-          longestTaskMs: blocking && blocking.longestMs
+          longestTaskMs: blocking && blocking.longestMs,
+          idleLagP95Ms: idleLag.p95
         }
       }
     }
@@ -282,6 +316,7 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
 
       const blocking = tasks.stop()
       const heapAfter = heapMB()
+      const elements = domNodes(ctx.pane())
       const wait = summarise(waits)
       const layout = summarise(layouts)
       const update = summarise(updates)
@@ -307,7 +342,13 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
           updateP95Ms: update.p95,
           blockedMs: blocking && blocking.blockedMs,
           longestTaskMs: blocking && blocking.longestMs,
-          heapMB: delta(heapAfter, heapBefore)
+          heapMB: delta(heapAfter, heapBefore),
+          heapPerNodeKB: perNodeKB(delta(heapAfter, heapBefore), live.nodes.length),
+          // Read against the hairball's figure at the same final size: a pane
+          // that ends up holding more elements per node after twenty
+          // incremental updates than it does on a cold render is leaking DOM.
+          domNodes: elements,
+          domPerNode: per(elements, live.nodes.length)
         }
       }
     }
@@ -366,6 +407,10 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
 
       const heapStart = heapMB()
       const tasks = watchLongTasks()
+      // Responsiveness under load, which the frame columns cannot report: an
+      // engine can present every frame on time and still make the next click
+      // wait behind a queue of pushes it has not caught up with.
+      const lag = watchLag()
 
       // Ten pushes a second. Faster than that and the batches get small enough
       // that React's own per-update overhead dominates the measurement; slower
@@ -399,7 +444,9 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
       clearInterval(timer)
 
       const blocking = tasks.stop()
+      const lagging = lag.stop()
       const heapEnd = heapMB()
+      const elements = domNodes(ctx.pane())
 
       // Empty the pane and look again. A heap that does not come back down once
       // every node is gone is the leak signal — the churn itself moving the
@@ -425,6 +472,10 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
           dropped: frames.dropped,
           updateMs: ctx.lastStat(),
           blockedMs: blocking && blocking.blockedMs,
+          lagP95Ms: lagging.p95,
+          lagWorstMs: lagging.worst,
+          domNodes: elements,
+          domPerNode: per(elements, live.nodes.length),
           // What holding the base graph costs this engine, empty pane to loaded.
           // Free to report — the reading it needs had to exist for `leakMB` to
           // mean anything — and it is the only per-engine memory number here
@@ -469,6 +520,7 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
       }
 
       const tasks = watchLongTasks()
+      const lag = watchLag()
       let last = 1
 
       const frames = await sampleFrames(num(ctx.knobs.seconds) * 1000, progress => {
@@ -487,6 +539,7 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
       })
 
       const blocking = tasks.stop()
+      const lagging = lag.stop()
       view.fit()
 
       return {
@@ -498,7 +551,11 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
           frameP95: frames.p95,
           worstFrameMs: frames.worst,
           dropped: frames.dropped,
-          blockedMs: blocking && blocking.blockedMs
+          blockedMs: blocking && blocking.blockedMs,
+          // How long anything else would have waited while the sweep ran. An
+          // engine that re-derives the scene every frame leaves the whole app
+          // unresponsive during a pan, not merely choppy.
+          lagP95Ms: lagging.p95
         }
       }
     }
@@ -639,6 +696,7 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
 
       const view = ctx.viewport()
       const tasks = watchLongTasks()
+      const lag = watchLag()
       let last = 1
 
       const frames = await sampleFrames(num(ctx.knobs.seconds) * 1000, progress => {
@@ -650,6 +708,8 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
       })
 
       const blocking = tasks.stop()
+      const lagging = lag.stop()
+      const elements = domNodes(ctx.pane())
       if (view) view.fit()
 
       return {
@@ -669,7 +729,13 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
           frameP95: frames.p95,
           worstFrameMs: frames.worst,
           dropped: frames.dropped,
-          blockedMs: blocking && blocking.blockedMs
+          blockedMs: blocking && blocking.blockedMs,
+          lagP95Ms: lagging.p95,
+          // Against the hairball's `domNodes` at the same size, this is what
+          // culling bought on a DOM engine — and on a canvas one it shows that
+          // it bought nothing there, which is the finding.
+          domNodes: elements,
+          domPerNode: per(elements, drawn.nodes)
         },
         note: view
           ? undefined
@@ -836,6 +902,29 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
       ctx.hover.setDebounce(0)
 
       const callbacks = ctx.hover.count()
+
+      // ── Input to paint ───────────────────────────────────────────────────
+      //
+      // The sweep above says how many callbacks fire and what the frames looked
+      // like. Neither answers the question a user asks, which is how long the
+      // hover takes to appear — and `frameP95` is at its most misleading here:
+      // an engine can present every frame inside its budget while the response
+      // to the pointer sits in a queue behind the redraw.
+      //
+      // Fired at calibrated hit points, alternating on and off so every sample
+      // is a real transition, with the debounce off — this is the engine's own
+      // floor rather than the debounce's contribution, which the `debounceMs`
+      // knob is there to measure separately.
+      const input = await latency(24, i => {
+        if (i % 2 && misses.length) {
+          const miss = misses[(i * 7) % misses.length]!
+          step(miss.x, miss.y)
+        } else {
+          const hit = hits[i % hits.length]!
+          step(hit.x, hit.y)
+        }
+      })
+
       return {
         metrics: {
           nodes: graph.nodes.length,
@@ -855,7 +944,12 @@ export const SCENARIOS: [Scenario, ...Scenario[]] = [
           frameP95: frames.p95,
           worstFrameMs: frames.worst,
           dropped: frames.dropped,
-          blockedMs: blocking && blocking.blockedMs
+          blockedMs: blocking && blocking.blockedMs,
+          // Pointer event to the paint that answers it. One frame is the floor,
+          // so read these against each other and never as absolutes.
+          inputP50Ms: input.p50,
+          inputP95Ms: input.p95,
+          inputWorstMs: input.worst
         }
       }
     }

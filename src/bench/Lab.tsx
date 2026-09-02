@@ -489,7 +489,7 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
     begin()
     setRunning(true)
     try {
-      const row = await runScenario(engineKey, scenario, knobs, makeCtx(knobs))
+      const row = await runScenario(engineKey, renderer, scenario, knobs, makeCtx(knobs))
       setResults(saveResult(row))
     } finally {
       // The hover scenario owns the debounce while it runs and leaves it at 0.
@@ -497,7 +497,7 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
       setHoverDebounce(debounce)
       setRunning(false)
     }
-  }, [begin, debounce, engineKey, knobs, makeCtx, running, scenario, setHoverDebounce])
+  }, [begin, debounce, engineKey, knobs, makeCtx, renderer, running, scenario, setHoverDebounce])
 
   const rows = useMemo(
     () =>
