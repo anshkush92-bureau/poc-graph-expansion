@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useRef } from 'react'
 import { FreeLayoutType } from '@neo4j-nvl/base'
+import type { Node as NvlNode, NvlOptions, Relationship } from '@neo4j-nvl/base'
 import { InteractiveNvlWrapper } from '@neo4j-nvl/react'
+import type { MouseEventCallbacks } from '@neo4j-nvl/react'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
 import { INK, nodeColor } from '../ui/theme.ts'
 import { useResize } from '../ui/useResize.ts'
+import type { GraphPaneProps } from '../engine/types.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -57,7 +60,13 @@ import { useResize } from '../ui/useResize.ts'
 const EDGE = '#2F3746'
 const LOOP = '#7FD4E8'
 
-const OPTIONS = {
+/**
+ * `backgroundColor` is honoured by NVL but missing from its published
+ * `NvlOptions`, so it is declared alongside rather than dropped.
+ */
+type Options = NvlOptions & { backgroundColor: string }
+
+const OPTIONS: Options = {
   // Coordinates come from the shared radial layout, so NVL must not run one of
   // its own over the top of them.
   layout: FreeLayoutType,
@@ -80,21 +89,24 @@ function NvlGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
   // The wrapper's ref, once mounted, is not the NVL instance itself but a
   // proxy object exposing NVL's instance methods directly (`.fit`, `.setZoom`,
   // `.getScale`, `.getPan`, `.setPan`, ...) — see `BasicNvlWrapper`'s
   // `useImperativeHandle`. No `.nvl` nesting.
-  const nvl = useRef(null)
+  const nvl = useRef<React.ComponentRef<typeof InteractiveNvlWrapper>>(null)
   // Node ids to fit against, as an array, so a resize can re-fit without
   // waiting for the next graph change.
-  const shown = useRef([])
+  const shown = useRef<string[]>([])
   const fitted = useRef(-1)
-  const hoveredId = useRef(null)
-  const fitTimer = useRef(null)
+  const hoveredId = useRef<string | null>(null)
+  const fitTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
   // Captions only render on the canvas backend — the WebGL one drops them
@@ -104,23 +116,22 @@ function NvlGraph({
   // live, so a stable ref (evaluated once, on first render) matches that
   // contract instead of reacting to a prop that in practice never changes
   // under a mounted instance.
-  const nvlOptions = useRef(
-    Object.assign({}, OPTIONS, {
-      renderer: renderer === 'webgl' ? 'webgl' : 'canvas'
-    })
-  ).current
+  const nvlOptions = useRef<Options>({
+    ...OPTIONS,
+    renderer: renderer === 'webgl' ? 'webgl' : 'canvas'
+  }).current
 
-  const mouseEventCallbacks = useRef({
-    onNodeClick: node => handlers.current.onNodeClick(node.id),
-    onRelationshipClick: rel => handlers.current.onEdgeClick(rel.id),
-    onCanvasClick: () => handlers.current.onBackgroundClick(),
+  const mouseEventCallbacks = useRef<MouseEventCallbacks>({
+    onNodeClick: node => handlers.current?.onNodeClick(node.id),
+    onRelationshipClick: rel => handlers.current?.onEdgeClick(rel.id),
+    onCanvasClick: () => handlers.current?.onBackgroundClick(),
     // `onHover` fires on **every mousemove**, hit or miss, so without this
     // dedupe it thrashes React state continuously while the pointer moves.
-    onHover: (element, hit, event) => {
-      const id = element && element.id && !element.from ? element.id : null
+    onHover: (element, _hit, event) => {
+      const id = element && element.id && !('from' in element) ? element.id : null
       if (id === hoveredId.current) return
       hoveredId.current = id
-      handlers.current.onNodeHover(id, id ? { x: event.clientX, y: event.clientY } : null)
+      handlers.current?.onNodeHover(id, id ? { x: event.clientX, y: event.clientY } : null)
     },
     // Turns the Pan/Zoom/DragNode interaction handlers on — see the header
     // comment. No app-level behaviour hangs off these three; they exist only
@@ -137,16 +148,16 @@ function NvlGraph({
     // contract, and a scenario that drives both per frame pays for that.
     if (onViewport) {
       onViewport({
-        zoomBy: factor => {
-          if (nvl.current) nvl.current.setZoom(nvl.current.getScale() * factor)
+        zoomBy: (factor: number) => {
+          const scale = nvl.current?.getScale?.()
+          if (scale != null) nvl.current?.setZoom?.(scale * factor)
         },
-        panBy: (dx, dy) => {
-          if (!nvl.current) return
-          const at = nvl.current.getPan()
-          nvl.current.setPan(at.x + dx, at.y + dy)
+        panBy: (dx: number, dy: number) => {
+          const at = nvl.current?.getPan?.()
+          if (at) nvl.current?.setPan?.(at.x + dx, at.y + dy)
         },
         fit: () => {
-          if (nvl.current && shown.current.length) nvl.current.fit(shown.current)
+          if (shown.current.length) nvl.current?.fit?.(shown.current)
         }
       })
     }
@@ -168,7 +179,7 @@ function NvlGraph({
   const refit = useRef(() => {
     clearTimeout(fitTimer.current)
     fitTimer.current = setTimeout(() => {
-      if (nvl.current && shown.current.length) nvl.current.fit(shown.current)
+      if (shown.current.length) nvl.current?.fit?.(shown.current)
     }, 120)
   })
 
@@ -181,15 +192,17 @@ function NvlGraph({
   const scene = useMemo(() => {
     const started = performance.now()
 
-    const nodes = graph.nodes
+    const nodes: NvlNode[] = graph.nodes
       .filter(n => positions[n.id])
       .map(node => {
         const meta = ENTITY[node.type]
         const behind = hidden.get(node.id) || 0
+        // Non-null: filtered to nodes the layout has placed.
+        const at = positions[node.id]!
         return {
           id: node.id,
-          x: positions[node.id].x,
-          y: positions[node.id].y,
+          x: at.x,
+          y: at.y,
           // Without this the free layout still lets a drag drift a node; pinned
           // keeps the shared arrangement exactly as the other panes draw it.
           pinned: true,
@@ -211,7 +224,7 @@ function NvlGraph({
         }
       })
 
-    const rels = graph.edges.map(edge => ({
+    const rels: Relationship[] = graph.edges.map(edge => ({
       id: edge.id,
       from: edge.source,
       to: edge.target,

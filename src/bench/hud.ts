@@ -19,9 +19,15 @@
 //     scripted scenarios do not read it this way.
 
 import { useEffect, useState } from 'react'
-import { heapMB, summarise } from './probes.js'
+import { heapMB, summarise } from './probes.ts'
+import type { FrameStats } from './probes.ts'
 
-export const IDLE = {
+export interface HudStats extends FrameStats {
+  heapMB: number | null
+  blockedMs: number | null
+}
+
+export const IDLE: HudStats = {
   frames: 0,
   fps: 0,
   p50: null,
@@ -45,7 +51,7 @@ const REPORT_MS = 500
  * numbers are the record, and two gauges disagreeing on screen invites reading
  * the wrong one.
  */
-export function useHud(active) {
+export function useHud(active: boolean): HudStats {
   const [hud, setHud] = useState(IDLE)
 
   useEffect(() => {
@@ -56,9 +62,9 @@ export function useHud(active) {
     let reported = last
     let first = true
     let blocked = 0
-    const deltas = []
+    const deltas: number[] = []
 
-    let observer = null
+    let observer: PerformanceObserver | null = null
     try {
       observer = new PerformanceObserver(list => {
         list.getEntries().forEach(entry => {
@@ -71,7 +77,7 @@ export function useHud(active) {
       observer = null
     }
 
-    const tick = now => {
+    const tick = (now: number) => {
       const delta = now - last
       last = now
       // The first delta spans whatever happened before the gauge started —

@@ -15,7 +15,27 @@
 // a graph of this size, and whether that cost lands on the UI thread.
 
 import { forceCenter, forceLink, forceManyBody, forceSimulation } from 'd3-force'
+import type { SimulationNodeDatum } from 'd3-force'
 import { NODE_SPACING } from '../graph/ops.ts'
+import type { Graph, Positions } from '../engine/types.ts'
+
+/** The stripped node d3 mutates: it adds x/y/vx/vy to whatever it is given. */
+interface SimNode extends SimulationNodeDatum {
+  id: string
+}
+
+export interface ForceOptions {
+  alphaMin?: number
+  maxTicks?: number
+}
+
+export interface ForceResult {
+  positions: Positions
+  ticks: number
+  alpha: number
+  converged: boolean
+  ms: number
+}
 
 /**
  * Runs a simulation to convergence and reports what it took.
@@ -33,24 +53,28 @@ import { NODE_SPACING } from '../graph/ops.ts'
  * that has not settled by then reports the alpha it reached, which is a
  * finding, not a failure.
  */
-export function forceLayout(graph, options) {
+export function forceLayout(graph: Graph, options?: ForceOptions): ForceResult {
   const { alphaMin = 0.02, maxTicks = 400 } = options || {}
 
   // d3-force mutates the objects it is given and stores link endpoints as
   // references into the node array, so it gets its own throwaway copies — the
   // app's graph objects are shared with eight renderers and must not grow x/y/
   // vx/vy fields behind their backs.
-  const nodes = graph.nodes.map(n => ({ id: n.id }))
+  const nodes: SimNode[] = graph.nodes.map(n => ({ id: n.id }))
   const index = new Map(nodes.map((n, i) => [n.id, i]))
   const links = graph.edges
     // A self-edge has no length to satisfy and would make the solver push a
     // node against itself; unresolvable endpoints would throw outright.
     .filter(e => e.source !== e.target && index.has(e.source) && index.has(e.target))
-    .map(e => ({ source: index.get(e.source), target: index.get(e.target) }))
+    // Both indices resolve — the filter above dropped every unresolvable edge.
+    .map(e => ({ source: index.get(e.source)!, target: index.get(e.target)! }))
 
   const started = now()
   const sim = forceSimulation(nodes)
-    .force('link', forceLink(links).distance(NODE_SPACING).strength(0.4))
+    .force(
+      'link',
+      forceLink<SimNode, (typeof links)[number]>(links).distance(NODE_SPACING).strength(0.4)
+    )
     // `distanceMax` is what keeps this from being O(n²) in practice: without a
     // cutoff, Barnes-Hut still walks far-away quadtree cells that contribute
     // nothing at these scales.
@@ -69,9 +93,9 @@ export function forceLayout(graph, options) {
     ticks += 1
   }
 
-  const positions = {}
+  const positions: Positions = {}
   nodes.forEach(n => {
-    positions[n.id] = { x: n.x, y: n.y }
+    positions[n.id] = { x: n.x ?? 0, y: n.y ?? 0 }
   })
 
   return {
@@ -85,4 +109,4 @@ export function forceLayout(graph, options) {
 
 // `performance` exists in a worker too, but guard anyway — this module is
 // imported from both sides and a missing timer should not take the layout down.
-const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
+const now = (): number => (typeof performance !== 'undefined' ? performance.now() : Date.now())

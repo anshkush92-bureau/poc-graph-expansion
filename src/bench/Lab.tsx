@@ -1,15 +1,28 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.js'
+import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.ts'
 import { layoutRadial } from '../graph/ops.ts'
 import { synthGraph } from '../graph/synth.ts'
 import { routeHash } from '../route.ts'
-import { useHud } from './hud.js'
-import { optimise } from './optimize.js'
-import { runLayout } from './runLayout.js'
-import { SCENARIOS, defaultKnobs, prune, sprout } from './scenarios.js'
-import { loadResults, saveResult } from './store.js'
-import { Knob, ResultTable, format } from './table.jsx'
-import { runScenario, usePane } from './usePane.js'
+import { useHud } from './hud.ts'
+import { optimise } from './optimize.ts'
+import { runLayout } from './runLayout.ts'
+import { SCENARIOS, defaultKnobs, prune, sprout } from './scenarios.ts'
+import { loadResults, saveResult } from './store.ts'
+import { Knob, ResultTable, format } from './table.tsx'
+import { runScenario, usePane } from './usePane.ts'
+import type { Graph, Positions } from '../engine/types.ts'
+import type { LayoutMode } from './layout.worker.ts'
+import type { HudStats } from './hud.ts'
+import type {
+  ChoiceKnob,
+  EngineKey,
+  KnobValue,
+  Knobs,
+  MetricValue,
+  Metrics,
+  NumberKnob,
+  ToggleKnob
+} from './types.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -41,9 +54,12 @@ import { runScenario, usePane } from './usePane.js'
 
 const RATE_TICK_MS = 100
 
-export default function Lab({ engine }) {
-  if (!engine || !ENGINES[engine]) return <LabIndex />
-  return <LabPane key={engine} engineKey={engine} />
+/** The first token of a surface tag ('dom+svg' -> 'dom'), for its CSS class. */
+const surfaceClass = (surface: string): string => surface.split(/[/+]/)[0] ?? surface
+
+export default function Lab({ engine }: { engine?: string | null }) {
+  if (!engine || !(engine in ENGINES)) return <LabIndex />
+  return <LabPane key={engine} engineKey={engine as EngineKey} />
 }
 
 /** The landing page: pick a library, get its own URL. */
@@ -63,9 +79,7 @@ function LabIndex() {
             <a className="lab__card" key={key} href={routeHash('lab', key)}>
               <b>{e.name}</b>
               <span className="lab__card-lib">{e.lib}</span>
-              <span
-                className={'lab__surface lab__surface--' + e.surface.split('/')[0].split('+')[0]}
-              >
+              <span className={'lab__surface lab__surface--' + surfaceClass(e.surface)}>
                 {e.surface}
               </span>
               <span className="lab__card-note">{e.note}</span>
@@ -87,10 +101,17 @@ function LabIndex() {
 // twice over: the interesting question at the bottom is what an *empty* pane
 // costs — that is the baseline every other reading is relative to — and a knob
 // that cannot reach zero also cannot be used to turn the thing off.
-const num = (label, min, max, step) => ({ type: 'number', label, min, max, step })
-const SOLVER = { type: 'choice', label: 'Solver', options: ['radial', 'force'] }
+const num = (label: string, min: number, max: number, step: number): NumberKnob => ({
+  type: 'number',
+  label,
+  min,
+  max,
+  step
+})
+const SOLVER: ChoiceKnob = { type: 'choice', label: 'Solver', options: ['radial', 'force'] }
+const toggle = (label: string): ToggleKnob => ({ type: 'toggle', label })
 
-function LabPane({ engineKey }) {
+function LabPane({ engineKey }: { engineKey: EngineKey }) {
   const engine = ENGINES[engineKey]
   const Renderer = engine.Component
   const {
@@ -118,8 +139,8 @@ function LabPane({ engineKey }) {
   const [initial, setInitial] = useState(1000)
   const [edges, setEdges] = useState(1500)
   const [expandBy, setExpandBy] = useState(25)
-  const [renderer, setRenderer] = useState(engine.renderers[0])
-  const [layoutMode, setLayoutMode] = useState('radial')
+  const [renderer, setRenderer] = useState(engine.renderers[0]!)
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('radial')
   const [worker, setWorker] = useState(false)
   const [alphaMin, setAlphaMin] = useState(0.02)
   const [lod, setLod] = useState(false)
@@ -130,18 +151,18 @@ function LabPane({ engineKey }) {
   const [rate, setRate] = useState(500)
 
   const [busy, setBusy] = useState(false)
-  const [report, setReport] = useState(null)
+  const [report, setReport] = useState<Metrics | null>(null)
   // Bumped on every expansion, because a renderer's data effect keys off it to
   // re-read the explored/pending status of nodes it has already drawn.
   const [statusVersion, setStatusVersion] = useState(0)
 
   // The last *full* graph built, so a re-layout does not rebuild it — and so the
   // stream has something to churn that is not whatever the cull left behind.
-  const fullRef = useRef(null)
+  const fullRef = useRef<Graph | null>(null)
   // Its positions, kept so an expansion can be laid out *against* them.
-  const posRef = useRef(null)
+  const posRef = useRef<Positions | null>(null)
   const seqRef = useRef(0)
-  const expandedRef = useRef(new Set())
+  const expandedRef = useRef(new Set<string>())
   // What the last Build actually made, and what it was asked for, so the split
   // below stays honest while the sliders are dragged to numbers nothing has been
   // built at yet.
@@ -156,24 +177,33 @@ function LabPane({ engineKey }) {
   // Knobs the expansion handler reads, mirrored into a ref so that handler can
   // keep one identity for the life of the page — a fresh `onNodeClick` on every
   // gauge tick would re-render the engine under test twice a second.
-  const live = useRef({})
+  const live = useRef<{ expandBy: number; lod: boolean; cull: boolean; fraction: number }>({
+    expandBy,
+    lod,
+    cull,
+    fraction
+  })
   live.current = { expandBy, lod, cull, fraction }
 
   // ── Scripted runs, scoped to this engine ─────────────────────────────────
   const [scenarioKey, setScenarioKey] = useState(SCENARIOS[0].key)
-  const scenario = useMemo(() => SCENARIOS.find(s => s.key === scenarioKey), [scenarioKey])
-  const [knobState, setKnobState] = useState({
+  const scenario = useMemo(
+    () => SCENARIOS.find(s => s.key === scenarioKey) ?? SCENARIOS[0],
+    [scenarioKey]
+  )
+  const [knobState, setKnobState] = useState<{ key: string; values: Knobs }>({
     key: SCENARIOS[0].key,
     values: defaultKnobs(SCENARIOS[0])
   })
   const knobs = knobState.key === scenarioKey ? knobState.values : defaultKnobs(scenario)
   const setKnob = useCallback(
-    (key, value) => {
+    (key: string, value: KnobValue) => {
       setKnobState(prev => ({
         key: scenarioKey,
-        values: Object.assign({}, prev.key === scenarioKey ? prev.values : defaultKnobs(scenario), {
+        values: {
+          ...(prev.key === scenarioKey ? prev.values : defaultKnobs(scenario)),
           [key]: value
-        })
+        }
       }))
     },
     [scenario, scenarioKey]
@@ -198,7 +228,7 @@ function LabPane({ engineKey }) {
    * you actually waited. One total would hide which of the four is your problem.
    */
   const apply = useCallback(
-    async (full, buildMs) => {
+    async (full: Graph, buildMs: number | null) => {
       busyRef.current = true
       setBusy(true)
       try {
@@ -213,7 +243,7 @@ function LabPane({ engineKey }) {
         setReport({
           nodes: full.nodes.length,
           edges: full.edges.length,
-          buildMs: buildMs == null ? null : buildMs,
+          buildMs,
           layout: layoutMode,
           where: worker ? 'worker' : 'main',
           solveMs: laid.solveMs,
@@ -267,7 +297,7 @@ function LabPane({ engineKey }) {
   // `live` or a ref), so the engine under test is never re-rendered just because
   // a slider moved.
   const expandFrom = useCallback(
-    async id => {
+    async (id: string) => {
       const graph = fullRef.current
       if (!graph || busyRef.current) return
       // Re-expanding is a no-op rather than a second helping — the same rule
@@ -317,10 +347,10 @@ function LabPane({ engineKey }) {
   // Stable too, and read through the ref rather than closed over: renderers
   // memoise on it, and a fresh function each render would re-run their data
   // effect — a full re-derive of the scene — on every gauge tick.
-  const isExpanded = useCallback(id => expandedRef.current.has(id), [])
+  const isExpanded = useCallback((id: string) => expandedRef.current.has(id), [])
 
   const zoom = useCallback(
-    what => {
+    (what: number | 'fit') => {
       const handle = viewport()
       if (!handle) return
       if (what === 'fit') handle.fit()
@@ -382,7 +412,10 @@ function LabPane({ engineKey }) {
   const rows = useMemo(
     () =>
       Object.keys(results)
-        .map(k => results[k])
+        .flatMap(k => {
+          const row = results[k]
+          return row ? [row] : []
+        })
         .filter(r => r.engine === engineKey && r.scenario === scenarioKey),
     [engineKey, results, scenarioKey]
   )
@@ -416,9 +449,7 @@ function LabPane({ engineKey }) {
       <header className="lab__head">
         <h2>{engine.name}</h2>
         <span className="pane__lib">{engine.lib}</span>
-        <span
-          className={'lab__surface lab__surface--' + engine.surface.split('/')[0].split('+')[0]}
-        >
+        <span className={'lab__surface lab__surface--' + surfaceClass(engine.surface)}>
           {engine.surface}
         </span>
         <p className="lab__note">{engine.note}</p>
@@ -433,19 +464,19 @@ function LabPane({ engineKey }) {
             knob={num('Initial nodes', 0, 50000, 1)}
             value={initial}
             disabled={locked}
-            onChange={setInitial}
+            onChange={v => setInitial(Number(v))}
           />
           <Knob
             knob={num('Edges', 0, 150000, 1)}
             value={edges}
             disabled={locked}
-            onChange={setEdges}
+            onChange={v => setEdges(Number(v))}
           />
           <Knob
             knob={num('Expand by (per click)', 0, 2000, 1)}
             value={expandBy}
             disabled={locked}
-            onChange={setExpandBy}
+            onChange={v => setExpandBy(Number(v))}
           />
           <button type="button" className="btn btn--primary" disabled={locked} onClick={build}>
             Build
@@ -498,7 +529,7 @@ function LabPane({ engineKey }) {
             knob={{ type: 'choice', label: 'Paint backend', options: engine.renderers }}
             value={renderer}
             disabled={locked || engine.renderers.length < 2}
-            onChange={setRenderer}
+            onChange={v => setRenderer(String(v))}
           />
         </Group>
 
@@ -506,19 +537,24 @@ function LabPane({ engineKey }) {
           title="Layout & worker"
           hint="Identical d3-force either way, so the only variable is where it runs. Watch the gauge, not the solve time — off the main thread the solve costs the same and the tab stays at 60."
         >
-          <Knob knob={SOLVER} value={layoutMode} disabled={locked} onChange={setLayoutMode} />
           <Knob
-            knob={{ type: 'toggle', label: 'In a Web Worker' }}
+            knob={SOLVER}
+            value={layoutMode}
+            disabled={locked}
+            onChange={v => setLayoutMode(String(v) as LayoutMode)}
+          />
+          <Knob
+            knob={toggle('In a Web Worker')}
             value={worker}
             disabled={locked}
-            onChange={setWorker}
+            onChange={v => setWorker(Boolean(v))}
           />
           {layoutMode === 'force' && (
             <Knob
               knob={num('Convergence α', 0, 0.2, 0.005)}
               value={alphaMin}
               disabled={locked}
-              onChange={setAlphaMin}
+              onChange={v => setAlphaMin(Number(v))}
             />
           )}
           <button type="button" className="btn" disabled={locked} onClick={redraw}>
@@ -531,22 +567,22 @@ function LabPane({ engineKey }) {
           hint="Both applied in the shared layer, so this engine gets exactly the help every other one gets. Read any speed-up next to `kept` below — “three times faster” means nothing without how much stopped being drawn. A visible fraction of 0 keeps nothing, which is the floor the rest of the readings sit on."
         >
           <Knob
-            knob={{ type: 'toggle', label: 'Level of detail (drop labels)' }}
+            knob={toggle('Level of detail (drop labels)')}
             value={lod}
             disabled={locked}
-            onChange={setLod}
+            onChange={v => setLod(Boolean(v))}
           />
           <Knob
-            knob={{ type: 'toggle', label: 'Viewport culling' }}
+            knob={toggle('Viewport culling')}
             value={cull}
             disabled={locked}
-            onChange={setCull}
+            onChange={v => setCull(Boolean(v))}
           />
           <Knob
             knob={num('Visible fraction', 0, 1, 0.05)}
             value={fraction}
             disabled={locked || !cull}
-            onChange={setFraction}
+            onChange={v => setFraction(Number(v))}
           />
           <button type="button" className="btn" disabled={locked} onClick={redraw}>
             Apply
@@ -561,7 +597,7 @@ function LabPane({ engineKey }) {
             knob={num('Nodes / sec', 0, 5000, 10)}
             value={rate}
             disabled={running}
-            onChange={setRate}
+            onChange={v => setRate(Number(v))}
           />
           <button
             type="button"
@@ -581,7 +617,7 @@ function LabPane({ engineKey }) {
             knob={num('Debounce (ms)', 0, 200, 5)}
             value={debounce}
             disabled={running}
-            onChange={setDebounce}
+            onChange={v => setDebounce(Number(v))}
           />
         </Group>
       </div>
@@ -669,7 +705,7 @@ function LabPane({ engineKey }) {
             <Knob
               key={knob.key}
               knob={knob}
-              value={knobs[knob.key]}
+              value={knobs[knob.key] ?? knob.value}
               disabled={locked}
               onChange={v => setKnob(knob.key, v)}
             />
@@ -709,8 +745,18 @@ function LabPane({ engineKey }) {
  * tasks reads as "never blocked", which is a much worse lie than "not measured
  * here".
  */
-function Gauge({ hud, live, hovers, onResetHovers }) {
-  const cells = [
+function Gauge({
+  hud,
+  live,
+  hovers,
+  onResetHovers
+}: {
+  hud: HudStats
+  live: boolean
+  hovers: number
+  onResetHovers(): void
+}) {
+  const cells: [string, MetricValue, string][] = [
     ['fps', hud.fps || '—', 'frames presented per second over the last ~3s'],
     ['p50 ms', hud.p50, 'median frame time'],
     ['p95 ms', hud.p95, '95th-percentile frame time — the stutter you notice'],
@@ -735,7 +781,15 @@ function Gauge({ hud, live, hovers, onResetHovers }) {
   )
 }
 
-function Group({ title, hint, children }) {
+function Group({
+  title,
+  hint,
+  children
+}: {
+  title: string
+  hint: string
+  children: React.ReactNode
+}) {
   return (
     <section className="lab__group">
       <h3>{title}</h3>

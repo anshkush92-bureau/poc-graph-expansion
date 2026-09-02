@@ -5,10 +5,12 @@ import {
   StateMachineConnector,
   newInstance
 } from '@jsplumb/browser-ui'
+import type { BrowserJsPlumbInstance } from '@jsplumb/browser-ui'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
 import { useResize } from '../ui/useResize.ts'
+import type { GraphEdge, GraphNode, GraphPaneProps } from '../engine/types.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -50,9 +52,9 @@ const PAD = 90
 // A lone root has a zero-sized box; give it something to be fitted against.
 const MIN_SPAN = 700
 
-const sizeOf = node => (node.level === 0 ? 38 : node.flagged ? 28 : 22)
+const sizeOf = (node: GraphNode): number => (node.level === 0 ? 38 : node.flagged ? 28 : 22)
 
-const connectorFor = edge =>
+const connectorFor = (edge: GraphEdge) =>
   isSelfEdge(edge)
     ? // A bezier between an element and itself has no direction to bow in and
       // renders as a dot under the node. The state-machine connector is jsPlumb's
@@ -79,24 +81,27 @@ function JsPlumbGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
-  const surface = useRef(null)
-  const plumb = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
+  const surface = useRef<HTMLDivElement>(null)
+  const plumb = useRef<BrowserJsPlumbInstance | null>(null)
   // id -> the div React rendered for that node, collected by ref callback.
-  const els = useRef(new Map())
+  const els = useRef(new Map<string, HTMLDivElement>())
   const [view, setView] = useState({ scale: 1, x: 0, y: 0 })
   // Bumped whenever the pane is resized, so the fit below re-runs against the
   // new box. There is no viewport object to ask — the fit *is* this state.
   const [measure, remeasure] = useState(0)
   useResize(frame, () => remeasure(n => n + 1))
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
   useEffect(() => {
     const instance = newInstance({
-      container: surface.current,
+      container: surface.current!,
       // Endpoints are the little handles jsPlumb draws for building connections
       // by dragging. This graph is not an editor, so they are switched off and
       // only the line itself is drawn.
@@ -110,7 +115,7 @@ function JsPlumbGraph({
     })
 
     instance.bind('connection:click', connection =>
-      handlers.current.onEdgeClick(connection.getData().edgeId)
+      handlers.current?.onEdgeClick((connection.getData() as { edgeId: string }).edgeId)
     )
 
     plumb.current = instance
@@ -129,7 +134,10 @@ function JsPlumbGraph({
    */
   useLayoutEffect(() => {
     const box = frame.current && frame.current.getBoundingClientRect()
-    const points = graph.nodes.map(n => positions[n.id]).filter(Boolean)
+    const points = graph.nodes.flatMap(n => {
+      const at = positions[n.id]
+      return at ? [at] : []
+    })
     if (!box || !box.width || !points.length) return
 
     const xs = points.map(p => p.x)
@@ -207,7 +215,7 @@ function JsPlumbGraph({
   useEffect(() => {
     if (!onViewport) return undefined
     onViewport({
-      zoomBy: factor =>
+      zoomBy: (factor: number) =>
         setView(v => {
           const box = frame.current
             ? frame.current.getBoundingClientRect()
@@ -220,7 +228,7 @@ function JsPlumbGraph({
             y: cy - (cy - v.y) * factor
           }
         }),
-      panBy: (dx, dy) => setView(v => Object.assign({}, v, { x: v.x + dx, y: v.y + dy })),
+      panBy: (dx: number, dy: number) => setView(v => ({ ...v, x: v.x + dx, y: v.y + dy })),
       // The fit *is* the layout effect above, and the only way to ask for it is
       // to tell it the box changed.
       fit: () => remeasure(n => n + 1)
@@ -228,7 +236,7 @@ function JsPlumbGraph({
     return () => onViewport(null)
   }, [onViewport])
 
-  const collect = (id, el) => {
+  const collect = (id: string, el: HTMLDivElement | null) => {
     if (el) els.current.set(id, el)
     else els.current.delete(id)
   }
@@ -238,7 +246,7 @@ function JsPlumbGraph({
       className="canvas plumb"
       ref={frame}
       onClick={event => {
-        if (event.target === frame.current) handlers.current.onBackgroundClick()
+        if (event.target === frame.current) handlers.current?.onBackgroundClick()
       }}
     >
       <div
@@ -269,11 +277,11 @@ function JsPlumbGraph({
                 borderColor: node.flagged ? FLARE : mix(meta.color, INK, 0.4),
                 opacity: isPending(node.id) ? 0.55 : 1
               }}
-              onClick={() => handlers.current.onNodeClick(node.id)}
+              onClick={() => handlers.current?.onNodeClick(node.id)}
               onMouseEnter={e =>
-                handlers.current.onNodeHover(node.id, { x: e.clientX, y: e.clientY })
+                handlers.current?.onNodeHover(node.id, { x: e.clientX, y: e.clientY })
               }
-              onMouseLeave={() => handlers.current.onNodeHover(null, null)}
+              onMouseLeave={() => handlers.current?.onNodeHover(null, null)}
             >
               {/* Counter-scaled so captions stay legible as the fit zooms out.
                   A node is a real DOM element here, which is the one thing this

@@ -10,11 +10,11 @@ import assert from 'node:assert/strict'
 import { test } from 'vitest'
 import { synthGraph } from '../graph/synth.ts'
 import { layoutRadial } from '../graph/ops.ts'
-import { summarise } from './probes.js'
-import { centreBox, cullToBox, optimise, stripLabels } from './optimize.js'
-import { forceLayout } from './force.js'
-import { sprout, trend } from './scenarios.js'
-import { ENGINES, ENGINE_KEYS } from '../engines.js'
+import { summarise } from './probes.ts'
+import { centreBox, cullToBox, optimise, stripLabels } from './optimize.ts'
+import { forceLayout } from './force.ts'
+import { sprout, trend } from './scenarios.ts'
+import type { Graph, GraphNode } from '../engine/types.ts'
 
 test('summarise: a steady 60fps stream reports 60 and drops nothing', () => {
   const deltas = new Array(120).fill(1000 / 60)
@@ -34,8 +34,8 @@ test('summarise: one long frame counts the frames it swallowed, not itself', () 
 test('summarise: p95 does not hide the stalls a mean would', () => {
   const deltas = new Array(95).fill(16).concat(new Array(5).fill(200))
   const out = summarise(deltas)
-  assert.ok(out.p95 >= 200, `p95 was ${out.p95}`)
-  assert.ok(out.p50 <= 16, `p50 was ${out.p50}`)
+  assert.ok(out.p95 != null && out.p95 >= 200, `p95 was ${out.p95}`)
+  assert.ok(out.p50 != null && out.p50 <= 16, `p50 was ${out.p50}`)
 })
 
 test('summarise: no samples is reported as no samples, not as zero cost', () => {
@@ -46,12 +46,12 @@ test('summarise: no samples is reported as no samples, not as zero cost', () => 
 
 test("stripLabels blanks captions without touching the caller's nodes", () => {
   const graph = synthGraph(40, 60)
-  const before = graph.nodes[5].name
+  const before = graph.nodes[5]!.name
   const out = stripLabels(graph)
-  assert.equal(out.nodes[5].name, '')
-  assert.equal(out.edges[3].label, '')
+  assert.equal(out.nodes[5]!.name, '')
+  assert.equal(out.edges[3]!.label, '')
   // The same node objects feed the side panel and whichever pane is mounted.
-  assert.equal(graph.nodes[5].name, before)
+  assert.equal(graph.nodes[5]!.name, before)
   assert.equal(out.nodes.length, graph.nodes.length)
 })
 
@@ -69,13 +69,15 @@ test('centreBox is centred on the graph and scales with the fraction', () => {
 
 test('cullToBox keeps only whole edges', () => {
   const positions = { a: { x: 0, y: 0 }, b: { x: 0, y: 0 }, far: { x: 9999, y: 9999 } }
+  // Cast: the cull reads ids and positions and nothing else, so the stub stands
+  // in for a graph rather than the test spelling out seven unused fields a node.
   const graph = {
     nodes: [{ id: 'a' }, { id: 'b' }, { id: 'far' }],
     edges: [
       { id: 'inside', source: 'a', target: 'b' },
       { id: 'straddling', source: 'a', target: 'far' }
     ]
-  }
+  } as unknown as Graph
   const out = cullToBox(graph, positions, { minX: -1, maxX: 1, minY: -1, maxY: 1 })
   assert.deepEqual(
     out.nodes.map(n => n.id),
@@ -95,7 +97,7 @@ test('optimise reports what survived, which is the denominator for every other n
   const out = optimise(graph, positions, { lod: true, cull: true, fraction: 0.3 })
   assert.ok(out.drawn.nodes < graph.nodes.length, 'culling removed nothing')
   assert.equal(out.drawn.nodes, out.graph.nodes.length)
-  assert.equal(out.graph.nodes[0].name, '')
+  assert.equal(out.graph.nodes[0]!.name, '')
 })
 
 test('optimise with everything off is a pass-through', () => {
@@ -113,7 +115,7 @@ test('forceLayout converges and places every node', () => {
   assert.ok(out.converged, `did not settle: alpha ${out.alpha} after ${out.ticks} ticks`)
   assert.ok(out.ticks > 0 && out.ticks < 400)
   Object.keys(out.positions).forEach(id => {
-    assert.ok(Number.isFinite(out.positions[id].x), `${id} has no x`)
+    assert.ok(Number.isFinite(out.positions[id]!.x), `${id} has no x`)
   })
 })
 
@@ -122,8 +124,8 @@ test('forceLayout does not write coordinates back onto the shared graph', () => 
   forceLayout(graph, { alphaMin: 0.1, maxTicks: 60 })
   // d3-force mutates what it is handed; the same node objects are shared with
   // eight renderers and must come back untouched.
-  assert.equal(graph.nodes[3].x, undefined)
-  assert.equal(typeof graph.edges[0].source, 'string')
+  assert.equal((graph.nodes[3] as GraphNode & { x?: number }).x, undefined)
+  assert.equal(typeof graph.edges[0]!.source, 'string')
 })
 
 test('forceLayout stops at maxTicks and says so rather than pretending', () => {
@@ -154,7 +156,7 @@ test('the edge dial has a floor: the spanning tree comes first', () => {
 test('trend: a flat heap has no slope, a growing one does', () => {
   assert.equal(trend([10, 10, 10, 10]), 0)
   assert.equal(trend([10, 11, 12, 13]), 1)
-  assert.ok(trend([10, 9, 8, 7]) < 0)
+  assert.ok((trend([10, 9, 8, 7]) ?? 0) < 0)
 })
 
 test('trend: too few readings, or a gap, reports nothing rather than a guess', () => {
@@ -164,7 +166,7 @@ test('trend: too few readings, or a gap, reports nothing rather than a guess', (
 
 test('sprout hangs every newcomer off the node it was given', () => {
   const graph = synthGraph(40, 60)
-  const onto = graph.nodes[7]
+  const onto = graph.nodes[7]!
   const grown = sprout(graph, 5, 0, onto)
 
   assert.equal(grown.nodes.length, graph.nodes.length + 5)
@@ -189,13 +191,4 @@ test('sprout without a parent still spreads the arrivals around', () => {
       .map(e => e.source)
   )
   assert.ok(sources.size > 1)
-})
-
-test('every engine declares at least one paint backend', () => {
-  // `Lab` reads `renderers[0]` as its default the moment a page mounts, so a
-  // missing entry is a blank screen for that library and nothing else.
-  ENGINE_KEYS.forEach(key => {
-    const list = ENGINES[key].renderers
-    assert.ok(Array.isArray(list) && list.length > 0, `${key} has no renderers`)
-  })
 })

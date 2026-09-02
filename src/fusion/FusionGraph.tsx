@@ -4,6 +4,40 @@ import PowerCharts from 'fusioncharts/fusioncharts.powercharts'
 import { ENTITY } from '../graph/data.ts'
 import { withLoops } from '../graph/loops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
+import type { GraphPaneProps, Point } from '../engine/types.ts'
+
+/** A node entry in drag-node's dataset. Every value is a string, as it wants. */
+interface DragNode {
+  id: string
+  x: string
+  y: string
+  label: string
+  shape: string
+  radius: string
+  color: string
+  alpha?: string
+  borderColor?: string
+  hoverColor?: string
+  allowDrag: string
+}
+
+interface DragConnector {
+  from: string
+  to: string
+  label: string
+  color: string
+  alpha: string
+  arrowAtStart: string
+  arrowAtEnd: string
+  strength: string
+}
+
+interface DragNodeData {
+  chart: Record<string, string>
+  dataset: [{ data: DragNode[] }]
+  labels: { label: { text: string; x: string; y: string; allowDrag: string }[] }
+  connectors?: [{ stdThickness: string; connector: DragConnector[] }]
+}
 
 /**
  * The FusionCharts renderer, on the drag-node chart (`dragnode`).
@@ -57,7 +91,11 @@ const NODE_SHAPES = '[class*="nodesGroup"] path'
  *
  * The y axis points up in FusionCharts and down in the layout, hence the flip.
  */
-function axisBox(points, width, height) {
+function axisBox(
+  points: Point[],
+  width: number,
+  height: number
+): { minX: number; maxX: number; minY: number; maxY: number } {
   // An empty graph is a legitimate state — the size dials go down to zero — and
   // `Math.min()` of nothing is `Infinity`, which makes every number below NaN.
   // One point at the origin costs nothing and lets the MIN_SPAN path below do
@@ -70,13 +108,13 @@ function axisBox(points, width, height) {
   let minY = Math.min(...ys) - PAD
   let maxY = Math.max(...ys) + PAD
 
-  const grow = (lo, hi, to) => {
+  const grow = (lo: number, hi: number, to: number): [number, number] => {
     const mid = (lo + hi) / 2
     return [mid - to / 2, mid + to / 2]
   }
 
-  let spanX = Math.max(maxX - minX, MIN_SPAN)
-  let spanY = Math.max(maxY - minY, MIN_SPAN)
+  const spanX = Math.max(maxX - minX, MIN_SPAN)
+  const spanY = Math.max(maxY - minY, MIN_SPAN)
   ;[minX, maxX] = grow(minX, maxX, spanX)
   ;[minY, maxY] = grow(minY, maxY, spanY)
 
@@ -99,23 +137,26 @@ function FusionGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
-  const chart = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
+  const chart = useRef<FusionCharts | null>(null)
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onBackgroundClick }
 
   // Dataset order -> graph node id, with null for the self-loop pivots. This is
   // what the SVG event bridge maps a clicked shape back through.
-  const order = useRef([])
+  const order = useRef<(string | null)[]>([])
   // The latest data-source builder, so a container resize can re-derive the
   // aspect-corrected axis box without waiting for the next graph change.
-  const build = useRef(null)
-  const hoveredId = useRef(null)
+  const build = useRef<((width: number, height: number) => DragNodeData) | null>(null)
+  const hoveredId = useRef<string | null>(null)
   // Which nodes carry the flagged pulse. Read by `markFlagged` after a render,
   // which is a different moment from when the data effect knows it.
-  const flagged = useRef(new Set())
+  const flagged = useRef(new Set<string>())
 
   /**
    * Tags the flagged nodes' shapes so CSS can pulse them.
@@ -132,7 +173,7 @@ function FusionGraph({
     const shapes = frame.current.querySelectorAll(NODE_SHAPES)
     if (shapes.length !== order.current.length) return
     order.current.forEach((id, i) => {
-      shapes[i].classList.toggle('is-flagged', !!id && flagged.current.has(id))
+      shapes[i]?.classList.toggle('is-flagged', !!id && flagged.current.has(id))
     })
   }
 
@@ -148,16 +189,17 @@ function FusionGraph({
    * different number of shapes, this returns null and interaction is lost,
    * rather than confidently expanding the wrong node.
    */
-  const idAtTarget = target => {
-    if (!frame.current || !target || target.tagName !== 'path') return null
+  const idAtTarget = (target: EventTarget | null): string | null => {
+    const shape = target instanceof SVGElement ? target : null
+    if (!frame.current || !shape || shape.tagName !== 'path') return null
     const shapes = frame.current.querySelectorAll(NODE_SHAPES)
     if (shapes.length !== order.current.length) return null
-    const index = Array.prototype.indexOf.call(shapes, target)
-    return index < 0 ? null : order.current[index]
+    const index = Array.prototype.indexOf.call(shapes, shape)
+    return index < 0 ? null : (order.current[index] ?? null)
   }
 
   useEffect(() => {
-    const el = frame.current
+    const el = frame.current!
 
     const instance = new FusionCharts({
       type: 'dragnode',
@@ -176,35 +218,35 @@ function FusionGraph({
     instance.render()
     chart.current = instance
 
-    const onClick = event => {
+    const onClick = (event: Event) => {
       const id = idAtTarget(event.target)
-      if (id) handlers.current.onNodeClick(id)
-      else handlers.current.onBackgroundClick()
+      if (id) handlers.current?.onNodeClick(id)
+      else handlers.current?.onBackgroundClick()
     }
 
     // mouseover/mouseout bubble (mouseenter/mouseleave do not), which is what
     // makes one listener on the frame enough for every node.
-    const onOver = event => {
+    const onOver = (event: MouseEvent) => {
       const id = idAtTarget(event.target)
       if (!id || id === hoveredId.current) return
       hoveredId.current = id
-      handlers.current.onNodeHover(id, { x: event.clientX, y: event.clientY })
+      handlers.current?.onNodeHover(id, { x: event.clientX, y: event.clientY })
     }
 
-    const onOut = event => {
+    const onOut = (event: MouseEvent) => {
       if (!idAtTarget(event.target)) return
       hoveredId.current = null
-      handlers.current.onNodeHover(null, null)
+      handlers.current?.onNodeHover(null, null)
     }
 
     el.addEventListener('click', onClick)
-    el.addEventListener('mouseover', onOver)
-    el.addEventListener('mouseout', onOut)
+    el.addEventListener('mouseover', onOver as EventListener)
+    el.addEventListener('mouseout', onOut as EventListener)
 
     const observer = new ResizeObserver(entries => {
-      const box = entries[0].contentRect
-      if (!build.current || !box.width || !box.height) return
-      chart.current.setJSONData(build.current(box.width, box.height))
+      const box = entries[0]?.contentRect
+      if (!build.current || !box || !box.width || !box.height) return
+      chart.current?.setJSONData(build.current(box.width, box.height))
     })
     observer.observe(el)
 
@@ -221,8 +263,8 @@ function FusionGraph({
     return () => {
       observer.disconnect()
       el.removeEventListener('click', onClick)
-      el.removeEventListener('mouseover', onOver)
-      el.removeEventListener('mouseout', onOut)
+      el.removeEventListener('mouseover', onOver as EventListener)
+      el.removeEventListener('mouseout', onOut as EventListener)
       instance.dispose()
       chart.current = null
     }
@@ -239,19 +281,25 @@ function FusionGraph({
     const { links, pivots } = withLoops(graph, positions)
 
     build.current = (width, height) => {
-      const box = axisBox(graph.nodes.map(n => positions[n.id]).concat(pivots), width, height)
+      const placed: Point[] = graph.nodes.flatMap(n => {
+        const at = positions[n.id]
+        return at ? [at] : []
+      })
+      const box = axisBox(placed.concat(pivots), width, height)
 
       // Axis units per pixel, so a caption can be offset a fixed number of
       // pixels below a node in a space that is measured in data units.
       const unitY = (box.maxY - box.minY) / height
-      const captions = []
+      const captions: DragNodeData['labels']['label'] = []
 
-      const nodes = graph.nodes.map(node => {
+      const nodes: DragNode[] = graph.nodes.map(node => {
         const meta = ENTITY[node.type]
         const behind = hidden.get(node.id) || 0
         const pending = isPending(node.id)
         const radius = node.level === 0 ? 19 : node.flagged ? 14 : 11
-        const at = positions[node.id]
+        // Non-null: an unplaced node cannot be drawn, and `layoutRadial` places
+        // every node in the graph it is given.
+        const at = positions[node.id]!
 
         // A free-text label rather than the node's own `label`, which would be
         // clipped to the disc. There is no badge hook either, so the count of
@@ -302,9 +350,9 @@ function FusionGraph({
         })
       })
 
-      order.current = graph.nodes.map(n => n.id).concat(pivots.map(() => null))
+      order.current = [...graph.nodes.map(n => n.id), ...pivots.map(() => null)]
 
-      const dataSource = {
+      const dataSource: DragNodeData = {
         chart: {
           bgColor: INK,
           bgAlpha: '100',
@@ -383,7 +431,7 @@ function FusionGraph({
 
     flagged.current = new Set(graph.nodes.filter(n => n.flagged).map(n => n.id))
 
-    const rect = frame.current.getBoundingClientRect()
+    const rect = frame.current!.getBoundingClientRect()
     chart.current.setJSONData(build.current(rect.width || 800, rect.height || 600))
     // renderComplete covers the normal path; this catches the case where the
     // draw was already synchronous and the event fired before order.current

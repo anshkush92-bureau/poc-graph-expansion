@@ -9,11 +9,21 @@ import {
   applyNodeChanges,
   useReactFlow
 } from '@xyflow/react'
+import type {
+  Edge,
+  EdgeProps,
+  EdgeTypes,
+  Node,
+  NodeProps,
+  NodeTypes,
+  OnNodesChange
+} from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
 import { FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
 import { useResize } from '../ui/useResize.ts'
+import type { GraphPaneProps } from '../engine/types.ts'
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -57,8 +67,21 @@ import { useResize } from '../ui/useResize.ts'
 const EDGE = '#2F3746'
 const LOOP = '#7FD4E8'
 
+interface DiscData extends Record<string, unknown> {
+  label: string
+  risk: number
+  behind: number
+  flagged: boolean
+  pending: boolean
+  color: string
+  border: string
+}
+
+type DiscNodeType = Node<DiscData, 'disc'>
+type LoopEdgeType = Edge<{ label: string }, 'selfloop'>
+
 /** Node visuals as a React component — the thing this engine is here for. */
-function DiscNode({ data }) {
+function DiscNode({ data }: NodeProps<DiscNodeType>) {
   return (
     <div
       className={'flow-node' + (data.flagged ? ' is-flagged' : '')}
@@ -85,7 +108,7 @@ function DiscNode({ data }) {
  * paint above edges, so a closer label has its first half hidden behind the
  * circle.
  */
-function SelfLoopEdge({ id, sourceX, sourceY, style, data }) {
+function SelfLoopEdge({ id, sourceX, sourceY, style, data }: EdgeProps<LoopEdgeType>) {
   const reach = 62
   const path =
     `M ${sourceX},${sourceY} C ${sourceX + reach},${sourceY - reach} ` +
@@ -102,8 +125,8 @@ function SelfLoopEdge({ id, sourceX, sourceY, style, data }) {
 
 // Module-level, for the reason in the header: a fresh identity here rebuilds
 // every node and edge on every render.
-const NODE_TYPES = { disc: DiscNode }
-const EDGE_TYPES = { selfloop: SelfLoopEdge }
+const NODE_TYPES = { disc: DiscNode } as unknown as NodeTypes
+const EDGE_TYPES = { selfloop: SelfLoopEdge } as unknown as EdgeTypes
 
 // `maxZoom` is the important half. A one-node graph has a bounding box the size
 // of one disc, and an uncapped fit scales it to the pane — the root fills the
@@ -124,37 +147,45 @@ function FlowCanvas({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
+}: GraphPaneProps) {
   const { fitView, setViewport, getViewport } = useReactFlow()
   const fitted = useRef(-1)
-  const frame = useRef(null)
+  const frame = useRef<HTMLDivElement>(null)
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
-  const [nodes, setNodes] = useState([])
-  const [edges, setEdges] = useState([])
+  const [nodes, setNodes] = useState<DiscNodeType[]>([])
+  const [edges, setEdges] = useState<Edge[]>([])
 
   // Controlled mode: React Flow only applies a change (drag included) back
   // onto `nodes` if something is listening here. `applyNodeChanges` is the
   // library's own reducer for the change objects it emits.
-  const onNodesChange = useCallback(changes => setNodes(nds => applyNodeChanges(changes, nds)), [])
+  const onNodesChange: OnNodesChange<DiscNodeType> = useCallback(
+    changes => setNodes(nds => applyNodeChanges(changes, nds)),
+    []
+  )
 
   useEffect(() => {
     const started = performance.now()
 
     // Timed together, nodes and edges, because this is the whole update the
     // pane renders — matching how CytoscapeGraph and VisGraph measure theirs.
-    const nextEdges = graph.edges.map(edge => {
+    const nextEdges: Edge[] = graph.edges.map(edge => {
       const loop = isSelfEdge(edge)
       return {
         id: edge.id,
         source: edge.source,
         target: edge.target,
         type: loop ? 'selfloop' : 'straight',
-        label: loop ? undefined : edge.label,
-        data: loop ? { label: edge.label } : undefined,
-        markerEnd: loop ? undefined : { type: MarkerType.ArrowClosed },
+        // Spread rather than `undefined` values: under exactOptionalPropertyTypes
+        // an absent prop and one set to `undefined` are not the same thing.
+        ...(loop
+          ? { data: { label: edge.label } }
+          : { label: edge.label, markerEnd: { type: MarkerType.ArrowClosed } }),
         style: { stroke: loop ? LOOP : EDGE, strokeWidth: 1 },
         labelStyle: { fill: '#6B7385', fontSize: 8 },
         labelBgStyle: { fill: INK, fillOpacity: 0.8 }
@@ -168,7 +199,8 @@ function FlowCanvas({
         const pending = isPending(node.id)
         return {
           id: node.id,
-          seed: positions[node.id],
+          // Non-null: filtered to nodes the layout has placed.
+          seed: positions[node.id]!,
           data: {
             label: `${meta.tag} ${node.name}`,
             risk: node.risk,
@@ -185,7 +217,7 @@ function FlowCanvas({
 
     setNodes(prev => {
       const byId = new Map(prev.map(n => [n.id, n]))
-      return nextNodeData.map(({ id, seed, data }) => ({
+      return nextNodeData.map(({ id, seed, data }): DiscNodeType => ({
         id,
         type: 'disc',
         // Seeded once, from the shared layout, and never overwritten for a
@@ -225,14 +257,14 @@ function FlowCanvas({
   useEffect(() => {
     if (!onViewport) return undefined
     onViewport({
-      zoomBy: factor => {
+      zoomBy: (factor: number) => {
         const { x, y, zoom } = getViewport()
         const box = frame.current ? frame.current.getBoundingClientRect() : { width: 0, height: 0 }
         const cx = box.width / 2
         const cy = box.height / 2
         setViewport({ x: cx - (cx - x) * factor, y: cy - (cy - y) * factor, zoom: zoom * factor })
       },
-      panBy: (dx, dy) => {
+      panBy: (dx: number, dy: number) => {
         const { x, y, zoom } = getViewport()
         setViewport({ x: x + dx, y: y + dy, zoom })
       },
@@ -244,14 +276,21 @@ function FlowCanvas({
   // v12 gives node and edge clicks their own props, and a node click no longer
   // fires at the end of a drag — so the v9 workaround of binding the click
   // inside the custom node is gone, along with the per-node closures it needed.
-  const handleNodeClick = useCallback((_, node) => handlers.current.onNodeClick(node.id), [])
-  const handleEdgeClick = useCallback((_, edge) => handlers.current.onEdgeClick(edge.id), [])
-  const handleNodeEnter = useCallback(
-    (event, node) => handlers.current.onNodeHover(node.id, { x: event.clientX, y: event.clientY }),
+  const handleNodeClick = useCallback(
+    (_: React.MouseEvent, node: Node) => handlers.current?.onNodeClick(node.id),
     []
   )
-  const handleNodeLeave = useCallback(() => handlers.current.onNodeHover(null, null), [])
-  const handlePaneClick = useCallback(() => handlers.current.onBackgroundClick(), [])
+  const handleEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => handlers.current?.onEdgeClick(edge.id),
+    []
+  )
+  const handleNodeEnter = useCallback(
+    (event: React.MouseEvent, node: Node) =>
+      handlers.current?.onNodeHover(node.id, { x: event.clientX, y: event.clientY }),
+    []
+  )
+  const handleNodeLeave = useCallback(() => handlers.current?.onNodeHover(null, null), [])
+  const handlePaneClick = useCallback(() => handlers.current?.onBackgroundClick(), [])
 
   return (
     // Kept as a real element, not just a ref target: `useResize` below
@@ -290,7 +329,7 @@ const Memoised = React.memo(FlowCanvas)
 
 // `useReactFlow` only works inside a provider, and the provider has to sit
 // outside the component that uses it.
-export default function FlowGraph(props) {
+export default function FlowGraph(props: GraphPaneProps) {
   return (
     <ReactFlowProvider>
       <Memoised {...props} />

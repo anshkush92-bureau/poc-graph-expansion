@@ -25,7 +25,7 @@
 import { ENTITY, ROOT, relationLabel } from '../graph/data.ts'
 import { layoutRadial } from '../graph/ops.ts'
 import { synthGraph } from '../graph/synth.ts'
-import { optimise } from './optimize.js'
+import { optimise } from './optimize.ts'
 import {
   heapMB,
   nextPaint,
@@ -36,11 +36,28 @@ import {
   summarise,
   watchLongTasks,
   collectGarbage
-} from './probes.js'
-import { runLayout } from './runLayout.js'
+} from './probes.ts'
+import { runLayout } from './runLayout.ts'
+import type { EntityType, Graph, GraphNode } from '../engine/types.ts'
+import type { LayoutMode } from './layout.worker.ts'
+import type { KnobValue, Knobs, Scenario, ScenarioKnob } from './types.ts'
 
-const EMPTY = { nodes: [ROOT], edges: [] }
-const TYPES = Object.keys(ENTITY)
+const EMPTY: Graph = { nodes: [ROOT], edges: [] }
+const TYPES = Object.keys(ENTITY) as EntityType[]
+
+// Knob reads. The catalog declares each knob's type and the runner carries the
+// resolved values as one loose map, so a scenario says which kind it is reading.
+const num = (value: KnobValue | undefined): number => Number(value ?? 0)
+const flag = (value: KnobValue | undefined): boolean => value === true
+
+/**
+ * A heap difference in MB, or `null` where either reading is missing.
+ *
+ * `heapMB` returns null off Chromium, and a difference against a missing
+ * reading has to stay missing rather than becoming a plausible-looking zero.
+ */
+const delta = (after: number | null, before: number | null): number | null =>
+  after == null || before == null ? null : Math.round((after - before) * 100) / 100
 
 /**
  * Adds `count` nodes hung off nodes already present, plus one cross-link each.
@@ -53,13 +70,14 @@ const TYPES = Object.keys(ENTITY)
  * New objects, never mutation: every pane is memoised on graph identity, so an
  * in-place push would be invisible to all eight.
  */
-export function sprout(graph, count, seq, onto) {
+export function sprout(graph: Graph, count: number, seq: number, onto?: GraphNode): Graph {
   const nodes = graph.nodes.slice()
   const edges = graph.edges.slice()
   for (let i = 0; i < count; i++) {
     const n = seq + i
-    const type = TYPES[n % TYPES.length]
-    const parent = onto || graph.nodes[(n * 7919) % graph.nodes.length]
+    // Both indices are taken modulo a non-empty array's length.
+    const type = TYPES[n % TYPES.length]!
+    const parent = onto || graph.nodes[(n * 7919) % graph.nodes.length]!
     const node = {
       id: `LIVE-${n}`,
       type,
@@ -89,10 +107,10 @@ export function sprout(graph, count, seq, onto) {
  * the node count holds steady — a streaming test whose graph grows without
  * bound is measuring the hairball again.
  */
-export function prune(graph, count) {
-  const doomed = new Set()
+export function prune(graph: Graph, count: number): Graph {
+  const doomed = new Set<string>()
   for (let i = 0; i < graph.nodes.length && doomed.size < count; i++) {
-    const id = graph.nodes[i].id
+    const id = graph.nodes[i]!.id
     if (id.indexOf('LIVE-') === 0) doomed.add(id)
   }
   if (!doomed.size) return graph
@@ -111,7 +129,7 @@ export function prune(graph, count) {
 // side by side and have the sizes cancel out: what is left between them is the
 // scenario, not the dial. Where a library separates is further up, and the dial
 // goes to 50,000 — but a comparison starts from one size for all of them.
-const nodesKnob = (value = 1000) => ({
+const nodesKnob = (value = 1000): ScenarioKnob => ({
   key: 'nodes',
   label: 'Nodes',
   type: 'number',
@@ -120,7 +138,7 @@ const nodesKnob = (value = 1000) => ({
   step: 1,
   value
 })
-const edgesKnob = (value = 1500) => ({
+const edgesKnob = (value = 1500): ScenarioKnob => ({
   key: 'edges',
   label: 'Edges',
   type: 'number',
@@ -129,7 +147,7 @@ const edgesKnob = (value = 1500) => ({
   step: 1,
   value
 })
-const secondsKnob = (value = 10) => ({
+const secondsKnob = (value = 10): ScenarioKnob => ({
   key: 'seconds',
   label: 'Seconds',
   type: 'number',
@@ -139,7 +157,7 @@ const secondsKnob = (value = 10) => ({
   value
 })
 
-export const SCENARIOS = [
+export const SCENARIOS: [Scenario, ...Scenario[]] = [
   // ══════════════════════════════════════════════════════════════════════════
   {
     key: 'hairball',
@@ -160,7 +178,7 @@ export const SCENARIOS = [
       const tasks = watchLongTasks()
 
       const builtAt = performance.now()
-      const graph = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
+      const graph = synthGraph(num(ctx.knobs.nodes), num(ctx.knobs.edges))
       const synthMs = Math.round(performance.now() - builtAt)
 
       const laidAt = performance.now()
@@ -186,7 +204,7 @@ export const SCENARIOS = [
           // Everything from "here is a graph" to "there are pixels", including
           // React's render and the browser's paint. The one a user feels.
           ttfrMs: paintedMs,
-          heapMB: heapBefore == null ? null : Math.round((heapAfter - heapBefore) * 100) / 100,
+          heapMB: delta(heapAfter, heapBefore),
           blockedMs: blocking && blocking.blockedMs,
           longestTaskMs: blocking && blocking.longestMs
         }
@@ -221,7 +239,7 @@ export const SCENARIOS = [
       { key: 'clicks', label: 'Expansions', type: 'number', min: 1, max: 200, step: 1, value: 20 }
     ],
     async run(ctx) {
-      const base = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
+      const base = synthGraph(num(ctx.knobs.nodes), num(ctx.knobs.edges))
       let positions = layoutRadial(base, null)
       await ctx.show(base, positions)
       await collectGarbage()
@@ -231,20 +249,20 @@ export const SCENARIOS = [
 
       let live = base
       let seq = 0
-      const waits = []
-      const layouts = []
-      const updates = []
+      const waits: number[] = []
+      const layouts: number[] = []
+      const updates: number[] = []
 
-      for (let i = 0; i < ctx.knobs.clicks; i++) {
+      for (let i = 0; i < num(ctx.knobs.clicks); i++) {
         if (ctx.signal.aborted) break
         // Spread the clicks over the graph the same way `sprout` spreads a
         // stream, so the run is not repeatedly expanding one hot node whose
         // neighbourhood the engine has already got warm.
-        const onto = live.nodes[(i * 7919) % live.nodes.length]
+        const onto = live.nodes[(i * 7919) % live.nodes.length]!
 
         const solvedAt = performance.now()
-        const grown = sprout(live, ctx.knobs.expandBy, seq, onto)
-        seq += ctx.knobs.expandBy
+        const grown = sprout(live, num(ctx.knobs.expandBy), seq, onto)
+        seq += num(ctx.knobs.expandBy)
         // Incremental: the previous frame's positions are passed in, so the
         // newcomers are placed into free space and everything else stays put.
         positions = layoutRadial(grown, positions)
@@ -281,15 +299,15 @@ export const SCENARIOS = [
           worstMs: wait.worst,
           // First against last, so a cost that grows with the graph under it is
           // visible inside a single row rather than only across sizes.
-          firstMs: waits.length ? round(waits[0]) : null,
-          lastMs: waits.length ? round(waits[waits.length - 1]) : null,
+          firstMs: waits.length ? round(waits[0]!) : null,
+          lastMs: waits.length ? round(waits[waits.length - 1]!) : null,
           // The shared incremental layout, identical for all eight — quoted so
           // the engine's share of the wait can be separated from the app's.
           layoutP95Ms: layout.p95,
           updateP95Ms: update.p95,
           blockedMs: blocking && blocking.blockedMs,
           longestTaskMs: blocking && blocking.longestMs,
-          heapMB: heapBefore == null ? null : Math.round((heapAfter - heapBefore) * 100) / 100
+          heapMB: delta(heapAfter, heapBefore)
         }
       }
     }
@@ -342,7 +360,7 @@ export const SCENARIOS = [
       await collectGarbage()
       const heapEmpty = heapMB()
 
-      const base = synthGraph(ctx.knobs.base, ctx.knobs.base * 1.5)
+      const base = synthGraph(num(ctx.knobs.base), num(ctx.knobs.base) * 1.5)
       await ctx.show(base, layoutRadial(base, null))
       await collectGarbage()
 
@@ -355,13 +373,13 @@ export const SCENARIOS = [
       // A rate of 0 pushes nothing at all rather than rounding up to one node a
       // tick, which makes it the idle-cost baseline for every other rate.
       const TICK = 100
-      const perTick = Math.round(ctx.knobs.rate / (1000 / TICK))
+      const perTick = Math.round(num(ctx.knobs.rate) / (1000 / TICK))
 
       let live = base
       let previous = layoutRadial(base, null)
       let seq = 0
       let pushes = 0
-      const heapTrail = []
+      const heapTrail: (number | null)[] = []
 
       const timer = setInterval(() => {
         if (ctx.signal.aborted || perTick < 1) return
@@ -377,7 +395,7 @@ export const SCENARIOS = [
         if (pushes % 10 === 0) heapTrail.push(heapMB())
       }, TICK)
 
-      const frames = await sampleFrames(ctx.knobs.seconds * 1000)
+      const frames = await sampleFrames(num(ctx.knobs.seconds) * 1000)
       clearInterval(timer)
 
       const blocking = tasks.stop()
@@ -400,7 +418,7 @@ export const SCENARIOS = [
           nodes: live.nodes.length,
           edges: live.edges.length,
           pushes,
-          pushedPerSec: Math.round((pushes * perTick) / ctx.knobs.seconds),
+          pushedPerSec: Math.round((pushes * perTick) / num(ctx.knobs.seconds)),
           fps: frames.fps,
           frameP95: frames.p95,
           worstFrameMs: frames.worst,
@@ -411,12 +429,12 @@ export const SCENARIOS = [
           // Free to report — the reading it needs had to exist for `leakMB` to
           // mean anything — and it is the only per-engine memory number here
           // that is not a difference of differences.
-          baseMB: heapEmpty == null ? null : Math.round((heapStart - heapEmpty) * 100) / 100,
-          heapMB: heapStart == null ? null : Math.round((heapEnd - heapStart) * 100) / 100,
+          baseMB: delta(heapStart, heapEmpty),
+          heapMB: delta(heapEnd, heapStart),
           heapSlopeMBs: slope,
           // Empty pane to empty pane, with a run of churn in between. Anything
           // above zero here did not come back.
-          leakMB: heapEmpty == null ? null : Math.round((heapAfterDrain - heapEmpty) * 100) / 100
+          leakMB: delta(heapAfterDrain, heapEmpty)
         },
         note:
           heapEmpty == null
@@ -437,7 +455,7 @@ export const SCENARIOS = [
       'order of magnitude.',
     knobs: [nodesKnob(), edgesKnob(), secondsKnob(10)],
     async run(ctx) {
-      const graph = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
+      const graph = synthGraph(num(ctx.knobs.nodes), num(ctx.knobs.edges))
       await ctx.show(graph, layoutRadial(graph, null))
 
       const view = ctx.viewport()
@@ -453,7 +471,7 @@ export const SCENARIOS = [
       const tasks = watchLongTasks()
       let last = 1
 
-      const frames = await sampleFrames(ctx.knobs.seconds * 1000, progress => {
+      const frames = await sampleFrames(num(ctx.knobs.seconds) * 1000, progress => {
         // A full in-and-out sweep: 1× out to 4× and back. 4 rather than
         // further because four of these engines clamp their zoom there, and a
         // sweep that spends half its frames pinned against a ceiling measures
@@ -520,7 +538,7 @@ export const SCENARIOS = [
       }
     ],
     async run(ctx) {
-      const graph = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
+      const graph = synthGraph(num(ctx.knobs.nodes), num(ctx.knobs.edges))
       // Put the graph on screen first, so the layout below is measured against a
       // live pane rather than an empty one — a frozen main thread with nothing
       // rendering is not the failure anybody cares about.
@@ -536,9 +554,9 @@ export const SCENARIOS = [
 
       const tasks = watchLongTasks()
       const result = await runLayout(graph, {
-        mode: ctx.knobs.mode,
-        worker: ctx.knobs.worker,
-        alphaMin: ctx.knobs.alphaMin
+        mode: String(ctx.knobs.mode) as LayoutMode,
+        worker: flag(ctx.knobs.worker),
+        alphaMin: num(ctx.knobs.alphaMin)
       })
       // And let a frame land after it. A synchronous solve returns before the
       // browser has presented anything, so the delta that spans the freeze does
@@ -556,7 +574,7 @@ export const SCENARIOS = [
         metrics: {
           nodes: graph.nodes.length,
           edges: graph.edges.length,
-          where: ctx.knobs.worker ? 'worker' : 'main',
+          where: flag(ctx.knobs.worker) ? 'worker' : 'main',
           solveMs: result.solveMs,
           transferMs: result.transferMs,
           totalMs: result.totalMs,
@@ -570,7 +588,7 @@ export const SCENARIOS = [
           blockedMs: blocking && blocking.blockedMs,
           drawMs: ctx.lastStat()
         },
-        note: ctx.knobs.worker
+        note: flag(ctx.knobs.worker)
           ? 'transferMs is the structured-clone round trip — the price the worker charges for the freeze it removes.'
           : undefined
       }
@@ -604,15 +622,15 @@ export const SCENARIOS = [
       secondsKnob(10)
     ],
     async run(ctx) {
-      const full = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
+      const full = synthGraph(num(ctx.knobs.nodes), num(ctx.knobs.edges))
       // Positions come from the *whole* graph, then the cut is applied. Laying
       // out only the survivors would rearrange them, and the reader would be
       // looking at a different graph rather than a cropped one.
       const positions = layoutRadial(full, null)
       const { graph, drawn } = optimise(full, positions, {
-        lod: ctx.knobs.lod,
-        cull: ctx.knobs.cull,
-        fraction: ctx.knobs.fraction
+        lod: flag(ctx.knobs.lod),
+        cull: flag(ctx.knobs.cull),
+        fraction: num(ctx.knobs.fraction)
       })
 
       const handedAt = performance.now()
@@ -623,7 +641,7 @@ export const SCENARIOS = [
       const tasks = watchLongTasks()
       let last = 1
 
-      const frames = await sampleFrames(ctx.knobs.seconds * 1000, progress => {
+      const frames = await sampleFrames(num(ctx.knobs.seconds) * 1000, progress => {
         if (!view) return
         const target = 1 + 3 * Math.sin(progress * Math.PI)
         view.zoomBy(target / last)
@@ -643,8 +661,8 @@ export const SCENARIOS = [
           // How much of the graph the optimisations removed. The denominator
           // for every other number in this row.
           kept: Math.round((1000 * drawn.nodes) / Math.max(1, full.nodes.length)) / 10 + '%',
-          lod: ctx.knobs.lod,
-          cull: ctx.knobs.cull,
+          lod: flag(ctx.knobs.lod),
+          cull: flag(ctx.knobs.cull),
           ttfrMs,
           updateMs: ctx.lastStat(),
           fps: frames.fps,
@@ -685,7 +703,7 @@ export const SCENARIOS = [
       secondsKnob(8)
     ],
     async run(ctx) {
-      const graph = synthGraph(ctx.knobs.nodes, ctx.knobs.edges)
+      const graph = synthGraph(num(ctx.knobs.nodes), num(ctx.knobs.edges))
       await ctx.show(graph, layoutRadial(graph, null))
 
       const el = ctx.pane()
@@ -704,8 +722,8 @@ export const SCENARIOS = [
        * a node, and an earlier version of this scenario duly reported zero
        * callbacks for React Flow and jsPlumb, which reads as "never fires".
        */
-      let over = null
-      const step = (x, y) => {
+      let over: Element | null = null
+      const step = (x: number, y: number) => {
         const target = document.elementFromPoint(x, y) || el
         const init = { clientX: x, clientY: y, bubbles: true, cancelable: true, view: window }
         const pointer = Object.assign({ pointerType: 'mouse', isPrimary: true }, init)
@@ -773,8 +791,8 @@ export const SCENARIOS = [
       const SPACING = 4
       const COLS = Math.max(56, Math.min(420, Math.round(box.width / SPACING)))
       const ROWS = Math.max(28, Math.min(220, Math.round(box.height / SPACING)))
-      const hits = []
-      const misses = []
+      const hits: { x: number; y: number }[] = []
+      const misses: { x: number; y: number }[] = []
       ctx.hover.setDebounce(0)
       ctx.hover.reset()
       for (let r = 0; r < ROWS; r++) {
@@ -798,17 +816,17 @@ export const SCENARIOS = [
       }
 
       // ── The measured sweep ───────────────────────────────────────────────
-      ctx.hover.setDebounce(ctx.knobs.debounce)
+      ctx.hover.setDebounce(num(ctx.knobs.debounce))
       ctx.hover.reset()
       const tasks = watchLongTasks()
       let sent = 0
 
-      const frames = await sampleFrames(ctx.knobs.seconds * 1000, () => {
+      const frames = await sampleFrames(num(ctx.knobs.seconds) * 1000, () => {
         // On a node, then off it. Sitting still on one node would let every
         // engine dedupe the whole run down to a single callback — the traffic a
         // debounce exists to absorb is the *transitions*.
-        const hit = hits[sent % hits.length]
-        const miss = misses.length ? misses[(sent * 7) % misses.length] : null
+        const hit = hits[sent % hits.length]!
+        const miss = misses.length ? misses[(sent * 7) % misses.length]! : null
         step(hit.x, hit.y)
         if (miss) step(miss.x, miss.y)
         sent += miss ? 2 : 1
@@ -821,7 +839,7 @@ export const SCENARIOS = [
       return {
         metrics: {
           nodes: graph.nodes.length,
-          debounceMs: ctx.knobs.debounce,
+          debounceMs: num(ctx.knobs.debounce),
           // How much of the pane this engine will report a hover from. A canvas
           // engine hit-tests the symbol; a DOM engine hit-tests the element's
           // whole box, which is larger — and jsPlumb's label sits outside the
@@ -844,20 +862,20 @@ export const SCENARIOS = [
   }
 ]
 
-export const SCENARIOS_BY_KEY = SCENARIOS.reduce((out, s) => {
+export const SCENARIOS_BY_KEY = SCENARIOS.reduce<Record<string, Scenario>>((out, s) => {
   out[s.key] = s
   return out
 }, {})
 
 /** Default knob values for a scenario, as the UI's starting state. */
-export const defaultKnobs = scenario =>
-  scenario.knobs.reduce((out, knob) => {
+export const defaultKnobs = (scenario: Scenario): Knobs =>
+  scenario.knobs.reduce<Knobs>((out, knob) => {
     out[knob.key] = knob.value
     return out
   }, {})
 
 /** Least-squares slope of a series sampled at one point per second, in MB/s. */
-function trend(series) {
+function trend(series: (number | null)[]): number | null {
   const n = series.length
   const clean = series.filter(v => v != null)
   if (clean.length !== n || n < 3) return null
@@ -866,7 +884,7 @@ function trend(series) {
   let top = 0
   let bottom = 0
   for (let i = 0; i < n; i++) {
-    top += (i - meanX) * (clean[i] - meanY)
+    top += (i - meanX) * (clean[i]! - meanY)
     bottom += (i - meanX) * (i - meanX)
   }
   return bottom ? Math.round((top / bottom) * 1000) / 1000 : null

@@ -16,12 +16,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ROOT } from '../graph/data.ts'
 import { layoutRadial } from '../graph/ops.ts'
-import { nextPaint, sleep } from './probes.js'
-import { stopWorker } from './runLayout.js'
+import { nextPaint, sleep } from './probes.ts'
+import { stopWorker } from './runLayout.ts'
+import type { Graph, GraphPaneProps, Positions, ViewportHandle } from '../engine/types.ts'
+import type { BenchContext, BenchResult, EngineKey, Knobs, Scenario } from './types.ts'
 
-export const EMPTY = { nodes: [ROOT], edges: [] }
+declare global {
+  interface Window {
+    /** The synchronous read seam for the hover counter — see the note below. */
+    __benchHovers?: () => number
+  }
+}
 
-const EMPTY_HIDDEN = new Map()
+export const EMPTY: Graph = { nodes: [ROOT], edges: [] }
+
+const EMPTY_HIDDEN = new Map<string, number>()
 const NEVER = () => false
 
 // How long a single `show` may take before the caller gives up on the pane.
@@ -32,18 +41,18 @@ const SHOW_TIMEOUT_MS = 45000
 export function usePane() {
   const [data, setData] = useState(() => ({ graph: EMPTY, positions: layoutRadial(EMPTY, null) }))
 
-  const paneRef = useRef(null)
-  const viewport = useRef(null)
-  const lastStat = useRef(null)
+  const paneRef = useRef<HTMLDivElement>(null)
+  const viewport = useRef<ViewportHandle | null>(null)
+  const lastStat = useRef<number | null>(null)
   // Resolver for the `show()` currently in flight. The pane's `onStat` fires it,
   // which is why every renderer in this repo reports one.
-  const settle = useRef(null)
+  const settle = useRef<((ms: number | null) => void) | null>(null)
   const abort = useRef({ aborted: false })
 
   const hoverCount = useRef(0)
   const hoverDebounce = useRef(0)
-  const hoverTimer = useRef(null)
-  const [, setHoverId] = useState(null)
+  const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const [, setHoverId] = useState<string | null>(null)
 
   useEffect(
     () => () => {
@@ -74,7 +83,7 @@ export function usePane() {
     }
   }, [])
 
-  const onStat = useCallback(ms => {
+  const onStat = useCallback((ms: number) => {
     lastStat.current = ms
     const resolve = settle.current
     if (!resolve) return
@@ -85,11 +94,11 @@ export function usePane() {
     nextPaint().then(() => resolve(ms))
   }, [])
 
-  const onViewport = useCallback(api => {
+  const onViewport = useCallback((api: ViewportHandle | null) => {
     viewport.current = api
   }, [])
 
-  const onNodeHover = useCallback(id => {
+  const onNodeHover = useCallback((id: string | null) => {
     hoverCount.current += 1
     if (!hoverDebounce.current) {
       setHoverId(id)
@@ -101,9 +110,9 @@ export function usePane() {
 
   const noop = useCallback(() => {}, [])
 
-  const show = useCallback((graph, positions) => {
+  const show = useCallback((graph: Graph, positions: Positions) => {
     lastStat.current = null
-    return new Promise(resolve => {
+    return new Promise<number | null>(resolve => {
       settle.current = resolve
       setData({ graph, positions })
       sleep(SHOW_TIMEOUT_MS).then(() => {
@@ -115,7 +124,10 @@ export function usePane() {
   }, [])
 
   /** Set the data and do NOT wait — the streaming path, on purpose. */
-  const push = useCallback((graph, positions) => setData({ graph, positions }), [])
+  const push = useCallback(
+    (graph: Graph, positions: Positions) => setData({ graph, positions }),
+    []
+  )
 
   const clear = useCallback(() => show(EMPTY, layoutRadial(EMPTY, null)), [show])
 
@@ -126,7 +138,7 @@ export function usePane() {
    * property of the explore view, and deriving it at 50,000 nodes would put the
    * app's own cost inside the engine's measurement.
    */
-  const paneProps = useMemo(
+  const paneProps = useMemo<Omit<GraphPaneProps, 'graph' | 'positions'>>(
     () => ({
       hidden: EMPTY_HIDDEN,
       isExpanded: NEVER,
@@ -150,7 +162,7 @@ export function usePane() {
    * nothing.
    */
   const makeCtx = useCallback(
-    knobs => ({
+    (knobs: Knobs): BenchContext => ({
       knobs,
       show,
       push,
@@ -162,7 +174,7 @@ export function usePane() {
         reset: () => {
           hoverCount.current = 0
         },
-        setDebounce: ms => {
+        setDebounce: (ms: number) => {
           hoverDebounce.current = ms
         }
       },
@@ -193,7 +205,7 @@ export function usePane() {
       resetHover: () => {
         hoverCount.current = 0
       },
-      setHoverDebounce: ms => {
+      setHoverDebounce: (ms: number) => {
         hoverDebounce.current = ms
       }
     }),
@@ -222,13 +234,18 @@ export function usePane() {
  * A thrown scenario is a result too: "this engine could not complete the
  * 50,000-node hairball" belongs in the table, not in the console.
  */
-export async function runScenario(engineKey, scenario, knobs, ctx) {
+export async function runScenario(
+  engineKey: EngineKey,
+  scenario: Scenario,
+  knobs: Knobs,
+  ctx: BenchContext
+): Promise<BenchResult> {
   const startedAt = Date.now()
   let outcome
   try {
     outcome = await scenario.run(ctx)
   } catch (err) {
-    outcome = { failed: String((err && err.message) || err), metrics: {} }
+    outcome = { failed: err instanceof Error ? err.message : String(err), metrics: {} }
   }
-  return Object.assign({ engine: engineKey, scenario: scenario.key, knobs, at: startedAt }, outcome)
+  return { engine: engineKey, scenario: scenario.key, knobs, at: startedAt, ...outcome }
 }

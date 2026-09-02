@@ -15,6 +15,28 @@ import { ENTITY } from '../graph/data.ts'
 import { withLoops } from '../graph/loops.ts'
 import { BONE, FLARE, INK, nodeColor } from '../ui/theme.ts'
 import { EDGE_RULES, EDGE_STYLES, SHAPE, SHAPE_SETS } from './symbols.ts'
+import type { GraphNode, GraphPaneProps } from '../engine/types.ts'
+import type { EdgeStyleKey } from '../engine/types.ts'
+
+type ShapeSet = (typeof SHAPE_SETS)[keyof typeof SHAPE_SETS]
+
+/** The graph series' internal view: graph space in, pixels out. */
+interface GraphView {
+  dataToPoint(point: [number, number]): [number, number]
+  getRoamTransform?(): number[]
+}
+
+/** One item in the graph series' `data`. Pivots carry only the geometry. */
+interface SeriesNode {
+  id?: string
+  name: string
+  x: number
+  y: number
+  symbol?: string
+  symbolSize: number
+  itemStyle?: Record<string, unknown>
+  label: Record<string, unknown>
+}
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -104,7 +126,7 @@ const NODE_SCALE_RATIO = 0.6
 // How big a node's box is before its shape gets a say. Three sizes, and each
 // one means something: the root anchors the graph, a flagged node has to be
 // findable without hunting, everything else is the baseline.
-const baseSizeOf = node => (node.level === 0 ? 36 : node.flagged ? 27 : 22)
+const baseSizeOf = (node: GraphNode): number => (node.level === 0 ? 36 : node.flagged ? 27 : 22)
 
 /**
  * The final pixel size of a node's symbol box.
@@ -114,7 +136,8 @@ const baseSizeOf = node => (node.level === 0 ? 36 : node.flagged ? 27 : 22)
  * Used twice — once for the symbol itself in STEP 4, once for the pulse ring in
  * STEP 8 — and they have to agree or the ring floats off a triangle.
  */
-const sizeOf = (node, shapeSet) => baseSizeOf(node) * SHAPE[shapeSet.shapeOf(node)].scale
+const sizeOf = (node: GraphNode, shapeSet: ShapeSet): number =>
+  baseSizeOf(node) * SHAPE[shapeSet.shapeOf(node)].scale
 
 // Defined once at series level rather than per node. ECharts merges an item's
 // label over the series' label, so every node inherits these styles and only
@@ -137,7 +160,7 @@ const RICH = {
 
 // A stable identity, so a caller that ships no overrides does not invalidate the
 // data effect's dependency on them every render.
-const NO_OVERRIDES = new Map()
+const NO_OVERRIDES: ReadonlyMap<string, EdgeStyleKey> = new Map()
 
 const EDGE_LABEL = {
   fontFamily: MONO,
@@ -164,24 +187,27 @@ function EChartsGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
-  const chart = useRef(null)
-  const layer = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
+  const chart = useRef<echarts.ECharts | null>(null)
+  const layer = useRef<HTMLDivElement>(null)
 
   // Fall back rather than crash if a caller forgets the prop or ships a stale
   // key — an unknown shape set is a UI bug, not a reason to lose the graph.
-  const shapes = SHAPE_SETS[shapeSet] || SHAPE_SETS.type
-  const rule = EDGE_RULES[edgeStyle] || EDGE_RULES.arrow
+  const shapes: ShapeSet = (shapeSet && SHAPE_SETS[shapeSet]) || SHAPE_SETS.type
+  const rule = (edgeStyle && EDGE_RULES[edgeStyle]) || EDGE_RULES.arrow
 
   // Handlers are new on most renders; the listeners are bound once. Routing
   // through a ref keeps us from tearing the chart down to pick up a callback.
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
   // Set by the data effect, which is the only place that knows where the nodes
   // are. The setup effect calls it back whenever the chart moves under them.
-  const place = useRef(null)
+  const place = useRef<(() => void) | null>(null)
 
   // Whether the chart has been given an option yet. Only the first one may
   // carry the view settings — see `zoom` in STEP 6.
@@ -198,26 +224,30 @@ function EChartsGraph({
     // a live chart, so a caller that wants the other one has to remount this
     // component. `renderer` is deliberately absent from the deps below for that
     // reason: re-running here would rebuild the chart and throw the roam away.
-    const instance = echarts.init(frame.current, null, { renderer })
+    const instance = echarts.init(frame.current, null, {
+      renderer: renderer === 'svg' ? 'svg' : 'canvas'
+    })
     chart.current = instance
 
     // `{ dataType: 'node' }` is what keeps these off the edges — without it the
     // same handler fires for a clicked relationship and reports its source.
     instance.on('click', { dataType: 'node' }, params => {
       // Pivots carry no id, so a loop's invisible endpoints resolve to nothing.
-      if (params.data.id) handlers.current.onNodeClick(params.data.id)
+      const id = (params.data as SeriesNode | undefined)?.id
+      if (id) handlers.current?.onNodeClick(id)
     })
 
     instance.on('mouseover', { dataType: 'node' }, params => {
-      if (!params.data.id) return
-      const native = params.event && params.event.event
-      handlers.current.onNodeHover(params.data.id, {
+      const id = (params.data as SeriesNode | undefined)?.id
+      if (!id) return
+      const native = params.event?.event as MouseEvent | undefined
+      handlers.current?.onNodeHover(id, {
         x: native ? native.clientX : 0,
         y: native ? native.clientY : 0
       })
     })
 
-    instance.on('mouseout', { dataType: 'node' }, () => handlers.current.onNodeHover(null, null))
+    instance.on('mouseout', { dataType: 'node' }, () => handlers.current?.onNodeHover(null, null))
 
     // The other half of `dataType` — the same event stream, filtered to links.
     // Clicking an edge was previously inert (the node handler filters it out,
@@ -225,24 +255,24 @@ function EChartsGraph({
     // no existing interaction. `edgeId` is ours: see STEP 5 for why it is not
     // the link's own id.
     instance.on('click', { dataType: 'edge' }, params => {
-      const { edgeId } = params.data
-      if (edgeId && handlers.current.onEdgeClick) handlers.current.onEdgeClick(edgeId)
+      const { edgeId } = params.data as { edgeId?: string }
+      if (edgeId) handlers.current?.onEdgeClick(edgeId)
     })
 
     // Empty background is not a series, so it never reaches `instance.on`.
     // ZRender is the layer below, where a miss shows up as a null target.
     instance.getZr().on('click', event => {
-      if (!event.target) handlers.current.onBackgroundClick()
+      if (!event.target) handlers.current?.onBackgroundClick()
     })
 
     // Everything that can move the rings ends in a render: a pan, a zoom, a
     // resize, a new level. One listener on the end of that render covers them
     // all, and it costs nothing while the chart is idle — which, with the pulse
     // now in CSS, is all the time.
-    instance.on('finished', () => place.current && place.current())
+    instance.on('finished', () => place.current?.())
 
     const observer = new ResizeObserver(() => instance.resize())
-    observer.observe(frame.current)
+    observer.observe(frame.current!)
 
     // The benchmark's handle.
     //
@@ -257,7 +287,7 @@ function EChartsGraph({
     // relative: this engine has no absolute form to convert from.
     if (onViewport) {
       onViewport({
-        zoomBy: factor => {
+        zoomBy: (factor: number) => {
           const box = frame.current
             ? frame.current.getBoundingClientRect()
             : { width: 0, height: 0 }
@@ -269,7 +299,7 @@ function EChartsGraph({
             originY: box.height / 2
           })
         },
-        panBy: (dx, dy) =>
+        panBy: (dx: number, dy: number) =>
           instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', dx, dy }),
         // No fit action exists — the series fits its own bounding box whenever
         // an option is pushed without a roam transform, and there is no way to
@@ -346,7 +376,7 @@ function EChartsGraph({
     // `name` is what ECharts matches links against — id is not used for that,
     // so the node id has to be the name, and the display text is a formatter.
     const build = () => {
-      const nodes = graph.nodes.map(node => {
+      const nodes: SeriesNode[] = graph.nodes.map(node => {
         const meta = ENTITY[node.type]
         const behind = hidden.get(node.id) || 0
         const pending = isPending(node.id)
@@ -359,8 +389,9 @@ function EChartsGraph({
           // Graph-space coordinates from STEP 2. Only honoured because the
           // series sets `layout: 'none'` — under 'force' they are seed values
           // the simulation immediately overwrites.
-          x: positions[node.id].x,
-          y: positions[node.id].y,
+          // Non-null: `layoutRadial` places every node in the graph it is given.
+          x: positions[node.id]!.x,
+          y: positions[node.id]!.y,
           // 'circle' | 'rect' | 'triangle' | 'path://…' — a built-in name or a
           // raw SVG path, and the series treats the two identically.
           symbol: shape.symbol,
@@ -419,14 +450,14 @@ function EChartsGraph({
         // The override key drops the `#out` / `#over` / `#back` suffix STEP 3 adds,
         // so clicking any one leg of a loop restyles all three. Without this a
         // loop would come apart into a dotted arc and two solid stubs.
-        const edgeId = link.id.split('#')[0]
+        const edgeId = link.id.split('#')[0]!
 
         const chosen =
           edgeOverrides.get(edgeId) ||
           rule.styleOf(link, {
             // A loop's middle leg leaves a pivot, not a node, so there is no hop
             // distance to report. -1 rather than 0, which would read as "the root".
-            level: levelOf.has(link.from) ? levelOf.get(link.from) : -1
+            level: levelOf.get(link.from) ?? -1
           })
         const style = EDGE_STYLES[chosen] || EDGE_STYLES.arrow
 
@@ -434,7 +465,7 @@ function EChartsGraph({
         // head, only the segment landing back on the node does. Copied, not
         // shared: handing the same array instance to every link means one
         // in-place edit anywhere downstream restyles the whole graph.
-        let ends = link.arrow ? style.ends.slice() : ['none', 'none']
+        const ends: string[] = link.arrow ? style.ends.slice() : ['none', 'none']
         // A loop with no arrowhead is unreadable — it becomes an arc floating over
         // a node with nothing to say which end it returns to. So a headless style
         // keeps its tail but borrows a head for the closing segment only.
@@ -470,7 +501,7 @@ function EChartsGraph({
     // and this could be JSON.stringify'd and sent over a wire — which is worth
     // remembering when tempted to close over something mutable in it.
     const option = () => {
-      const series = {
+      const series: Record<string, unknown> = {
         // Load-bearing, and easy to leave off. `replaceMerge` below matches
         // components by id; a series without one can never match, so every
         // push destroyed the series and built a new one — which means every
@@ -518,7 +549,7 @@ function EChartsGraph({
         // Long enough that a new level slides in rather than appearing, short
         // enough that the chart is idle again well before the next click.
         animationDurationUpdate: ANIM_MS,
-        animationEasingUpdate: 'sinusoidalInOut',
+        animationEasingUpdate: 'sinusoidalInOut' as const,
         // Entering nodes use this one, not the update duration, and it
         // defaults to a full second — so a newly expanded level would arrive
         // well after everything else had settled.
@@ -548,8 +579,15 @@ function EChartsGraph({
     // public API for it — `convertToPixel` only knows registered coordinate
     // systems, and a graph's view is not one.
     place.current = () => {
-      const series = instance.getModel().getSeriesByIndex(0)
-      const view = series && series.coordinateSystem
+      // No public API reaches the graph's view — `getModel` is internal and
+      // `convertToPixel` only knows registered coordinate systems. The two
+      // members read here are all this overlay needs.
+      const model = instance as unknown as {
+        getModel(): {
+          getSeriesByIndex(index: number): { coordinateSystem?: GraphView } | undefined
+        }
+      }
+      const view = model.getModel().getSeriesByIndex(0)?.coordinateSystem
       if (!view || !layer.current) return
 
       // How much bigger than its symbol size a node is actually drawn.
@@ -564,13 +602,14 @@ function EChartsGraph({
       //
       // What a symbol does scale with is the roam zoom, damped by
       // `nodeScaleRatio`. Same arithmetic here, so the ring tracks the node.
-      const roam = view.getRoamTransform ? Math.abs(view.getRoamTransform()[0]) || 1 : 1
+      const roam = view.getRoamTransform ? Math.abs(view.getRoamTransform()[0] ?? 1) || 1 : 1
       const zoom = (roam - 1) * NODE_SCALE_RATIO + 1
 
       const flagged = new Map(graph.nodes.map(node => [node.id, node]))
 
-      Array.from(layer.current.children).forEach(ring => {
-        const node = flagged.get(ring.dataset.node)
+      Array.from(layer.current.children).forEach(el => {
+        const ring = el as HTMLElement
+        const node = ring.dataset['node'] ? flagged.get(ring.dataset['node']) : undefined
         const at = node && positions[node.id]
         if (!at) return
         const [x, y] = view.dataToPoint([at.x, at.y])

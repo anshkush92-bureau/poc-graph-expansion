@@ -16,9 +16,42 @@
 // as well as the solve, and the gap between them is the transfer.
 
 import { layoutRadial } from '../graph/ops.ts'
-import { forceLayout } from './force.js'
+import { forceLayout } from './force.ts'
+import type { ForceOptions } from './force.ts'
+import type { Graph, Positions } from '../engine/types.ts'
 
-self.onmessage = event => {
+export type LayoutMode = 'radial' | 'force'
+
+export interface LayoutRequest {
+  id: number
+  graph: Graph
+  mode: LayoutMode
+  options?: ForceOptions
+}
+
+export type LayoutResponse =
+  | {
+      id: number
+      ok: true
+      positions: Positions
+      ticks: number | null
+      alpha: number | null
+      converged: boolean
+      solveMs: number
+    }
+  | { id: number; ok: false; error: string }
+
+/**
+ * `self` is typed as a Window here because the app compiles against lib.dom —
+ * pulling in lib.webworker instead would retype the whole project. One local
+ * view of the two members this file uses is cheaper and just as safe.
+ */
+const scope = self as unknown as {
+  onmessage: ((event: MessageEvent<LayoutRequest>) => void) | null
+  postMessage(message: LayoutResponse): void
+}
+
+scope.onmessage = event => {
   const { id, graph, mode, options } = event.data
   const started = performance.now()
 
@@ -31,7 +64,7 @@ self.onmessage = event => {
         ? forceLayout(graph, options)
         : { positions: layoutRadial(graph, null), ticks: null, alpha: null, converged: true }
 
-    self.postMessage({
+    scope.postMessage({
       id,
       ok: true,
       positions: result.positions,
@@ -42,6 +75,6 @@ self.onmessage = event => {
       solveMs: Math.round(performance.now() - started)
     })
   } catch (err) {
-    self.postMessage({ id, ok: false, error: String((err && err.message) || err) })
+    scope.postMessage({ id, ok: false, error: err instanceof Error ? err.message : String(err) })
   }
 }

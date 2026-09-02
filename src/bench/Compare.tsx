@@ -1,8 +1,17 @@
 import React, { useMemo, useState } from 'react'
-import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.js'
-import { SCENARIOS } from './scenarios.js'
-import { ResultTable, format } from './table.jsx'
-import { clearResults, loadResults } from './store.js'
+import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.ts'
+import { SCENARIOS } from './scenarios.ts'
+import { ResultTable, format } from './table.tsx'
+import { clearResults, loadResults } from './store.ts'
+import type { BenchResult, EngineKey, MetricValue } from './types.ts'
+
+/** The one number worth ranking a scenario on, and which way is better. */
+interface Headline {
+  metric: string
+  label: string
+  unit: string
+  lowerIsBetter: boolean
+}
 
 /**
  * Everything measured so far, in one place.
@@ -19,8 +28,7 @@ import { clearResults, loadResults } from './store.js'
  * ranks on is named in the header so it can be argued with.
  */
 
-/** The one number worth ranking each scenario on, and which way is better. */
-const HEADLINE = {
+const HEADLINE: Record<string, Headline> = {
   hairball: { metric: 'ttfrMs', label: 'time to first render', unit: 'ms', lowerIsBetter: true },
   stream: {
     metric: 'fps',
@@ -62,16 +70,15 @@ export default function Compare() {
   const [results, setResults] = useState(loadResults)
 
   const byScenario = useMemo(() => {
-    const out = {}
+    const out: Record<string, BenchResult[]> = {}
     SCENARIOS.forEach(s => {
       out[s.key] = []
     })
-    Object.keys(results).forEach(key => {
-      const row = results[key]
-      if (out[row.scenario]) out[row.scenario].push(row)
+    Object.values(results).forEach(row => {
+      out[row.scenario]?.push(row)
     })
-    Object.keys(out).forEach(k => {
-      out[k].sort((a, b) => ENGINE_KEYS.indexOf(a.engine) - ENGINE_KEYS.indexOf(b.engine))
+    Object.values(out).forEach(rows => {
+      rows.sort((a, b) => ENGINE_KEYS.indexOf(a.engine) - ENGINE_KEYS.indexOf(b.engine))
     })
     return out
   }, [results])
@@ -129,7 +136,7 @@ export default function Compare() {
                     <th key={s.key}>
                       {s.label}
                       <small>
-                        {HEADLINE[s.key].label} ({HEADLINE[s.key].unit})
+                        {HEADLINE[s.key]?.label} ({HEADLINE[s.key]?.unit})
                       </small>
                     </th>
                   ))}
@@ -141,11 +148,13 @@ export default function Compare() {
                     <th scope="row">{ENGINES[key].name}</th>
                     <td className="grid__soft">{ENGINES[key].surface}</td>
                     {SCENARIOS.map(s => {
-                      const row = byScenario[s.key].find(r => r.engine === key)
-                      const best = bestFor(byScenario[s.key], HEADLINE[s.key])
+                      const headline = HEADLINE[s.key]
+                      const scenarioRows = byScenario[s.key] ?? []
+                      const row = scenarioRows.find(r => r.engine === key)
+                      const best = headline ? bestFor(scenarioRows, headline) : null
                       const value =
-                        row && !row.unsupported && !row.failed && row.metrics
-                          ? row.metrics[HEADLINE[s.key].metric]
+                        row && !row.unsupported && !row.failed && row.metrics && headline
+                          ? row.metrics[headline.metric]
                           : null
                       const isBest = value != null && value === best
                       return (
@@ -193,7 +202,8 @@ export default function Compare() {
                 <tr key={capKey}>
                   <th scope="row">{label}</th>
                   {ENGINE_KEYS.map(key => {
-                    const value = ENGINES[key].caps[capKey]
+                    const value =
+                      ENGINES[key].caps[capKey as keyof (typeof ENGINES)[EngineKey]['caps']]
                     return (
                       <td key={key} className={value ? '' : 'is-na'}>
                         {value || 'none'}
@@ -211,7 +221,7 @@ export default function Compare() {
         <section className="compare__block" key={s.key}>
           <h2>{s.label}</h2>
           <p className="compare__sub">{s.blurb}</p>
-          <ResultTable rows={byScenario[s.key]} scenario={s} />
+          <ResultTable rows={byScenario[s.key] ?? []} scenario={s} />
         </section>
       ))}
     </div>
@@ -219,11 +229,11 @@ export default function Compare() {
 }
 
 /** The winning value for a scenario's headline metric, or null if nothing ran. */
-function bestFor(rows, headline) {
+function bestFor(rows: BenchResult[], headline: Headline): number | null {
   const values = rows
     .filter(r => !r.unsupported && !r.failed && r.metrics)
-    .map(r => r.metrics[headline.metric])
-    .filter(v => typeof v === 'number')
+    .map((r): MetricValue => r.metrics[headline.metric])
+    .filter((v): v is number => typeof v === 'number')
   if (!values.length) return null
-  return headline.lowerIsBetter ? Math.min.apply(null, values) : Math.max.apply(null, values)
+  return headline.lowerIsBetter ? Math.min(...values) : Math.max(...values)
 }

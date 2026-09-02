@@ -6,10 +6,33 @@
 // comparable. Anything engine-specific lives in the renderer's viewport handle,
 // not here.
 
+export interface FrameStats {
+  frames: number
+  fps: number
+  p50: number | null
+  p95: number | null
+  worst: number | null
+  dropped: number
+}
+
+export interface LongTaskStats {
+  count: number
+  blockedMs: number
+  longestMs: number
+}
+
+/**
+ * Chromium-only extras. Neither is in lib.dom, and both are read defensively
+ * below, so a narrow local declaration beats widening the global types.
+ */
+interface ChromeMemory {
+  usedJSHeapSize: number
+}
+
 /** One frame's budget at 60 Hz. */
 const BUDGET = 1000 / 60
 
-const round = (n, places = 1) => {
+const round = (n: number, places = 1): number => {
   const f = Math.pow(10, places)
   return Math.round(n * f) / f
 }
@@ -25,19 +48,21 @@ const round = (n, places = 1) => {
  * `dropped` counts frames the browser never got to present, not frames that ran
  * slow — a 100 ms delta is one frame that arrived plus five that did not.
  */
-export function summarise(deltas) {
+export function summarise(deltas: number[]): FrameStats {
   if (!deltas.length) {
     return { frames: 0, fps: 0, p50: null, p95: null, worst: null, dropped: 0 }
   }
   const sorted = deltas.slice().sort((a, b) => a - b)
-  const at = q => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))]
+  // Non-null: `sorted` is non-empty here and the index is clamped to it.
+  const at = (q: number): number =>
+    sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))]!
   const total = deltas.reduce((sum, d) => sum + d, 0)
   return {
     frames: deltas.length,
     fps: round((1000 * deltas.length) / total),
     p50: round(at(0.5)),
     p95: round(at(0.95)),
-    worst: round(sorted[sorted.length - 1]),
+    worst: round(sorted[sorted.length - 1]!),
     dropped: deltas.reduce((sum, d) => sum + Math.max(0, Math.round(d / BUDGET) - 1), 0)
   }
 }
@@ -52,13 +77,13 @@ export function summarise(deltas) {
  * *is* the answer. A fixed-duration sampler would have to guess a window long
  * enough to contain a layout whose duration is the thing being measured.
  */
-export function startFrames() {
-  const deltas = []
+export function startFrames(): { stop(): FrameStats } {
+  const deltas: number[] = []
   let last = performance.now()
   let skipped = false
   let live = true
 
-  const tick = now => {
+  const tick = (now: number) => {
     const delta = now - last
     last = now
     // The first delta spans whatever happened before the sampler started —
@@ -86,14 +111,17 @@ export function startFrames() {
  * transforms from a `setInterval` instead would queue work the renderer never
  * gets to show and turn the measurement into a queue-depth test.
  */
-export function sampleFrames(ms, step) {
+export function sampleFrames(
+  ms: number,
+  step?: (progress: number, elapsed: number) => void
+): Promise<FrameStats> {
   return new Promise(resolve => {
-    const deltas = []
+    const deltas: number[] = []
     const t0 = performance.now()
     let last = t0
     let skipped = false
 
-    const tick = now => {
+    const tick = (now: number) => {
       const delta = now - last
       last = now
       if (skipped) deltas.push(delta)
@@ -120,9 +148,9 @@ export function sampleFrames(ms, step) {
  * elsewhere is deliberate: a reported 0 ms blocked reads as "never blocked",
  * which is a much worse lie than "not measured here".
  */
-export function watchLongTasks() {
-  const entries = []
-  let observer = null
+export function watchLongTasks(): { stop(): LongTaskStats | null } {
+  const entries: PerformanceEntry[] = []
+  let observer: PerformanceObserver | null = null
   try {
     observer = new PerformanceObserver(list => {
       list.getEntries().forEach(entry => entries.push(entry))
@@ -132,7 +160,8 @@ export function watchLongTasks() {
     return { stop: () => null }
   }
   return {
-    stop() {
+    stop(): LongTaskStats | null {
+      if (!observer) return null
       // `takeRecords` before disconnecting, and this is not belt-and-braces.
       // A PerformanceObserver's callback is delivered on a later task, so an
       // entry for work that finished microseconds ago has not arrived yet —
@@ -159,8 +188,10 @@ export function watchLongTasks() {
  * at the end, and again after the graph has been emptied, and *that* difference
  * is a leak signal rather than a snapshot.
  */
-export const heapMB = () =>
-  performance.memory ? round(performance.memory.usedJSHeapSize / (1024 * 1024), 2) : null
+export const heapMB = (): number | null => {
+  const memory = (performance as Performance & { memory?: ChromeMemory }).memory
+  return memory ? round(memory.usedJSHeapSize / (1024 * 1024), 2) : null
+}
 
 /**
  * Resolves once the change you just made has actually been painted.
@@ -171,12 +202,13 @@ export const heapMB = () =>
  * this is the difference between time-to-render and time-to-first-*visible*,
  * and on the DOM engines it is a large difference.
  */
-export const nextPaint = () =>
-  new Promise(resolve => {
+export const nextPaint = (): Promise<number> =>
+  new Promise<number>(resolve => {
     requestAnimationFrame(() => requestAnimationFrame(() => resolve(performance.now())))
   })
 
-export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
+export const sleep = (ms: number): Promise<void> =>
+  new Promise<void>(resolve => setTimeout(resolve, ms))
 
 /**
  * Asks the browser to collect garbage, if it has been started with
@@ -184,8 +216,9 @@ export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
  * default — this makes them less so where it is available and costs nothing
  * where it is not.
  */
-export const collectGarbage = async () => {
-  if (typeof window !== 'undefined' && typeof window.gc === 'function') window.gc()
+export const collectGarbage = async (): Promise<void> => {
+  const gc = typeof window !== 'undefined' ? (window as Window & { gc?: () => void }).gc : undefined
+  if (typeof gc === 'function') gc()
   // A frame plus a macrotask gives an idle-time collector a chance either way.
   await nextPaint()
   await sleep(60)

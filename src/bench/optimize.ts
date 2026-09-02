@@ -18,6 +18,21 @@
 // none gets to borrow it. That is the point — it separates "this library is
 // fast" from "this library ships the optimisation you would have written".
 
+import type { Graph, Positions } from '../engine/types.ts'
+
+export interface Box {
+  minX: number
+  maxX: number
+  minY: number
+  maxY: number
+}
+
+export interface OptimiseOptions {
+  lod?: boolean
+  cull?: boolean
+  fraction?: number
+}
+
 /**
  * Level of detail: the same graph with nothing to letter.
  *
@@ -31,7 +46,7 @@
  * to whichever pane is on screen and to the side panel, and blanking a name in
  * place would blank it everywhere.
  */
-export function stripLabels(graph) {
+export function stripLabels(graph: Graph): Graph {
   return {
     nodes: graph.nodes.map(n => Object.assign({}, n, { name: '' })),
     edges: graph.edges.map(e => Object.assign({}, e, { label: '' }))
@@ -49,8 +64,8 @@ export function stripLabels(graph) {
  * what a reader sees having zoomed in to a quarter of the graph's extent, which
  * is an ordinary thing to do and the case culling exists for.
  */
-export function centreBox(positions, fraction) {
-  const points = Object.keys(positions).map(id => positions[id])
+export function centreBox(positions: Positions, fraction: number): Box {
+  const points = Object.values(positions)
   if (!points.length) return { minX: 0, maxX: 0, minY: 0, maxY: 0 }
 
   let minX = Infinity
@@ -81,8 +96,8 @@ export function centreBox(positions, fraction) {
  * The root is *not* given an exemption. It would be a lie about the cost: a
  * viewport does not keep a node because it is important.
  */
-export function cullToBox(graph, positions, box) {
-  const kept = new Set()
+export function cullToBox(graph: Graph, positions: Positions, box: Box): Graph {
+  const kept = new Set<string>()
   const nodes = graph.nodes.filter(n => {
     const at = positions[n.id]
     if (!at || at.x < box.minX || at.x > box.maxX || at.y < box.minY || at.y > box.maxY)
@@ -101,7 +116,11 @@ export function cullToBox(graph, positions, box) {
  * "culling made it three times faster" is not a finding on its own — it is only
  * a finding next to how much of the graph stopped being drawn.
  */
-export function optimise(graph, positions, { lod = false, cull = false, fraction = 0.25 } = {}) {
+export function optimise(
+  graph: Graph,
+  positions: Positions,
+  { lod = false, cull = false, fraction = 0.25 }: OptimiseOptions = {}
+): { graph: Graph; drawn: { nodes: number; edges: number } } {
   let out = graph
   if (cull) out = cullToBox(out, positions, centreBox(positions, fraction))
   if (lod) out = stripLabels(out)

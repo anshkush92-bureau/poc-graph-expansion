@@ -109,20 +109,23 @@ const DEPTH_SHAPES: readonly (keyof typeof SHAPE)[] = [
   'triangle'
 ]
 
+/** A key into {@link SHAPE}. Every shape set resolves a node to one of these. */
+export type ShapeKey = keyof typeof SHAPE
+
 export const SHAPE_SETS = {
   type: {
     label: 'Shape per entity type',
-    shapeOf: (node: ShapeNode) => BY_TYPE[node.type] || 'circle'
+    shapeOf: (node: ShapeNode): ShapeKey => BY_TYPE[node.type] || 'circle'
   },
   uniform: {
     label: 'All circles',
-    shapeOf: () => 'circle'
+    shapeOf: (): ShapeKey => 'circle'
   },
   custom: {
     label: 'Custom SVG paths',
     // Same six types, drawn with hand-written path:// symbols instead of
     // built-ins — the proof that the shape vocabulary is not capped at eight.
-    shapeOf: (node: ShapeNode) =>
+    shapeOf: (node: ShapeNode): ShapeKey =>
       (
         ({
           account: 'hexagon',
@@ -138,13 +141,14 @@ export const SHAPE_SETS = {
     label: 'Shape per risk band',
     // Shape as a severity channel: the thing an analyst is hunting for is the
     // only pointed shape on the canvas.
-    shapeOf: (node: ShapeNode) => (node.flagged ? 'star' : node.risk > 55 ? 'triangle' : 'rounded')
+    shapeOf: (node: ShapeNode): ShapeKey =>
+      node.flagged ? 'star' : node.risk > 55 ? 'triangle' : 'rounded'
   },
   depth: {
     label: 'Shape per hop distance',
     // Reads the ring you are on off the symbol, so a screenshot still says how
     // far from the root each node sits after the labels are cropped off.
-    shapeOf: (node: ShapeNode) => DEPTH_SHAPES[node.level] || 'plus'
+    shapeOf: (node: ShapeNode): ShapeKey => DEPTH_SHAPES[node.level] || 'plus'
   }
 }
 
@@ -252,7 +256,8 @@ export interface FlatLink {
   from: string
   to: string
   label: string
-  arrow: boolean
+  /** Absent on the two invisible legs of a self-loop — see `withLoops`. */
+  arrow?: boolean
   loop?: boolean
   synthetic?: boolean
 }

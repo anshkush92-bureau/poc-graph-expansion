@@ -1,11 +1,46 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { createApp, h, reactive, shallowRef } from 'vue'
-import VNetworkGraphPlugin, { VNetworkGraph } from 'v-network-graph'
+import VNetworkGraphPlugin, { VNetworkGraph, defineConfigs } from 'v-network-graph'
+import type {
+  Edge,
+  Edges,
+  Layouts,
+  Node,
+  Nodes,
+  UserConfigs,
+  VNetworkGraphInstance
+} from 'v-network-graph'
 import 'v-network-graph/lib/style.css'
 import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
 import { useResize } from '../ui/useResize.ts'
+import type { GraphPaneProps } from '../engine/types.ts'
+
+/**
+ * What this pane puts in v-network-graph's `nodes` / `edges` maps. The library
+ * types both as open records, and the config callbacks below read these fields.
+ */
+interface VngNode extends Node {
+  name: string
+  size: number
+  color: string
+  hoverColor: string
+  strokeWidth: number
+  strokeColor: string
+}
+
+interface VngEdge extends Edge {
+  source: string
+  target: string
+  color: string
+}
+
+/** The one svg-pan-zoom member the viewport handle drives. */
+interface PanZoom {
+  zoomBy(factor: number): void
+  panBy(by: { x: number; y: number }): void
+}
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
@@ -69,7 +104,7 @@ const LOOP = '#7FD4E8'
  */
 const CEILING = 150
 
-const CONFIGS = {
+const CONFIGS = defineConfigs<VngNode, VngEdge>({
   view: {
     scalingObjects: true, // nodes shrink with zoom, matching the canvas engines
     minZoomLevel: 0.02,
@@ -104,7 +139,7 @@ const CONFIGS = {
     // Native self-loops, sized to arch above the node like every other pane.
     selfLoop: { radius: 16, offset: 14, angle: 180, isClockwise: true }
   }
-}
+})
 
 function VngGraph({
   graph,
@@ -119,46 +154,54 @@ function VngGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
   // The Vue side: the app, the reactive store it renders, and a ref to the
   // component instance so the viewport can be refitted as the graph grows.
-  const vue = useRef(null)
-  const store = useRef(null)
-  const instance = useRef(null)
+  const vue = useRef<ReturnType<typeof createApp> | null>(null)
+  const store = useRef<{ nodes: Nodes; edges: Edges; layouts: Layouts } | null>(null)
+  const instance = useRef<{ value: VNetworkGraphInstance | null } | null>(null)
   const fitted = useRef(-1)
   const [refused, setRefused] = useState(0)
 
   // The Vue component fits once on load, against whatever box existed then —
   // which for a lazily-mounted pane can be one that has not been laid out.
   useResize(frame, () => {
-    const graphRef = instance.current
-    if (graphRef && graphRef.value) graphRef.value.fitToContents()
+    instance.current?.value?.fitToContents()
   })
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
   useEffect(() => {
     // `reactive` for the data — deep tracking is what makes the graph redraw
     // when a node's colour changes. `CONFIGS` stays a plain frozen constant:
     // wrapping it would build proxies for something that never changes.
-    const state = reactive({ nodes: {}, edges: {}, layouts: { nodes: {} } })
-    const graphRef = shallowRef(null)
+    const state = reactive<{ nodes: Nodes; edges: Edges; layouts: Layouts }>({
+      nodes: {},
+      edges: {},
+      layouts: { nodes: {} }
+    })
+    const graphRef = shallowRef<VNetworkGraphInstance | null>(null)
 
     // The component's own `zoomIn` / `zoomOut` are fixed steps with no
     // continuous form, so the viewport handle needs the svg-pan-zoom instance
     // underneath — which is only reachable through this config callback. It is
     // the one reason `CONFIGS` is copied here rather than passed as the frozen
     // module constant it is everywhere else.
-    let panZoom = null
-    const configs = Object.assign({}, CONFIGS, {
-      view: Object.assign({}, CONFIGS.view, {
-        onSvgPanZoomInitialized: made => {
+    let panZoom: PanZoom | null = null
+    const configs = {
+      ...CONFIGS,
+      view: {
+        ...CONFIGS.view,
+        onSvgPanZoomInitialized: (made: PanZoom) => {
           panZoom = made
         }
-      })
-    })
+      }
+    }
 
     const app = createApp({
       render: () =>
@@ -167,21 +210,23 @@ function VngGraph({
           nodes: state.nodes,
           edges: state.edges,
           layouts: state.layouts,
-          configs,
+          // The component's props are declared over the library's base Node /
+          // Edge, so a config typed against this pane's richer node does not
+          // assign to it. The callbacks only ever see this pane's own nodes.
+          configs: configs as UserConfigs,
           // Vue event names containing a colon do not camel-case, so the prop key
           // is the handler name spelled out. `@node:click` in a template is
           // `'onNode:click'` here.
-          'onNode:click': ({ node, event }) =>
-            handlers.current.onNodeClick(node, { x: event.clientX, y: event.clientY }),
-          'onNode:pointerover': ({ node, event }) =>
-            handlers.current.onNodeHover(node, { x: event.clientX, y: event.clientY }),
-          'onNode:pointerout': () => handlers.current.onNodeHover(null, null),
-          'onEdge:click': ({ edge }) => handlers.current.onEdgeClick(edge),
-          'onView:click': () => handlers.current.onBackgroundClick()
+          'onNode:click': ({ node }: { node: string }) => handlers.current?.onNodeClick(node),
+          'onNode:pointerover': ({ node, event }: { node: string; event: PointerEvent }) =>
+            handlers.current?.onNodeHover(node, { x: event.clientX, y: event.clientY }),
+          'onNode:pointerout': () => handlers.current?.onNodeHover(null, null),
+          'onEdge:click': ({ edge }: { edge: string }) => handlers.current?.onEdgeClick(edge),
+          'onView:click': () => handlers.current?.onBackgroundClick()
         })
     })
     app.use(VNetworkGraphPlugin)
-    app.mount(frame.current)
+    app.mount(frame.current!)
 
     vue.current = app
     store.current = state
@@ -189,15 +234,9 @@ function VngGraph({
 
     if (onViewport) {
       onViewport({
-        zoomBy: factor => {
-          if (panZoom) panZoom.zoomBy(factor)
-        },
-        panBy: (dx, dy) => {
-          if (panZoom) panZoom.panBy({ x: dx, y: dy })
-        },
-        fit: () => {
-          if (graphRef.value) graphRef.value.fitToContents()
-        }
+        zoomBy: (factor: number) => panZoom?.zoomBy(factor),
+        panBy: (dx: number, dy: number) => panZoom?.panBy({ x: dx, y: dy }),
+        fit: () => graphRef.value?.fitToContents()
       })
     }
 
@@ -232,8 +271,8 @@ function VngGraph({
     // reactivity handles either, but a single assignment is one dependency
     // notification instead of one per node, which at a few thousand nodes is
     // the difference between a redraw and a stall.
-    const nodes = {}
-    const layouts = {}
+    const nodes: Record<string, VngNode> = {}
+    const layouts: Layouts['nodes'] = {}
     graph.nodes.forEach(node => {
       const at = positions[node.id]
       if (!at) return
@@ -253,7 +292,7 @@ function VngGraph({
       layouts[node.id] = { x: at.x, y: at.y }
     })
 
-    const edges = {}
+    const edges: Record<string, VngEdge> = {}
     graph.edges.forEach(edge => {
       edges[edge.id] = {
         source: edge.source,
@@ -273,7 +312,7 @@ function VngGraph({
       fitted.current = graph.nodes.length
       const graphRef = instance.current
       requestAnimationFrame(() => {
-        if (graphRef && graphRef.value) graphRef.value.fitToContents()
+        graphRef?.value?.fitToContents()
       })
     }
 

@@ -4,6 +4,7 @@ import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
 import { useResize } from '../ui/useResize.ts'
+import type { GraphNode, GraphPaneProps } from '../engine/types.ts'
 
 /**
  * The Cytoscape.js renderer.
@@ -38,7 +39,7 @@ const LOOP = '#7FD4E8'
 // same stack the rest of the app uses rather than a family only this file knows.
 const UI = "'Inter Tight', system-ui, sans-serif"
 
-const STYLE = [
+const STYLE: cytoscape.StylesheetJson = [
   {
     selector: 'node',
     style: {
@@ -79,14 +80,21 @@ const STYLE = [
   },
   // A loop needs its own curve style: `bezier` on an edge whose endpoints are
   // the same point has no direction to bend in and collapses under the disc.
+  // Cast: `loop` is a real curve style in cytoscape 3.34, but its shipped
+  // types still list only the nine that predate it.
   {
     selector: 'edge.loop',
     style: { 'curve-style': 'loop', 'loop-direction': '0deg', 'loop-sweep': '-40deg' }
-  },
+  } as unknown as cytoscape.StylesheetJson[number],
   { selector: 'node.pending', style: { opacity: 0.55 } }
 ]
 
-const dataFor = (node, hidden, explored, pending) => {
+const dataFor = (
+  node: GraphNode,
+  hidden: ReadonlyMap<string, number>,
+  explored: boolean,
+  pending: boolean
+) => {
   const meta = ENTITY[node.type]
   const behind = hidden.get(node.id) || 0
   return {
@@ -113,14 +121,17 @@ function CytoscapeGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
-  const cy = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
+  const cy = useRef<cytoscape.Core | null>(null)
   // Node count at the last fit, so a refit happens when the graph grows or
   // shrinks and not merely when it is recoloured.
   const fitted = useRef(-1)
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
   useEffect(() => {
@@ -139,22 +150,24 @@ function CytoscapeGraph({
       wheelSensitivity: 0.2,
       minZoom: 0.02,
       maxZoom: 4
-    })
+      // Same gap as the loop style above: the WebGL rasteriser ships without a
+      // type for the option that selects it.
+    } as cytoscape.CytoscapeOptions & { renderer: { name: string; webgl: boolean } })
 
     // `tap` rather than `click`: it is Cytoscape's unified pointer event, and
     // unlike a raw click it does not fire at the end of a node drag — dragging
     // a node to read the graph underneath must not expand it.
-    instance.on('tap', 'node', evt => handlers.current.onNodeClick(evt.target.id()))
-    instance.on('tap', 'edge', evt => handlers.current.onEdgeClick(evt.target.id()))
+    instance.on('tap', 'node', evt => handlers.current?.onNodeClick(evt.target.id()))
+    instance.on('tap', 'edge', evt => handlers.current?.onEdgeClick(evt.target.id()))
     instance.on('tap', evt => {
-      if (evt.target === instance) handlers.current.onBackgroundClick()
+      if (evt.target === instance) handlers.current?.onBackgroundClick()
     })
 
     instance.on('mouseover', 'node', evt => {
-      const e = evt.originalEvent
-      handlers.current.onNodeHover(evt.target.id(), { x: e.clientX, y: e.clientY })
+      const e = evt.originalEvent as MouseEvent
+      handlers.current?.onNodeHover(evt.target.id(), { x: e.clientX, y: e.clientY })
     })
-    instance.on('mouseout', 'node', () => handlers.current.onNodeHover(null, null))
+    instance.on('mouseout', 'node', () => handlers.current?.onNodeHover(null, null))
 
     cy.current = instance
 
@@ -164,12 +177,12 @@ function CytoscapeGraph({
     // test of drawing nothing.
     if (onViewport) {
       onViewport({
-        zoomBy: factor =>
+        zoomBy: (factor: number) =>
           instance.zoom({
             level: instance.zoom() * factor,
             renderedPosition: { x: instance.width() / 2, y: instance.height() / 2 }
           }),
-        panBy: (dx, dy) => instance.panBy({ x: dx, y: dy }),
+        panBy: (dx: number, dy: number) => instance.panBy({ x: dx, y: dy }),
         fit: () => refit.current()
       })
     }

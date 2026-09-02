@@ -9,6 +9,7 @@ import { ENTITY } from '../graph/data.ts'
 import { isSelfEdge } from '../graph/ops.ts'
 import { BONE, FLARE, INK, mix, nodeColor } from '../ui/theme.ts'
 import { useResize } from '../ui/useResize.ts'
+import type { GraphEdge, GraphNode, GraphPaneProps, Point, Positions } from '../engine/types.ts'
 
 /**
  * The vis-network renderer.
@@ -35,10 +36,17 @@ import { useResize } from '../ui/useResize.ts'
 const EDGE = '#2F3746'
 const LOOP = '#7FD4E8'
 
-const nodeFor = (node, positions, hidden, explored, pending) => {
+const nodeFor = (
+  node: GraphNode,
+  positions: Positions,
+  hidden: ReadonlyMap<string, number>,
+  explored: boolean,
+  pending: boolean
+) => {
   const meta = ENTITY[node.type]
   const behind = hidden.get(node.id) || 0
-  const at = positions[node.id]
+  // Non-null: callers filter to nodes the layout has placed.
+  const at = positions[node.id]!
   const fill = nodeColor(meta.color, { explored, pending })
   return {
     id: node.id,
@@ -69,7 +77,7 @@ const nodeFor = (node, positions, hidden, explored, pending) => {
   }
 }
 
-const edgeFor = edge => ({
+const edgeFor = (edge: GraphEdge) => ({
   id: edge.id,
   from: edge.source,
   to: edge.target,
@@ -119,14 +127,17 @@ function VisGraph({
   onBackgroundClick,
   onStat,
   onViewport
-}) {
-  const frame = useRef(null)
-  const net = useRef(null)
-  const nodes = useRef(null)
-  const edges = useRef(null)
+}: GraphPaneProps) {
+  const frame = useRef<HTMLDivElement>(null)
+  const net = useRef<Network | null>(null)
+  const nodes = useRef<DataSet<ReturnType<typeof nodeFor>>>(null)
+  const edges = useRef<DataSet<ReturnType<typeof edgeFor>>>(null)
   const fitted = useRef(-1)
 
-  const handlers = useRef({})
+  const handlers = useRef<Pick<
+    GraphPaneProps,
+    'onNodeClick' | 'onNodeHover' | 'onEdgeClick' | 'onBackgroundClick'
+  > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
   // Where the pointer last was, in page coordinates.
@@ -135,29 +146,31 @@ function VisGraph({
   // `pointer.DOM` is canvas-relative and `event` is a Hammer event whose shape
   // has changed between releases. Tracking the raw mousemove on the container is
   // both simpler and stable across versions.
-  const pointer = useRef({ x: 0, y: 0 })
+  const pointer = useRef<Point>({ x: 0, y: 0 })
 
   useEffect(() => {
-    const el = frame.current
-    nodes.current = new DataSet([])
-    edges.current = new DataSet([])
+    const el = frame.current!
+    nodes.current = new DataSet<ReturnType<typeof nodeFor>>([])
+    edges.current = new DataSet<ReturnType<typeof edgeFor>>([])
     const instance = new Network(el, { nodes: nodes.current, edges: edges.current }, OPTIONS)
 
-    const track = event => {
+    const track = (event: MouseEvent) => {
       pointer.current = { x: event.clientX, y: event.clientY }
     }
     el.addEventListener('mousemove', track)
 
     instance.on('click', params => {
-      if (params.nodes.length) handlers.current.onNodeClick(params.nodes[0])
-      else if (params.edges.length) handlers.current.onEdgeClick(params.edges[0])
-      else handlers.current.onBackgroundClick()
+      if (params.nodes.length) handlers.current?.onNodeClick(String(params.nodes[0]))
+      else if (params.edges.length) handlers.current?.onEdgeClick(String(params.edges[0]))
+      else handlers.current?.onBackgroundClick()
     })
-    instance.on('hoverNode', params => handlers.current.onNodeHover(params.node, pointer.current))
-    instance.on('blurNode', () => handlers.current.onNodeHover(null, null))
+    instance.on('hoverNode', params =>
+      handlers.current?.onNodeHover(String(params.node), pointer.current)
+    )
+    instance.on('blurNode', () => handlers.current?.onNodeHover(null, null))
     // Dragging the canvas under a hovered node never fires blurNode, so the card
     // would be left floating over a node that has moved out from under it.
-    instance.on('dragStart', () => handlers.current.onNodeHover(null, null))
+    instance.on('dragStart', () => handlers.current?.onNodeHover(null, null))
 
     net.current = instance
 
@@ -166,9 +179,9 @@ function VisGraph({
     // of pixels into world units first, since `position` is in graph space.
     if (onViewport) {
       onViewport({
-        zoomBy: factor =>
+        zoomBy: (factor: number) =>
           instance.moveTo({ scale: instance.getScale() * factor, animation: false }),
-        panBy: (dx, dy) => {
+        panBy: (dx: number, dy: number) => {
           const scale = instance.getScale() || 1
           const at = instance.getViewPosition()
           instance.moveTo({
@@ -222,17 +235,19 @@ function VisGraph({
     // only part that has to be worked out here.
     const wantNodes = new Set(graph.nodes.map(n => n.id))
     const wantEdges = new Set(graph.edges.map(e => e.id))
-    const goneNodes = nodes.current.getIds().filter(id => !wantNodes.has(id))
-    const goneEdges = edges.current.getIds().filter(id => !wantEdges.has(id))
-    if (goneNodes.length) nodes.current.remove(goneNodes)
-    if (goneEdges.length) edges.current.remove(goneEdges)
+    const nodeSet = nodes.current!
+    const edgeSet = edges.current!
+    const goneNodes = nodeSet.getIds().filter(id => !wantNodes.has(String(id)))
+    const goneEdges = edgeSet.getIds().filter(id => !wantEdges.has(String(id)))
+    if (goneNodes.length) nodeSet.remove(goneNodes)
+    if (goneEdges.length) edgeSet.remove(goneEdges)
 
-    nodes.current.update(
+    nodeSet.update(
       graph.nodes
         .filter(n => positions[n.id])
         .map(n => nodeFor(n, positions, hidden, isExpanded(n.id), isPending(n.id)))
     )
-    edges.current.update(graph.edges.map(edgeFor))
+    edgeSet.update(graph.edges.map(edgeFor))
 
     if (fitted.current !== graph.nodes.length) {
       refit.current()

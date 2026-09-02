@@ -6,10 +6,21 @@
 // in one of them turns "not measured here" into "never blocked".
 
 import React, { useMemo } from 'react'
-import { ENGINES } from '../engines.js'
+import { ENGINES } from '../engines.ts'
+import type { BenchResult, Knob as KnobDef, KnobValue, MetricValue, Scenario } from './types.ts'
 
 /** A scenario knob: toggle, choice, or a slider paired with its exact value. */
-export function Knob({ knob, value, disabled, onChange }) {
+export function Knob({
+  knob,
+  value,
+  disabled,
+  onChange
+}: {
+  knob: KnobDef
+  value: KnobValue
+  disabled?: boolean
+  onChange(value: KnobValue): void
+}) {
   if (knob.type === 'toggle') {
     return (
       <label className="rig__check">
@@ -27,7 +38,7 @@ export function Knob({ knob, value, disabled, onChange }) {
     return (
       <label className="jump">
         <span>{knob.label}</span>
-        <select value={value} disabled={disabled} onChange={e => onChange(e.target.value)}>
+        <select value={String(value)} disabled={disabled} onChange={e => onChange(e.target.value)}>
           {knob.options.map(o => (
             <option key={o} value={o}>
               {o}
@@ -37,7 +48,7 @@ export function Knob({ knob, value, disabled, onChange }) {
       </label>
     )
   }
-  const clamp = raw => Math.max(knob.min, Math.min(knob.max, Number(raw) || knob.min))
+  const clamp = (raw: string) => Math.max(knob.min, Math.min(knob.max, Number(raw) || knob.min))
   return (
     <label className="dial">
       <span className="dial__label">{knob.label}</span>
@@ -47,7 +58,7 @@ export function Knob({ knob, value, disabled, onChange }) {
         min={knob.min}
         max={knob.max}
         step={knob.step}
-        value={value}
+        value={Number(value)}
         disabled={disabled}
         onChange={e => onChange(clamp(e.target.value))}
       />
@@ -57,7 +68,7 @@ export function Knob({ knob, value, disabled, onChange }) {
         min={knob.min}
         max={knob.max}
         step={knob.step}
-        value={value}
+        value={Number(value)}
         disabled={disabled}
         onChange={e => onChange(clamp(e.target.value))}
       />
@@ -73,9 +84,9 @@ export function Knob({ knob, value, disabled, onChange }) {
  * carries fewer metrics than one that ran, and hard-coding the columns would
  * mean maintaining the same list in two places.
  */
-export function ResultTable({ rows, scenario }) {
+export function ResultTable({ rows, scenario }: { rows: BenchResult[]; scenario: Scenario }) {
   const columns = useMemo(() => {
-    const seen = []
+    const seen: string[] = []
     rows.forEach(row => {
       Object.keys(row.metrics || {}).forEach(key => {
         if (seen.indexOf(key) === -1) seen.push(key)
@@ -133,7 +144,7 @@ export function ResultTable({ rows, scenario }) {
 }
 
 /** `null` is "not measured", never "zero". The distinction is the whole point. */
-export function format(value) {
+export function format(value: MetricValue): string {
   if (value == null) return '—'
   if (typeof value === 'boolean') return value ? 'yes' : 'no'
   if (typeof value === 'number')
