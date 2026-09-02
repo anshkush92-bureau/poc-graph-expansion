@@ -1,10 +1,23 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ENGINES, ENGINE_KEYS } from './engines.ts'
+import type { EngineKey } from './engines.ts'
+import type {
+  ControlKey,
+  EdgeRuleKey,
+  EdgeStyleKey,
+  EntityType,
+  GraphEngine,
+  GraphNode,
+  Point,
+  Positions,
+  ShapeSetKey
+} from './engine/types.ts'
 import { ENTITY, MAX_DEPTH, ROOT } from './graph/data.ts'
 import { hiddenCounts, isSelfEdge, layoutRadial } from './graph/ops.ts'
 import { synthGraph } from './graph/synth.ts'
 import { useGraph } from './graph/useGraph.ts'
 import { MODES, parseRoute, routeHash } from './route.ts'
+import type { ModeKey } from './route.ts'
 import HoverCard from './ui/HoverCard.tsx'
 import SidePanel from './ui/SidePanel.tsx'
 // The shape and line catalogs, read here only to label the two pickers. The
@@ -63,22 +76,22 @@ export default function App() {
   }, [])
   // Writing the hash is the only way modes change; the listener above turns that
   // back into state, so there is one source of truth rather than two that drift.
-  const setMode = useCallback(key => {
+  const setMode = useCallback((key: ModeKey) => {
     window.location.hash = routeHash(key)
   }, [])
   const mode = route.mode
   // A list, not a single key: the whole reason this exists is putting two or
   // three libraries side by side on the identical graph. Order is selection
   // order, so the panes do not jump around as engines are toggled.
-  const [engines, setEngines] = useState(['echarts'])
+  const [engines, setEngines] = useState<EngineKey[]>(['echarts'])
   // Appearance choices, held here rather than inside the renderer so toggling a
   // pane off and back on does not silently reset them.
-  const [shapeSet, setShapeSet] = useState('type')
-  const [edgeStyle, setEdgeStyle] = useState('arrow')
+  const [shapeSet, setShapeSet] = useState<ShapeSetKey>('type')
+  const [edgeStyle, setEdgeStyle] = useState<EdgeRuleKey>('arrow')
   // Edges the analyst has restyled by hand: edge id -> style key. Beats the
   // picker for those edges only, so "everything solid except this one dashed
   // path" needs no rule written for it.
-  const [edgeOverrides, setEdgeOverrides] = useState(new Map())
+  const [edgeOverrides, setEdgeOverrides] = useState<Map<string, EdgeStyleKey>>(new Map())
   const { graph, isExpanded, isPending, statusVersion, expand, addNode, deleteNode, reset, load } =
     useGraph()
 
@@ -93,16 +106,16 @@ export default function App() {
   const [wantEdges, setWantEdges] = useState(180)
   const [incremental, setIncremental] = useState(true)
 
-  const [hover, setHover] = useState(null) // { id, at }
-  const [selected, setSelected] = useState(null) // { id, tab }
-  const closeTimer = useRef(null)
+  const [hover, setHover] = useState<{ id: string; at: Point } | null>(null)
+  const [selected, setSelected] = useState<{ id: string; tab: 'details' | 'trace' } | null>(null)
+  const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Milliseconds each pane last spent turning the graph into its own elements.
   // Not a frame rate — it is the update cost, which is the number that actually
   // separates these libraries once the graph is large.
-  const [stats, setStats] = useState({})
+  const [stats, setStats] = useState<Partial<Record<EngineKey, number>>>({})
   const onStats = useMemo(() => {
-    const out = {}
+    const out = {} as Record<EngineKey, (ms: number) => void>
     // One stable callback per engine, created once. A fresh identity would
     // break each renderer's memo and re-run its update effect on every render.
     ENGINE_KEYS.forEach(key => {
@@ -112,7 +125,7 @@ export default function App() {
     return out
   }, [])
 
-  const byId = useMemo(() => new Map(graph.nodes.map(n => [n.id, n])), [graph])
+  const byId = useMemo(() => new Map<string, GraphNode>(graph.nodes.map(n => [n.id, n])), [graph])
   const hidden = useMemo(() => hiddenCounts(graph), [graph])
 
   // Node coordinates, computed once here rather than inside each renderer.
@@ -124,7 +137,7 @@ export default function App() {
   // in a renderer would let two panes drift into different arrangements of the
   // same graph, which is the one thing this comparison cannot afford. Second, it
   // is the same numbers for every engine, so computing them per pane was waste.
-  const lastPositions = useRef(null)
+  const lastPositions = useRef<Positions | null>(null)
   const positions = useMemo(() => {
     // Under the threshold, re-balance the whole circle: it is the tighter
     // arrangement, and with few enough nodes the shuffle reads as the graph
@@ -136,26 +149,29 @@ export default function App() {
     return lastPositions.current
   }, [graph, incremental])
 
-  useEffect(() => () => clearTimeout(closeTimer.current), [])
+  useEffect(() => () => clearTimeout(closeTimer.current ?? undefined), [])
 
   // A hover card with buttons in it must survive the pointer travelling from
   // the node to the card, so closing is always on a short delay.
-  const onNodeHover = useCallback((id, at) => {
-    clearTimeout(closeTimer.current)
-    if (!id) {
+  const onNodeHover = useCallback((id: string | null, at: Point | null) => {
+    clearTimeout(closeTimer.current ?? undefined)
+    // `at` is null on every leave and non-null on every enter in all eight
+    // adapters, but the contract allows the pair to come apart; closing is the
+    // only card a null point can draw.
+    if (!id || !at) {
       closeTimer.current = setTimeout(() => setHover(null), 180)
       return
     }
     setHover({ id, at })
   }, [])
 
-  const holdCard = useCallback(() => clearTimeout(closeTimer.current), [])
+  const holdCard = useCallback(() => clearTimeout(closeTimer.current ?? undefined), [])
   const releaseCard = useCallback(() => {
     closeTimer.current = setTimeout(() => setHover(null), 180)
   }, [])
 
   const onNodeClick = useCallback(
-    id => {
+    (id: string) => {
       const node = byId.get(id)
       if (!node) return
       expand(node)
@@ -166,7 +182,7 @@ export default function App() {
       // pointer travels from the expanded node onto the card, the renderer under
       // it never sees an enter, and the node beneath is simply unclickable. The
       // card is also stale the moment the graph grows.
-      clearTimeout(closeTimer.current)
+      clearTimeout(closeTimer.current ?? undefined)
       setHover(null)
     },
     [byId, expand]
@@ -175,24 +191,29 @@ export default function App() {
   // Clicking an edge walks it through the style list, then off the end back to
   // whatever the picker says. No extra UI: the graph is the control surface, and
   // an edge has nothing else a click could mean.
-  const onEdgeClick = useCallback(id => {
+  const onEdgeClick = useCallback((id: string) => {
     setEdgeOverrides(prev => {
       const next = new Map(prev)
-      const at = EDGE_STYLE_ORDER.indexOf(prev.get(id))
-      // -1 (not overridden) lands on index 0; the last style deletes the entry.
-      if (at + 1 >= EDGE_STYLE_ORDER.length) next.delete(id)
-      else next.set(id, EDGE_STYLE_ORDER[at + 1])
+      // Object.keys cannot say that these are EDGE_STYLES' own keys.
+      const order = EDGE_STYLE_ORDER as EdgeStyleKey[]
+      const current = prev.get(id)
+      const at = current ? order.indexOf(current) : -1
+      // -1 (not overridden) lands on index 0; running off the end — the same
+      // condition as `at + 1 >= order.length` — deletes the entry.
+      const step = order[at + 1]
+      if (step === undefined) next.delete(id)
+      else next.set(id, step)
       return next
     })
   }, [])
 
   const onBackgroundClick = useCallback(() => {
-    clearTimeout(closeTimer.current)
+    clearTimeout(closeTimer.current ?? undefined)
     setHover(null)
   }, [])
 
   const handleDelete = useCallback(
-    node => {
+    (node: GraphNode) => {
       if (deleteNode(node.id)) {
         setSelected(null)
         setHover(null)
@@ -202,7 +223,7 @@ export default function App() {
   )
 
   const handleAdd = useCallback(
-    (parent, type) => {
+    (parent: GraphNode, type: EntityType) => {
       addNode(parent, type)
     },
     [addNode]
@@ -210,7 +231,7 @@ export default function App() {
 
   // Toggling a pane. The last one cannot be turned off — an empty stage is a
   // broken screen, not a valid selection.
-  const toggleEngine = useCallback(key => {
+  const toggleEngine = useCallback((key: EngineKey) => {
     setEngines(prev => {
       if (!prev.includes(key)) return prev.concat(key)
       return prev.length > 1 ? prev.filter(k => k !== key) : prev
@@ -244,7 +265,7 @@ export default function App() {
   const selectedNode = selected ? byId.get(selected.id) : null
 
   // Self-edges are not a step outward, so they don't count as a mapped link.
-  const shownFor = node =>
+  const shownFor = (node: GraphNode) =>
     graph.edges.filter(e => !isSelfEdge(e) && e.source === node.id && byId.has(e.target)).length
 
   const deepest = graph.nodes.reduce((max, n) => Math.max(max, n.level), 0)
@@ -253,8 +274,10 @@ export default function App() {
   // for. No engine is named here — an engine opts in via `controls` in its own
   // manifest.
   const controls = useMemo(() => {
-    const on = new Set()
-    engines.forEach(key => (ENGINES[key].controls || []).forEach(c => on.add(c)))
+    const on = new Set<ControlKey>()
+    // Each entry is `satisfies GraphEngine`, so it keeps its own literal type
+    // and `controls` is simply absent from the manifests that do not opt in.
+    engines.forEach(key => ((ENGINES[key] as GraphEngine).controls || []).forEach(c => on.add(c)))
     return on
   }, [engines])
 
@@ -337,8 +360,11 @@ export default function App() {
               {controls.has('shapeSet') && (
                 <label className="jump">
                   <span>Nodes</span>
-                  <select value={shapeSet} onChange={e => setShapeSet(e.target.value)}>
-                    {Object.keys(SHAPE_SETS).map(key => (
+                  <select
+                    value={shapeSet}
+                    onChange={e => setShapeSet(e.target.value as ShapeSetKey)}
+                  >
+                    {(Object.keys(SHAPE_SETS) as ShapeSetKey[]).map(key => (
                       <option key={key} value={key}>
                         {SHAPE_SETS[key].label}
                       </option>
@@ -350,8 +376,11 @@ export default function App() {
                 <React.Fragment>
                   <label className="jump">
                     <span>Edges</span>
-                    <select value={edgeStyle} onChange={e => setEdgeStyle(e.target.value)}>
-                      {Object.keys(EDGE_RULES).map(key => (
+                    <select
+                      value={edgeStyle}
+                      onChange={e => setEdgeStyle(e.target.value as EdgeRuleKey)}
+                    >
+                      {(Object.keys(EDGE_RULES) as EdgeRuleKey[]).map(key => (
                         <option key={key} value={key}>
                           {EDGE_RULES[key].label}
                         </option>
@@ -477,7 +506,7 @@ export default function App() {
         </div>
 
         <ul className="legend">
-          {Object.keys(ENTITY).map(t => (
+          {(Object.keys(ENTITY) as EntityType[]).map(t => (
             <li key={t} style={{ '--accent': ENTITY[t].color }}>
               {ENTITY[t].label}
             </li>
@@ -490,7 +519,7 @@ export default function App() {
         </ul>
       </main>
 
-      {hoverNode && (
+      {hoverNode && hover && (
         <HoverCard
           node={hoverNode}
           at={hover.at}
@@ -506,7 +535,7 @@ export default function App() {
         />
       )}
 
-      {selectedNode && (
+      {selectedNode && selected && (
         <SidePanel
           graph={graph}
           node={selectedNode}
@@ -524,7 +553,7 @@ export default function App() {
   )
 }
 
-function ModeTabs({ mode, onMode }) {
+function ModeTabs({ mode, onMode }: { mode: ModeKey; onMode: (key: ModeKey) => void }) {
   return (
     <div className="modes" role="group" aria-label="View">
       {MODES.map(([key, label]) => (
@@ -550,8 +579,18 @@ function ModeTabs({ mode, onMode }) {
  * a number box alone gives no feel for the scale. `<input type=range>` and
  * `<input type=number>` together need no library and no state of their own.
  */
-function Dial({ label, max, value, onChange }) {
-  const clamp = raw => Math.max(0, Math.min(max, Number(raw) || 0))
+function Dial({
+  label,
+  max,
+  value,
+  onChange
+}: {
+  label: string
+  max: number
+  value: number
+  onChange: (n: number) => void
+}) {
+  const clamp = (raw: string) => Math.max(0, Math.min(max, Number(raw) || 0))
   return (
     <label className="dial">
       <span className="dial__label">{label}</span>
