@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import {
   ArrowOverlay,
   BezierConnector,
@@ -99,6 +99,31 @@ function JsPlumbGraph({
   > | null>(null)
   handlers.current = { onNodeClick, onNodeHover, onEdgeClick, onBackgroundClick }
 
+  /**
+   * Node → edges, through jsPlumb's own hover state.
+   *
+   * `setHover(true)` is what a real pointer-over on a connection does, so the
+   * highlight is the `hoverPaintStyle` already declared on every connection
+   * rather than a second style that has to be kept in step with it. Two
+   * `select` calls because a connection touching this node has it as either
+   * end, and passing both to one call ANDs them.
+   */
+  const litEdges = useRef<string | null>(null)
+  const lightEdges = useCallback((id: string | null) => {
+    const inst = plumb.current
+    if (!inst || litEdges.current === id) return
+    const previous = litEdges.current && els.current.get(litEdges.current)
+    if (previous) {
+      inst.select({ source: previous }).setHover(false)
+      inst.select({ target: previous }).setHover(false)
+    }
+    litEdges.current = id
+    const el = id && els.current.get(id)
+    if (!el) return
+    inst.select({ source: el }).setHover(true)
+    inst.select({ target: el }).setHover(true)
+  }, [])
+
   useEffect(() => {
     const instance = newInstance({
       container: surface.current!,
@@ -117,6 +142,18 @@ function JsPlumbGraph({
     instance.bind('connection:click', connection =>
       handlers.current?.onEdgeClick((connection.getData() as { edgeId: string }).edgeId)
     )
+
+    // Edge → nodes. jsPlumb already highlights a hovered connection itself
+    // (`hoverPaintStyle` on the connect call below), but says nothing about the
+    // two elements it joins — so the class goes on them directly. These *are*
+    // DOM elements here, which is the one thing this engine makes easy: no
+    // state, no re-render, no diff.
+    instance.bind('connection:mouseover', connection => {
+      ;[connection.source, connection.target].forEach(el => el?.classList.add('is-adj'))
+    })
+    instance.bind('connection:mouseout', connection => {
+      ;[connection.source, connection.target].forEach(el => el?.classList.remove('is-adj'))
+    })
 
     plumb.current = instance
     return () => {
@@ -278,10 +315,14 @@ function JsPlumbGraph({
                 opacity: isPending(node.id) ? 0.55 : 1
               }}
               onClick={() => handlers.current?.onNodeClick(node.id)}
-              onMouseEnter={e =>
+              onMouseEnter={e => {
+                lightEdges(node.id)
                 handlers.current?.onNodeHover(node.id, { x: e.clientX, y: e.clientY })
-              }
-              onMouseLeave={() => handlers.current?.onNodeHover(null, null)}
+              }}
+              onMouseLeave={() => {
+                lightEdges(null)
+                handlers.current?.onNodeHover(null, null)
+              }}
             >
               {/* Counter-scaled so captions stay legible as the fit zooms out.
                   A node is a real DOM element here, which is the one thing this

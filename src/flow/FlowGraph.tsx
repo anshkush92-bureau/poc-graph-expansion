@@ -284,12 +284,62 @@ function FlowCanvas({
     (_: React.MouseEvent, edge: Edge) => handlers.current?.onEdgeClick(edge.id),
     []
   )
-  const handleNodeEnter = useCallback(
-    (event: React.MouseEvent, node: Node) =>
-      handlers.current?.onNodeHover(node.id, { x: event.clientX, y: event.clientY }),
-    []
+  /**
+   * The adjacency highlight.
+   *
+   * React Flow has no focus-adjacency mode, so this is hand-rolled — and it
+   * marks the elements with a `className` rather than a `style`, which is what
+   * keeps it cheap. Rewriting `style` would mean reconstructing each edge's
+   * resting stroke (loop or not, overridden or not) on the way back out, and
+   * getting that wrong shows up as an edge stuck in the highlight colour. A
+   * class is a flag; `styles.css` owns what it means.
+   *
+   * `litRef` short-circuits the repeat calls React Flow makes as the pointer
+   * moves inside one node, so the O(n) map runs once per node entered rather
+   * than once per mouse event.
+   */
+  const litRef = useRef<string | null>(null)
+  const litEdgeRef = useRef<string | null>(null)
+  const flag = <T extends { className?: string | undefined }>(item: T, on: boolean): T =>
+    (item.className === 'is-adj') === on ? item : { ...item, className: on ? 'is-adj' : '' }
+
+  const lightFromNode = useCallback(
+    (id: string | null) => {
+      if (litRef.current === id) return
+      litRef.current = id
+      setEdges(prev => prev.map(e => flag(e, id != null && (e.source === id || e.target === id))))
+    },
+    [setEdges]
   )
-  const handleNodeLeave = useCallback(() => handlers.current?.onNodeHover(null, null), [])
+
+  // And the other direction: an edge lights the two nodes it joins.
+  const lightFromEdge = useCallback(
+    (edge: Edge | null) => {
+      if (litEdgeRef.current === (edge?.id ?? null)) return
+      litEdgeRef.current = edge?.id ?? null
+      setNodes(prev =>
+        prev.map(n => flag(n, edge != null && (n.id === edge.source || n.id === edge.target)))
+      )
+    },
+    [setNodes]
+  )
+
+  const handleNodeEnter = useCallback(
+    (event: React.MouseEvent, node: Node) => {
+      lightFromNode(node.id)
+      handlers.current?.onNodeHover(node.id, { x: event.clientX, y: event.clientY })
+    },
+    [lightFromNode]
+  )
+  const handleNodeLeave = useCallback(() => {
+    lightFromNode(null)
+    handlers.current?.onNodeHover(null, null)
+  }, [lightFromNode])
+  const handleEdgeEnter = useCallback(
+    (_: React.MouseEvent, edge: Edge) => lightFromEdge(edge),
+    [lightFromEdge]
+  )
+  const handleEdgeLeave = useCallback(() => lightFromEdge(null), [lightFromEdge])
   const handlePaneClick = useCallback(() => handlers.current?.onBackgroundClick(), [])
 
   return (
@@ -307,6 +357,8 @@ function FlowCanvas({
         onEdgeClick={handleEdgeClick}
         onNodeMouseEnter={handleNodeEnter}
         onNodeMouseLeave={handleNodeLeave}
+        onEdgeMouseEnter={handleEdgeEnter}
+        onEdgeMouseLeave={handleEdgeLeave}
         onPaneClick={handlePaneClick}
         // Backspace would otherwise delete the selection; deletion is the side
         // panel's job, against state every pane shares.

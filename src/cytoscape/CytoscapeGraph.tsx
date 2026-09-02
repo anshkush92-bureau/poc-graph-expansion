@@ -86,7 +86,24 @@ const STYLE: cytoscape.StylesheetJson = [
     selector: 'edge.loop',
     style: { 'curve-style': 'loop', 'loop-direction': '0deg', 'loop-sweep': '-40deg' }
   } as unknown as cytoscape.StylesheetJson[number],
-  { selector: 'node.pending', style: { opacity: 0.55 } }
+  { selector: 'node.pending', style: { opacity: 0.55 } },
+  // ── The adjacency highlight ───────────────────────────────────────────────
+  // Cytoscape has no `:hover` in its stylesheet, so the hover handlers below
+  // put `adj` on the neighbourhood and these two rules are what it means.
+  //
+  // Additive, not subtractive: the alternative is `cy.elements().not(nbh)
+  // .addClass('dim')`, which is the more striking effect and touches every
+  // element in the graph on every mouseover — at 50,000 nodes that is a style
+  // pass over the whole scene per pointer move. Lighting up the dozen elements
+  // that matter costs a dozen.
+  {
+    selector: 'node.adj',
+    style: { 'border-color': BONE, 'border-width': 3, 'text-outline-width': 3, 'z-index': 10 }
+  },
+  {
+    selector: 'edge.adj',
+    style: { 'line-color': BONE, 'target-arrow-color': BONE, width: 2.5, 'z-index': 10 }
+  }
 ]
 
 const dataFor = (
@@ -163,11 +180,36 @@ function CytoscapeGraph({
       if (evt.target === instance) handlers.current?.onBackgroundClick()
     })
 
+    // The neighbourhood currently lit. Held rather than re-derived on the way
+    // out: `removeClass` on the collection we added to is one pass over a dozen
+    // elements, where `cy.elements('.adj')` is a selector run over the graph.
+    let lit: cytoscape.CollectionReturnValue | null = null
+    const dim = () => {
+      lit?.removeClass('adj')
+      lit = null
+    }
+    const light = (nbh: cytoscape.CollectionReturnValue) => {
+      dim()
+      lit = nbh
+      nbh.addClass('adj')
+    }
+
     instance.on('mouseover', 'node', evt => {
+      // A node lights its own edges and the nodes on their far ends —
+      // `closedNeighborhood` is Cytoscape's name for exactly that set.
+      light(evt.target.closedNeighborhood())
       const e = evt.originalEvent as MouseEvent
       handlers.current?.onNodeHover(evt.target.id(), { x: e.clientX, y: e.clientY })
     })
-    instance.on('mouseout', 'node', () => handlers.current?.onNodeHover(null, null))
+    instance.on('mouseout', 'node', () => {
+      dim()
+      handlers.current?.onNodeHover(null, null)
+    })
+    // And the other direction: an edge lights the two nodes it joins. There is
+    // no `onEdgeHover` in the shared prop contract and this needs none — the
+    // highlight never leaves the renderer.
+    instance.on('mouseover', 'edge', evt => light(evt.target.connectedNodes().union(evt.target)))
+    instance.on('mouseout', 'edge', dim)
 
     cy.current = instance
 

@@ -17,11 +17,27 @@ interface SidePanelProps {
   tab: 'details' | 'trace'
   onTab: (tab: 'details' | 'trace') => void
   onClose: () => void
-  onAdd: (parent: GraphNode, type: EntityType) => void
-  onDelete: (node: GraphNode) => void
-  onExpand: (node: GraphNode) => void
-  isRoot: boolean
+  /**
+   * Both absent in the lab, which has no analyst edits to make — its graph is
+   * synthesised and the only thing a click does to it is grow it. The controls
+   * are dropped rather than disabled: a button that can never do anything is
+   * worse than no button.
+   */
+  onAdd?: ((parent: GraphNode, type: EntityType) => void) | undefined
+  onDelete?: ((node: GraphNode) => void) | undefined
+  /**
+   * Also absent in the lab, and for a subtler reason than the other two: a
+   * click there expands the node *and* opens this panel, so by the time the
+   * panel exists its expand button could only ever be the disabled "nothing
+   * left" state. A button whose only reachable state is disabled is not a
+   * control.
+   */
+  onExpand?: ((node: GraphNode) => void) | undefined
+  /** Only read by the delete control, so it goes with it. */
+  isRoot?: boolean | undefined
   hidden: number
+  /** `float` pins the panel over the page; the default sits in the shell grid. */
+  place?: 'grid' | 'float' | undefined
 }
 
 export default function SidePanel({
@@ -34,7 +50,8 @@ export default function SidePanel({
   onDelete,
   onExpand,
   isRoot,
-  hidden
+  hidden,
+  place = 'grid'
 }: SidePanelProps) {
   const [addType, setAddType] = useState<EntityType>('device')
   const closeRef = useRef<HTMLButtonElement>(null)
@@ -56,7 +73,10 @@ export default function SidePanel({
   const links = neighborsOf(graph, node.id)
 
   return (
-    <aside className="panel" aria-label={`${meta.label} ${node.name}`}>
+    <aside
+      className={'panel' + (place === 'float' ? ' panel--float' : '')}
+      aria-label={`${meta.label} ${node.name}`}
+    >
       <header className="panel__head" style={{ '--accent': meta.color }}>
         <div>
           <p className="panel__eyebrow">{meta.label}</p>
@@ -158,49 +178,57 @@ export default function SidePanel({
         )}
       </div>
 
-      <footer className="panel__foot">
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={() => onExpand(node)}
-          disabled={hidden === 0}
-        >
-          {hidden > 0 ? `Expand ${hidden} link${hidden > 1 ? 's' : ''}` : 'Nothing to expand'}
-        </button>
-
-        <div className="addrow">
-          <label className="addrow__label" htmlFor="addtype">
-            Add linked node
-          </label>
-          <div className="addrow__controls">
-            <select
-              id="addtype"
-              value={addType}
-              onChange={e => {
-                if (isEntityType(e.target.value)) setAddType(e.target.value)
-              }}
+      {(onExpand || onAdd || onDelete) && (
+        <footer className="panel__foot">
+          {onExpand && (
+            <button
+              type="button"
+              className="btn btn--primary"
+              onClick={() => onExpand(node)}
+              disabled={hidden === 0}
             >
-              {ADDABLE.map(t => (
-                <option key={t} value={t}>
-                  {ENTITY[t].label}
-                </option>
-              ))}
-            </select>
-            <button type="button" className="btn" onClick={() => onAdd(node, addType)}>
-              Add
+              {hidden > 0 ? `Expand ${hidden} link${hidden > 1 ? 's' : ''}` : 'Nothing to expand'}
             </button>
-          </div>
-        </div>
+          )}
 
-        <button
-          type="button"
-          className="btn btn--danger"
-          onClick={() => onDelete(node)}
-          disabled={isRoot}
-        >
-          {isRoot ? 'Root cannot be deleted' : 'Delete this node'}
-        </button>
-      </footer>
+          {onAdd && (
+            <div className="addrow">
+              <label className="addrow__label" htmlFor="addtype">
+                Add linked node
+              </label>
+              <div className="addrow__controls">
+                <select
+                  id="addtype"
+                  value={addType}
+                  onChange={e => {
+                    if (isEntityType(e.target.value)) setAddType(e.target.value)
+                  }}
+                >
+                  {ADDABLE.map(t => (
+                    <option key={t} value={t}>
+                      {ENTITY[t].label}
+                    </option>
+                  ))}
+                </select>
+                <button type="button" className="btn" onClick={() => onAdd(node, addType)}>
+                  Add
+                </button>
+              </div>
+            </div>
+          )}
+
+          {onDelete && (
+            <button
+              type="button"
+              className="btn btn--danger"
+              onClick={() => onDelete(node)}
+              disabled={isRoot}
+            >
+              {isRoot ? 'Root cannot be deleted' : 'Delete this node'}
+            </button>
+          )}
+        </footer>
+      )}
     </aside>
   )
 }

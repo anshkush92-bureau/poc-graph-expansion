@@ -29,14 +29,18 @@ import vng from './vng/engine.ts'
  * at construction in every case, so changing it means remounting the pane — the
  * lab does that with a key rather than trying to swap it live.
  *
- * `onViewport` is the one addition the benchmark needed. A pane calls it once
- * on mount with `{ zoomBy, panBy, fit }` — or with `null` if the library has no
- * viewport to drive — and again with `null` on unmount. Relative rather than
- * absolute (`zoomBy(1.1)`, not `zoomTo(2)`) because every engine here can
- * express a relative zoom and only some can express an absolute one.
+ * `onViewport` started as the benchmark's addition and is now what every zoom
+ * control in the app runs on. A pane calls it once on mount with
+ * `{ zoomBy, panBy, fit }` — or with `null` if the library has no viewport to
+ * drive — and again with `null` on unmount. Relative rather than absolute
+ * (`zoomBy(1.1)`, not `zoomTo(2)`) because every engine here can express a
+ * relative zoom and only some can express an absolute one.
  *
- * The scenarios in `bench/` drive the viewport through that handle and nothing
- * else, which is what keeps the zoom/pan test identical across all eight.
+ * The scenarios in `bench/` and the `CanvasControls` overlay on every pane both
+ * drive the viewport through that handle and nothing else, which is what keeps
+ * the zoom/pan test — and the buttons — identical across all eight. `caps.viewport`
+ * is the manifest's own answer for whether there is a handle at all; the overlay
+ * reads it to disable the buttons with a reason rather than hide them.
  *
  * That uniformity is the whole comparison. Node coordinates in particular come
  * from `layoutRadial` in App, not from each library's own layout engine, so

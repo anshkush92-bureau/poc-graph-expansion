@@ -3,6 +3,9 @@ import { CAP_ROWS, ENGINES, ENGINE_KEYS } from '../engines.ts'
 import { layoutRadial } from '../graph/ops.ts'
 import { synthGraph } from '../graph/synth.ts'
 import { routeHash } from '../route.ts'
+import CanvasControls from '../ui/CanvasControls.tsx'
+import HoverCard from '../ui/HoverCard.tsx'
+import SidePanel from '../ui/SidePanel.tsx'
 import { useHud } from './hud.ts'
 import { optimise } from './optimize.ts'
 import { runLayout } from './runLayout.ts'
@@ -10,7 +13,17 @@ import { SCENARIOS, defaultKnobs, prune, sprout } from './scenarios.ts'
 import { loadResults, saveResult } from './store.ts'
 import { Knob, ResultTable, format } from './table.tsx'
 import { runScenario, usePane } from './usePane.ts'
-import type { Graph, Positions } from '../engine/types.ts'
+import { EDGE_RULES, SHAPE_SETS } from '../echarts/symbols.ts'
+import type {
+  ControlKey,
+  EdgeRuleKey,
+  Graph,
+  GraphEngine,
+  GraphNode,
+  Point,
+  Positions,
+  ShapeSetKey
+} from '../engine/types.ts'
 import type { LayoutMode } from './layout.worker.ts'
 import type { HudStats } from './hud.ts'
 import type {
@@ -111,11 +124,30 @@ const num = (label: string, min: number, max: number, step: number): NumberKnob 
 const SOLVER: ChoiceKnob = { type: 'choice', label: 'Solver', options: ['radial', 'force'] }
 const toggle = (label: string): ToggleKnob => ({ type: 'toggle', label })
 
+/**
+ * The four things written down under the pane, one at a time.
+ *
+ * Tabs rather than a stack. All four are reference material you consult while
+ * looking at the graph — the knobs you turn, the scripted rows, the last
+ * build's numbers, the capability grid — and stacked they came to about three
+ * screens, which put the graph itself above the fold only by accident. One tab
+ * at a time means the pane is always the thing on screen.
+ */
+const SECTIONS = [
+  ['config', 'Configuration'],
+  ['scripted', 'Scripted scenarios'],
+  ['report', 'Last build'],
+  ['caps', 'Library']
+] as const
+
+type SectionKey = (typeof SECTIONS)[number][0]
+
 function LabPane({ engineKey }: { engineKey: EngineKey }) {
   const engine = ENGINES[engineKey]
   const Renderer = engine.Component
   const {
     data,
+    hovered,
     paneRef,
     paneProps,
     show,
@@ -134,11 +166,16 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
   // `initial` is what Build makes; expansion adds to it. Kept apart because the
   // total on screen is a result, not a setting — "5,000 nodes" means something
   // different when 2,000 of them arrived a click at a time.
-  // Same 1,000 / 1,500 the scripted scenarios start from, so a hand-driven run
-  // and a scripted row are read against the same graph.
-  const [initial, setInitial] = useState(1000)
-  const [edges, setEdges] = useState(1500)
-  const [expandBy, setExpandBy] = useState(25)
+  //
+  // Ten and ten, expanding two at a time. The page used to open on the
+  // scenarios' own 1,000 / 1,500, which is a legible number for a scripted run
+  // and an unreadable hairball to arrive at: 1,000 nodes is 14,000px of radial
+  // layout, so every pane opened on grey dust. A graph you can count opens the
+  // page; the dials go to 50,000 for the question of where the engine gives
+  // out, and that is a question you ask deliberately.
+  const [initial, setInitial] = useState(10)
+  const [edges, setEdges] = useState(10)
+  const [expandBy, setExpandBy] = useState(2)
   const [renderer, setRenderer] = useState(engine.renderers[0]!)
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('radial')
   const [worker, setWorker] = useState(false)
@@ -147,11 +184,39 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
   const [cull, setCull] = useState(false)
   const [fraction, setFraction] = useState(0.5)
   const [debounce, setDebounce] = useState(0)
+  // The same two appearance pickers the explore view offers, and gated the same
+  // way: an engine opts in through `controls` in its own manifest, so this is
+  // not a list of engine names. Held here rather than in the renderer so the
+  // choice survives a backend switch, which remounts it.
+  const [shapeSet, setShapeSet] = useState<ShapeSetKey>('type')
+  const [edgeStyle, setEdgeStyle] = useState<EdgeRuleKey>('arrow')
   const [streaming, setStreaming] = useState(false)
   const [rate, setRate] = useState(500)
 
   const [busy, setBusy] = useState(false)
   const [report, setReport] = useState<Metrics | null>(null)
+  // The node the panel is open on, and which of its tabs. Same shape the
+  // explore view keeps, because it drives the same `SidePanel`.
+  const [selected, setSelected] = useState<{ id: string; tab: 'details' | 'trace' } | null>(null)
+  /**
+   * The hover card, which outlives the hover.
+   *
+   * `usePane`'s own `hovered` goes null the instant the pointer leaves the
+   * node's disc, and the card sits a few pixels off the pointer — so a card
+   * that tracked it exactly would unmount in the gap between the two, and its
+   * View details button could never be reached. It stays until another node is
+   * hovered, the background is clicked, or the pointer leaves the pane.
+   */
+  const [card, setCard] = useState<{ id: string; at: Point } | null>(null)
+  useEffect(() => {
+    if (hovered) setCard(hovered)
+  }, [hovered])
+  const dropCard = useCallback(() => setCard(null), [])
+  // Which of the four sections below the graph is showing. There is more
+  // written down under this pane than fits on a screen — six cards of knobs,
+  // seven scenarios and their result table, the last build's dozen metrics and
+  // the capability grid — and stacked they push the graph itself off the top.
+  const [section, setSection] = useState<SectionKey>('config')
   // Bumped on every expansion, because a renderer's data effect keys off it to
   // re-read the explored/pending status of nodes it has already drawn.
   const [statusVersion, setStatusVersion] = useState(0)
@@ -298,8 +363,14 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
   // a slider moved.
   const expandFrom = useCallback(
     async (id: string) => {
-      const graph = fullRef.current
-      if (!graph || busyRef.current) return
+      // Fall back to what is on screen. `fullRef` is only set by Build, and is
+      // deliberately dropped when a scripted scenario takes the pane over — so
+      // clicking a node after a run used to be silently inert. The stream
+      // effect below already reads the pane this way; expansion now does too,
+      // and there is no longer any state the pane can be in where a click on a
+      // visible node does nothing.
+      const graph = fullRef.current ?? dataRef.current.graph
+      if (!graph.nodes.length || busyRef.current) return
       // Re-expanding is a no-op rather than a second helping — the same rule
       // `useGraph` enforces, and without it a double-click doubles the level.
       if (expandedRef.current.has(id)) return
@@ -316,7 +387,7 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
         const grown = sprout(graph, by, seqRef.current, node)
         seqRef.current += by
         expandedRef.current.add(id)
-        const positions = layoutRadial(grown, posRef.current)
+        const positions = layoutRadial(grown, posRef.current ?? dataRef.current.positions)
         const expandMs = Math.round(performance.now() - t0)
         fullRef.current = grown
         posRef.current = positions
@@ -349,15 +420,34 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
   // effect — a full re-derive of the scene — on every gauge tick.
   const isExpanded = useCallback((id: string) => expandedRef.current.has(id), [])
 
-  const zoom = useCallback(
-    (what: number | 'fit') => {
-      const handle = viewport()
-      if (!handle) return
-      if (what === 'fit') handle.fit()
-      else handle.zoomBy(what)
-    },
-    [viewport]
-  )
+  /**
+   * A click expands, and only expands.
+   *
+   * It briefly did both — expand and open the panel — and one gesture meaning
+   * two things is one gesture too many: there was no way to read a node without
+   * also growing it, and no way to grow it without the panel arriving over the
+   * result. Detail is the hover card's button now, so the two are separate
+   * gestures on separate targets.
+   */
+  const onNodeClick = expandFrom
+
+  /**
+   * Build once on arrival.
+   *
+   * `usePane` seeds the pane with the single root node, and until Build had run
+   * that was all the page had: nothing to expand from (so a click was inert),
+   * a one-node bounding box to fit (so Fit appeared to do nothing), and one dot
+   * in the middle of the canvas to scale (so zoom appeared to do nothing). One
+   * cause, three controls that all looked broken. The guard is what keeps this
+   * to the first render — `build` changes identity whenever a layout knob moves,
+   * and re-running it on every one of those would rebuild the graph mid-session.
+   */
+  const booted = useRef(false)
+  useEffect(() => {
+    if (booted.current) return
+    booted.current = true
+    void build()
+  }, [build])
 
   // ── The stream ───────────────────────────────────────────────────────────
   //
@@ -420,6 +510,16 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
     [engineKey, results, scenarioKey]
   )
 
+  // What this engine's manifest asks for. No engine is named here — an engine
+  // opts in via `controls` in its own file. The cast is the same one the explore
+  // view needs: each entry is `satisfies GraphEngine`, so it keeps its own
+  // literal type and `controls` is simply absent from the manifests that do not
+  // opt in.
+  const controls = useMemo(
+    () => new Set<ControlKey>((engine as GraphEngine).controls ?? []),
+    [engine]
+  )
+
   const locked = busy || running
   const built = builtRef.current
   const grown = Math.max(0, (fullRef.current ? fullRef.current.nodes.length : 0) - built)
@@ -428,6 +528,19 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
   // that got built. `floored` is the gap, shown only when there is one.
   const liveEdges = fullRef.current ? fullRef.current.edges.length : 0
   const floored = built ? Math.max(0, built - 1 - askedRef.current) : 0
+
+  // Looked up rather than indexed. A Map keyed on every node would be rebuilt
+  // on every push — ten times a second while the stream runs, at whatever the
+  // node count is — and it would exist to answer two lookups that only happen
+  // while something is actually being inspected.
+  // ponytail: O(n) per render, and only while a card or the panel is open.
+  const find = (id: string): GraphNode | undefined => data.graph.nodes.find(n => n.id === id)
+  const hoverNode = card ? find(card.id) : undefined
+  const selectedNode = selected ? find(selected.id) : undefined
+  // Links this node has on screen. Self-edges are not a step outward, so they
+  // do not count as a mapped link — same rule the explore view applies.
+  const degreeOf = (node: GraphNode) =>
+    data.graph.edges.filter(e => e.source !== e.target && e.source === node.id).length
 
   return (
     <div className="lab">
@@ -455,173 +568,6 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
         <p className="lab__note">{engine.note}</p>
       </header>
 
-      <div className="lab__grid">
-        <Group
-          title="Graph"
-          hint="Build makes a spanning tree over `initial nodes` first, then adds cross-links until it reaches `edges` — so the edge dial is a target with a floor at initial − 1, and asking for fewer changes nothing. There is no total-nodes dial because the total is a result: what Build made, plus everything you have clicked into. Drag the initial count up until this engine gives out — that number is the finding."
-        >
-          <Knob
-            knob={num('Initial nodes', 0, 50000, 1)}
-            value={initial}
-            disabled={locked}
-            onChange={v => setInitial(Number(v))}
-          />
-          <Knob
-            knob={num('Edges', 0, 150000, 1)}
-            value={edges}
-            disabled={locked}
-            onChange={v => setEdges(Number(v))}
-          />
-          <Knob
-            knob={num('Expand by (per click)', 0, 2000, 1)}
-            value={expandBy}
-            disabled={locked}
-            onChange={v => setExpandBy(Number(v))}
-          />
-          <button type="button" className="btn btn--primary" disabled={locked} onClick={build}>
-            Build
-          </button>
-          <p className="lab__hint">
-            {built.toLocaleString()} built + {grown.toLocaleString()} expanded ={' '}
-            <b>{(built + grown).toLocaleString()}</b> nodes, {liveEdges.toLocaleString()} edges
-            {floored > 0 && (
-              <b> — {floored.toLocaleString()} more edges than asked for: the tree comes first.</b>
-            )}
-          </p>
-        </Group>
-
-        <Group
-          title="Interaction"
-          hint="Click any node to hang `expand by` new neighbours off it — laid out incrementally, so nothing already on screen moves. Panning, wheel-zoom and node drag are the library's own; the buttons drive the same viewport handle the scripted zoom test uses, so they are comparable across engines."
-        >
-          {engine.caps.viewport ? (
-            <React.Fragment>
-              <button type="button" className="btn" onClick={() => zoom(1.25)}>
-                Zoom in
-              </button>
-              <button type="button" className="btn" onClick={() => zoom(0.8)}>
-                Zoom out
-              </button>
-              <button type="button" className="btn" onClick={() => zoom('fit')}>
-                Fit
-              </button>
-            </React.Fragment>
-          ) : (
-            <p className="lab__hint">
-              No viewport API at all in this library — pan and zoom are the finding, not an
-              omission.
-            </p>
-          )}
-          <p className="lab__hint">
-            expanded: {expandedRef.current.size} node{expandedRef.current.size === 1 ? '' : 's'}
-          </p>
-        </Group>
-
-        <Group
-          title="Renderer"
-          hint={
-            engine.renderers.length > 1
-              ? 'The same code path with a different paint backend. Switching remounts the pane — none of these can swap it on a live instance — so the graph is redrawn from scratch and the viewport resets.'
-              : 'This library has exactly one backend. That is the finding for it.'
-          }
-        >
-          <Knob
-            knob={{ type: 'choice', label: 'Paint backend', options: engine.renderers }}
-            value={renderer}
-            disabled={locked || engine.renderers.length < 2}
-            onChange={v => setRenderer(String(v))}
-          />
-        </Group>
-
-        <Group
-          title="Layout & worker"
-          hint="Identical d3-force either way, so the only variable is where it runs. Watch the gauge, not the solve time — off the main thread the solve costs the same and the tab stays at 60."
-        >
-          <Knob
-            knob={SOLVER}
-            value={layoutMode}
-            disabled={locked}
-            onChange={v => setLayoutMode(String(v) as LayoutMode)}
-          />
-          <Knob
-            knob={toggle('In a Web Worker')}
-            value={worker}
-            disabled={locked}
-            onChange={v => setWorker(Boolean(v))}
-          />
-          {layoutMode === 'force' && (
-            <Knob
-              knob={num('Convergence α', 0, 0.2, 0.005)}
-              value={alphaMin}
-              disabled={locked}
-              onChange={v => setAlphaMin(Number(v))}
-            />
-          )}
-          <button type="button" className="btn" disabled={locked} onClick={redraw}>
-            Re-layout
-          </button>
-        </Group>
-
-        <Group
-          title="LOD & culling"
-          hint="Both applied in the shared layer, so this engine gets exactly the help every other one gets. Read any speed-up next to `kept` below — “three times faster” means nothing without how much stopped being drawn. A visible fraction of 0 keeps nothing, which is the floor the rest of the readings sit on."
-        >
-          <Knob
-            knob={toggle('Level of detail (drop labels)')}
-            value={lod}
-            disabled={locked}
-            onChange={v => setLod(Boolean(v))}
-          />
-          <Knob
-            knob={toggle('Viewport culling')}
-            value={cull}
-            disabled={locked}
-            onChange={v => setCull(Boolean(v))}
-          />
-          <Knob
-            knob={num('Visible fraction', 0, 1, 0.05)}
-            value={fraction}
-            disabled={locked || !cull}
-            onChange={v => setFraction(Number(v))}
-          />
-          <button type="button" className="btn" disabled={locked} onClick={redraw}>
-            Apply
-          </button>
-        </Group>
-
-        <Group
-          title="Streaming"
-          hint="Nodes arriving and expiring at a fixed rate, the way a live feed behaves. Node count stays flat, so what you are watching is churn. Leave it running and watch the heap. At 0 nothing is pushed — that is the idle cost of holding this graph, which is what a churn reading should be compared against."
-        >
-          <Knob
-            knob={num('Nodes / sec', 0, 5000, 10)}
-            value={rate}
-            disabled={running}
-            onChange={v => setRate(Number(v))}
-          />
-          <button
-            type="button"
-            className={'btn' + (streaming ? ' btn--danger' : '')}
-            disabled={running}
-            onClick={() => setStreaming(s => !s)}
-          >
-            {streaming ? 'Stop stream' : 'Start stream'}
-          </button>
-        </Group>
-
-        <Group
-          title="Hover"
-          hint="Move the pointer over the pane yourself. The counter is every callback this engine fired; the debounce is on the React state update the real hover card does, not on the engine."
-        >
-          <Knob
-            knob={num('Debounce (ms)', 0, 200, 5)}
-            value={debounce}
-            disabled={running}
-            onChange={v => setDebounce(Number(v))}
-          />
-        </Group>
-      </div>
-
       <Gauge hud={hud} live={!locked} hovers={hoverCount()} onResetHovers={resetHover} />
 
       <section className="pane pane--bench">
@@ -634,7 +580,23 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
           </span>
           {streaming && <span className="lab__live">streaming {rate}/s</span>}
         </header>
-        <div className="pane__body" ref={paneRef}>
+        {/* The card is dropped on the way out of the pane, which is the one
+            gesture that means "done looking" without meaning anything else.
+            It only works because the card is rendered *inside* here: React's
+            `onMouseLeave` is built on `mouseout` plus a subtree check, so a
+            card that was a sibling of the pane fired this the moment the
+            pointer reached it — however much it overlapped the pane on screen.
+            Being a child also puts it inside the fullscreen element, where a
+            sibling would simply not be painted. */}
+        <div className="pane__body" ref={paneRef} onMouseLeave={dropCard}>
+          {/* The same overlay the explore panes get, driven by the same getter
+              the scripted zoom scenario uses. No `onClose`: there is one pane
+              here and nothing to close back to. */}
+          <CanvasControls
+            label={engine.name}
+            viewport={viewport}
+            supported={Boolean(engine.caps.viewport)}
+          />
           <Suspense fallback={<p className="pane__wait">loading {engine.lib}…</p>}>
             {/* Keyed on the backend: not one of these libraries can swap its
                 paint target on a live instance, so the only honest way to offer
@@ -647,92 +609,363 @@ function LabPane({ engineKey }: { engineKey: EngineKey }) {
               renderer={renderer}
               isExpanded={isExpanded}
               statusVersion={statusVersion}
-              onNodeClick={expandFrom}
+              shapeSet={shapeSet}
+              edgeStyle={edgeStyle}
+              onNodeClick={onNodeClick}
+              onBackgroundClick={dropCard}
             />
           </Suspense>
+          {/* The peek layer, driven by `usePane`'s own debounced hover state —
+              so the debounce knob is now literally the delay on this card,
+              which is what its note has always said it was. Its two buttons
+              are the only way into the panel: a click on the node expands it
+              and does nothing else. No `onHold`, because nothing is counting
+              down — leaving the card is what closes it.
+
+              `hidden` is 0 rather than `expandBy`: the lab's graph is fully
+              materialised, so every link a node has is already drawn and the
+              degree bar reads "N of N mapped". A click here does not reveal
+              neighbours, it creates them — which is what `hint` says. */}
+          {hoverNode && card && (
+            <HoverCard
+              node={hoverNode}
+              at={card.at}
+              shown={degreeOf(hoverNode)}
+              hidden={0}
+              explored={isExpanded(hoverNode.id)}
+              onOpen={tab => {
+                setSelected({ id: hoverNode.id, tab })
+                setCard(null)
+              }}
+              onRelease={dropCard}
+              hint={
+                isExpanded(hoverNode.id)
+                  ? 'Already expanded'
+                  : `Click the node to sprout ${expandBy} neighbour${expandBy === 1 ? '' : 's'}`
+              }
+            />
+          )}
         </div>
       </section>
 
-      {report && (
-        <section className="lab__report">
-          <h3>Last build</h3>
-          <dl className="lab__stats">
-            {Object.keys(report).map(key => (
-              <div key={key}>
-                <dt>{key}</dt>
-                <dd>{format(report[key])}</dd>
-              </div>
+      <nav className="lab__tabs" role="group" aria-label="Lab sections">
+        {SECTIONS.map(([key, label]) => (
+          <button
+            key={key}
+            type="button"
+            className={'engines__tab' + (section === key ? ' is-on' : '')}
+            aria-pressed={section === key}
+            onClick={() => setSection(key)}
+          >
+            {label}
+            {key === 'scripted' && rows.length > 0 && (
+              <span className="lab__tabcount">{rows.length}</span>
+            )}
+          </button>
+        ))}
+      </nav>
+
+      {section === 'config' && (
+        <div className="lab__grid">
+          <Group
+            title="Graph"
+            hint="Build makes a spanning tree over `initial nodes` first, then adds cross-links until it reaches `edges` — so the edge dial is a target with a floor at initial − 1, and asking for fewer changes nothing. There is no total-nodes dial because the total is a result: what Build made, plus everything you have clicked into. Drag the initial count up until this engine gives out — that number is the finding."
+          >
+            <Knob
+              knob={num('Initial nodes', 0, 50000, 1)}
+              value={initial}
+              disabled={locked}
+              onChange={v => setInitial(Number(v))}
+            />
+            <Knob
+              knob={num('Edges', 0, 150000, 1)}
+              value={edges}
+              disabled={locked}
+              onChange={v => setEdges(Number(v))}
+            />
+            <Knob
+              knob={num('Expand by (per click)', 0, 2000, 1)}
+              value={expandBy}
+              disabled={locked}
+              onChange={v => setExpandBy(Number(v))}
+            />
+            <button type="button" className="btn btn--primary" disabled={locked} onClick={build}>
+              Build
+            </button>
+            <p className="lab__hint">
+              {built.toLocaleString()} built + {grown.toLocaleString()} expanded ={' '}
+              <b>{(built + grown).toLocaleString()}</b> nodes, {liveEdges.toLocaleString()} edges
+              {floored > 0 && (
+                <b>
+                  {' '}
+                  — {floored.toLocaleString()} more edges than asked for: the tree comes first.
+                </b>
+              )}
+            </p>
+          </Group>
+
+          <Group
+            title="Interaction"
+            hint="Click any node to hang `expand by` new neighbours off it — laid out incrementally, so nothing already on screen moves. Panning, wheel-zoom and node drag are the library's own. Zoom, fit and fullscreen sit on the canvas below, bottom right, and drive the same viewport handle the scripted zoom test uses — so they are comparable across engines."
+          >
+            {!engine.caps.viewport && (
+              <p className="lab__hint">
+                No viewport API at all in this library — pan and zoom are the finding, not an
+                omission.
+              </p>
+            )}
+            <p className="lab__hint">
+              expanded: {expandedRef.current.size} node{expandedRef.current.size === 1 ? '' : 's'}
+            </p>
+          </Group>
+
+          {/* Only for the panes that asked. Every other engine here draws one
+              node shape and one line style, so offering the pickers alongside
+              them would be controls that do nothing to the graph on screen —
+              the same rule the explore view's strip applies. */}
+          {(controls.has('shapeSet') || controls.has('edgeStyle')) && (
+            <Group
+              title="Nodes &amp; edges"
+              hint="Node glyphs and line styles, read off the same catalogue the explore view uses — and applied by the renderer, not by this page: it is handed the chosen key and looks the recipe up itself. Which of the two pickers appear is the engine's own answer, declared in its manifest."
+            >
+              {controls.has('shapeSet') && (
+                <Knob
+                  knob={{
+                    type: 'choice',
+                    label: 'Node shapes',
+                    options: Object.keys(SHAPE_SETS)
+                  }}
+                  value={shapeSet}
+                  disabled={locked}
+                  onChange={v => setShapeSet(v as ShapeSetKey)}
+                />
+              )}
+              {controls.has('edgeStyle') && (
+                <Knob
+                  knob={{
+                    type: 'choice',
+                    label: 'Edge style',
+                    options: Object.keys(EDGE_RULES)
+                  }}
+                  value={edgeStyle}
+                  disabled={locked}
+                  onChange={v => setEdgeStyle(v as EdgeRuleKey)}
+                />
+              )}
+            </Group>
+          )}
+
+          <Group
+            title="Renderer"
+            hint={
+              engine.renderers.length > 1
+                ? 'The same code path with a different paint backend. Switching remounts the pane — none of these can swap it on a live instance — so the graph is redrawn from scratch and the viewport resets.'
+                : 'This library has exactly one backend. That is the finding for it.'
+            }
+          >
+            <Knob
+              knob={{ type: 'choice', label: 'Paint backend', options: engine.renderers }}
+              value={renderer}
+              disabled={locked || engine.renderers.length < 2}
+              onChange={v => setRenderer(String(v))}
+            />
+          </Group>
+
+          <Group
+            title="Layout & worker"
+            hint="Identical d3-force either way, so the only variable is where it runs. Watch the gauge, not the solve time — off the main thread the solve costs the same and the tab stays at 60."
+          >
+            <Knob
+              knob={SOLVER}
+              value={layoutMode}
+              disabled={locked}
+              onChange={v => setLayoutMode(String(v) as LayoutMode)}
+            />
+            <Knob
+              knob={toggle('In a Web Worker')}
+              value={worker}
+              disabled={locked}
+              onChange={v => setWorker(Boolean(v))}
+            />
+            {layoutMode === 'force' && (
+              <Knob
+                knob={num('Convergence α', 0, 0.2, 0.005)}
+                value={alphaMin}
+                disabled={locked}
+                onChange={v => setAlphaMin(Number(v))}
+              />
+            )}
+            <button type="button" className="btn" disabled={locked} onClick={redraw}>
+              Re-layout
+            </button>
+          </Group>
+
+          <Group
+            title="LOD & culling"
+            hint="Both applied in the shared layer, so this engine gets exactly the help every other one gets. Read any speed-up next to `kept` below — “three times faster” means nothing without how much stopped being drawn. A visible fraction of 0 keeps nothing, which is the floor the rest of the readings sit on."
+          >
+            <Knob
+              knob={toggle('Level of detail (drop labels)')}
+              value={lod}
+              disabled={locked}
+              onChange={v => setLod(Boolean(v))}
+            />
+            <Knob
+              knob={toggle('Viewport culling')}
+              value={cull}
+              disabled={locked}
+              onChange={v => setCull(Boolean(v))}
+            />
+            <Knob
+              knob={num('Visible fraction', 0, 1, 0.05)}
+              value={fraction}
+              disabled={locked || !cull}
+              onChange={v => setFraction(Number(v))}
+            />
+            <button type="button" className="btn" disabled={locked} onClick={redraw}>
+              Apply
+            </button>
+          </Group>
+
+          <Group
+            title="Streaming"
+            hint="Nodes arriving and expiring at a fixed rate, the way a live feed behaves. Node count stays flat, so what you are watching is churn. Leave it running and watch the heap. At 0 nothing is pushed — that is the idle cost of holding this graph, which is what a churn reading should be compared against."
+          >
+            <Knob
+              knob={num('Nodes / sec', 0, 5000, 10)}
+              value={rate}
+              disabled={running}
+              onChange={v => setRate(Number(v))}
+            />
+            <button
+              type="button"
+              className={'btn' + (streaming ? ' btn--danger' : '')}
+              disabled={running}
+              onClick={() => setStreaming(s => !s)}
+            >
+              {streaming ? 'Stop stream' : 'Start stream'}
+            </button>
+          </Group>
+
+          <Group
+            title="Hover"
+            hint="Move the pointer over the pane yourself. The counter is every callback this engine fired; the debounce is on the React state update the real hover card does, not on the engine."
+          >
+            <Knob
+              knob={num('Debounce (ms)', 0, 200, 5)}
+              value={debounce}
+              disabled={running}
+              onChange={v => setDebounce(Number(v))}
+            />
+          </Group>
+        </div>
+      )}
+
+      {section === 'report' &&
+        (report ? (
+          <section className="lab__report">
+            <dl className="lab__stats">
+              {Object.keys(report).map(key => (
+                <div key={key}>
+                  <dt>{key}</dt>
+                  <dd>{format(report[key])}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ) : (
+          <p className="lab__hint">
+            Nothing built yet. Build, re-layout or expand a node and the split — solve, transfer,
+            update, time-to-first-render — lands here.
+          </p>
+        ))}
+
+      {section === 'scripted' && (
+        <section className="lab__scripted">
+          <div className="bench__row">
+            <label className="jump">
+              <span>Scenario</span>
+              <select
+                value={scenarioKey}
+                disabled={locked}
+                onChange={e => setScenarioKey(e.target.value)}
+              >
+                {SCENARIOS.map(s => (
+                  <option key={s.key} value={s.key}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              className="btn btn--primary"
+              disabled={locked}
+              onClick={runScripted}
+            >
+              Run on {engine.name}
+            </button>
+            {running && (
+              <button type="button" className="btn btn--danger" onClick={cancel}>
+                Stop
+              </button>
+            )}
+            {running && <span className="bench__status">running — the gauge is paused</span>}
+          </div>
+          <p className="bench__blurb">{scenario.blurb}</p>
+          <div className="bench__knobs">
+            {scenario.knobs.map(knob => (
+              <Knob
+                key={knob.key}
+                knob={knob}
+                value={knobs[knob.key] ?? knob.value}
+                disabled={locked}
+                onChange={v => setKnob(knob.key, v)}
+              />
             ))}
-          </dl>
+          </div>
+          <ResultTable rows={rows} scenario={scenario} />
         </section>
       )}
 
-      <section className="lab__scripted">
-        <h3>Scripted scenarios</h3>
-        <div className="bench__row">
-          <label className="jump">
-            <span>Scenario</span>
-            <select
-              value={scenarioKey}
-              disabled={locked}
-              onChange={e => setScenarioKey(e.target.value)}
-            >
-              {SCENARIOS.map(s => (
-                <option key={s.key} value={s.key}>
-                  {s.label}
-                </option>
+      {section === 'caps' && (
+        <section className="lab__caps">
+          <h3>What the library gives you</h3>
+          <p className="compare__sub">
+            Read off this library's API, not measured — the half of the comparison a stopwatch
+            cannot answer, and on a real project the half that decides it.
+          </p>
+          <table className="grid">
+            <tbody>
+              {CAP_ROWS.map(([capKey, label]) => (
+                <tr key={capKey}>
+                  <th scope="row">{label}</th>
+                  <td className={engine.caps[capKey] ? '' : 'is-na'}>
+                    {engine.caps[capKey] || 'none'}
+                  </td>
+                </tr>
               ))}
-            </select>
-          </label>
-          <button
-            type="button"
-            className="btn btn--primary"
-            disabled={locked}
-            onClick={runScripted}
-          >
-            Run on {engine.name}
-          </button>
-          {running && (
-            <button type="button" className="btn btn--danger" onClick={cancel}>
-              Stop
-            </button>
-          )}
-          {running && <span className="bench__status">running — the gauge is paused</span>}
-        </div>
-        <p className="bench__blurb">{scenario.blurb}</p>
-        <div className="bench__knobs">
-          {scenario.knobs.map(knob => (
-            <Knob
-              key={knob.key}
-              knob={knob}
-              value={knobs[knob.key] ?? knob.value}
-              disabled={locked}
-              onChange={v => setKnob(knob.key, v)}
-            />
-          ))}
-        </div>
-        <ResultTable rows={rows} scenario={scenario} />
-      </section>
+            </tbody>
+          </table>
+        </section>
+      )}
 
-      <section className="lab__caps">
-        <h3>What the library gives you</h3>
-        <p className="compare__sub">
-          Read off this library's API, not measured — the half of the comparison a stopwatch cannot
-          answer, and on a real project the half that decides it.
-        </p>
-        <table className="grid">
-          <tbody>
-            {CAP_ROWS.map(([capKey, label]) => (
-              <tr key={capKey}>
-                <th scope="row">{label}</th>
-                <td className={engine.caps[capKey] ? '' : 'is-na'}>
-                  {engine.caps[capKey] || 'none'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+      {/* The same panel the explore view uses. `place="float"` because the
+          explore one sits in the shell's own grid column and the lab is a
+          child of the stage, not of the shell. No add and no delete: this
+          graph is synthesised, and the only edit the page makes to it is
+          growth. */}
+      {selectedNode && selected && (
+        <SidePanel
+          place="float"
+          graph={data.graph}
+          node={selectedNode}
+          tab={selected.tab}
+          hidden={0}
+          onTab={tab => setSelected({ id: selectedNode.id, tab })}
+          onClose={() => setSelected(null)}
+        />
+      )}
     </div>
   )
 }
@@ -781,6 +1014,25 @@ function Gauge({
   )
 }
 
+/**
+ * One card of knobs.
+ *
+ * The explanation is a hover panel rather than a paragraph. Every one of these
+ * is three or four sentences you read once and then never again, and six of
+ * them stacked above the graph pushed the graph itself off the screen — which
+ * is the one thing on this page you are actually looking at.
+ *
+ * It shows the text itself rather than leaning on `title`, which was the first
+ * attempt and was wrong twice: the native tooltip waits about a second before
+ * appearing, and the marker it hung off — `ⓘ`, U+24D8 — is missing from
+ * plenty of system UI fonts and rendered as a `?` box. This marker is the
+ * letter `i` in a drawn circle, so there is no glyph to be missing.
+ *
+ * `tabIndex` on the marker so the panel is reachable without a pointer — the
+ * `:focus-within` half of the CSS rule is what opens it — and `aria-label`
+ * carries the same text to a screen reader, which is not reading the panel it
+ * cannot see.
+ */
 function Group({
   title,
   hint,
@@ -792,9 +1044,13 @@ function Group({
 }) {
   return (
     <section className="lab__group">
-      <h3>{title}</h3>
+      <h3 className="lab__grouphead">
+        {title}
+        <span className="lab__info" tabIndex={0} role="note" aria-label={hint}>
+          i<span className="lab__tip">{hint}</span>
+        </span>
+      </h3>
       <div className="lab__controls">{children}</div>
-      <p className="lab__hint">{hint}</p>
     </section>
   )
 }

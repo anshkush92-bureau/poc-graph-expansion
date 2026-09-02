@@ -10,7 +10,8 @@ import type {
   GraphNode,
   Point,
   Positions,
-  ShapeSetKey
+  ShapeSetKey,
+  ViewportHandle
 } from './engine/types.ts'
 import { ENTITY, MAX_DEPTH, ROOT } from './graph/data.ts'
 import { hiddenCounts, isSelfEdge, layoutRadial } from './graph/ops.ts'
@@ -18,6 +19,7 @@ import { synthGraph } from './graph/synth.ts'
 import { useGraph } from './graph/useGraph.ts'
 import { MODES, parseRoute, routeHash } from './route.ts'
 import type { ModeKey } from './route.ts'
+import CanvasControls from './ui/CanvasControls.tsx'
 import HoverCard from './ui/HoverCard.tsx'
 import SidePanel from './ui/SidePanel.tsx'
 // The shape and line catalogs, read here only to label the two pickers. The
@@ -121,6 +123,27 @@ export default function App() {
     ENGINE_KEYS.forEach(key => {
       out[key] = ms =>
         setStats(prev => (prev[key] === ms ? prev : Object.assign({}, prev, { [key]: ms })))
+    })
+    return out
+  }, [])
+
+  // Each pane's viewport handle, published from its own mount effect.
+  //
+  // A Map in a memo closure rather than state: putting the handle in state
+  // would re-render the whole stage — and break every renderer's memo — once
+  // per pane as the panes come up. The canvas controls read it through the
+  // getter at click time, by which point it is always there.
+  const viewports = useMemo(() => {
+    const store = new Map<EngineKey, ViewportHandle | null>()
+    const out = {} as Record<
+      EngineKey,
+      { set: (handle: ViewportHandle | null) => void; get: () => ViewportHandle | null }
+    >
+    ENGINE_KEYS.forEach(key => {
+      out[key] = {
+        set: handle => store.set(key, handle),
+        get: () => store.get(key) ?? null
+      }
     })
     return out
   }, [])
@@ -428,29 +451,52 @@ export default function App() {
       </div>
 
       {/* The stress dial. Expansion grows the graph a few nodes at a time, which
-          never reaches the sizes these libraries actually differ at. */}
-      <div className="rig">
-        <Dial label="Nodes" max={MAX_NODES} value={wantNodes} onChange={setWantNodes} />
-        <Dial label="Edges" max={MAX_EDGES} value={wantEdges} onChange={setWantEdges} />
-        <button type="button" className="btn btn--primary" onClick={build}>
-          Build graph
-        </button>
+          never reaches the sizes these libraries actually differ at.
+          Folded away by default — it is set once per session and then read at
+          most, and collapsed it costs one line instead of three. A native
+          `<details>` rather than a toggle in state: the browser already does
+          this, including the keyboard and the animation. */}
+      <details className="rig">
+        <summary className="rig__summary">
+          <span className="rig__title">Build &amp; layout</span>
+          <span className="rig__badge">
+            {wantNodes.toLocaleString()} nodes · {wantEdges.toLocaleString()} links ·{' '}
+            {incremental ? 'incremental' : 're-balancing'}
+          </span>
+        </summary>
+        <div className="rig__body">
+          <Dial label="Nodes" max={MAX_NODES} value={wantNodes} onChange={setWantNodes} />
+          <Dial label="Edges" max={MAX_EDGES} value={wantEdges} onChange={setWantEdges} />
+          <button type="button" className="btn btn--primary" onClick={build}>
+            Build graph
+          </button>
 
-        <label className="rig__check">
-          <input
-            type="checkbox"
-            checked={incremental}
-            onChange={e => setIncremental(e.target.checked)}
-          />
-          <span>Incremental layout</span>
-        </label>
+          <label className="rig__check">
+            <input
+              type="checkbox"
+              checked={incremental}
+              onChange={e => setIncremental(e.target.checked)}
+            />
+            <span>Incremental layout</span>
+          </label>
 
-        <p className="rig__note">
-          {incremental
-            ? 'Newcomers are placed into free space; nothing already on screen moves. Costs O(n²) — slow past a few hundred nodes.'
-            : 'The whole circle re-balances on every change. Tighter and much cheaper at scale, but an expansion reads as a reload.'}
-        </p>
-      </div>
+          <p className="rig__note">
+            {incremental
+              ? 'Newcomers are placed into free space; nothing already on screen moves. Costs O(n²) — slow past a few hundred nodes.'
+              : 'The whole circle re-balances on every change. Tighter and much cheaper at scale, but an expansion reads as a reload.'}
+          </p>
+
+          {/* The reading instructions, moved off the stage. Prose is what you
+              need once and the colour key is what you need continuously, so
+              only the key stays down there. */}
+          <p className="rig__note rig__note--wide">
+            Bright = links still hidden. Click a node to expand a level
+            {controls.has('edgeStyle') && ', or an edge to restyle just that edge'}. Each pane's own
+            zoom, fit and fullscreen sit on its canvas, bottom right. Every pane draws the same
+            graph at the same coordinates — only the drawing differs.
+          </p>
+        </div>
+      </details>
 
       <main className="stage">
         <div
@@ -467,18 +513,17 @@ export default function App() {
                   <span className="pane__stat">
                     {stats[key] == null ? '—' : `${stats[key]} ms`}
                   </span>
-                  {engines.length > 1 && (
-                    <button
-                      type="button"
-                      className="pane__drop"
-                      aria-label={`Close ${name}`}
-                      onClick={() => toggleEngine(key)}
-                    >
-                      ×
-                    </button>
-                  )}
                 </header>
                 <div className="pane__body">
+                  {/* Zoom, fit, fullscreen and close, on the pane they act on.
+                      Outside the Suspense boundary on purpose: they are still
+                      the way out of a pane whose library is slow to arrive. */}
+                  <CanvasControls
+                    label={name}
+                    viewport={viewports[key].get}
+                    supported={Boolean(ENGINES[key].caps.viewport)}
+                    onClose={engines.length > 1 ? () => toggleEngine(key) : undefined}
+                  />
                   {/* Each engine is a lazy chunk, so selecting one pane
                       downloads one library and nothing else. */}
                   <Suspense fallback={<p className="pane__wait">loading {lib}…</p>}>
@@ -497,6 +542,7 @@ export default function App() {
                       onEdgeClick={onEdgeClick}
                       onBackgroundClick={onBackgroundClick}
                       onStat={onStats[key]}
+                      onViewport={viewports[key].set}
                     />
                   </Suspense>
                 </div>
@@ -511,11 +557,6 @@ export default function App() {
               {ENTITY[t].label}
             </li>
           ))}
-          <li className="legend__rule">
-            Bright = links still hidden. Click a node to expand a level
-            {controls.has('edgeStyle') && ', or an edge to restyle just that edge'}. Every pane
-            draws the same graph at the same coordinates — only the drawing differs.
-          </li>
         </ul>
       </main>
 

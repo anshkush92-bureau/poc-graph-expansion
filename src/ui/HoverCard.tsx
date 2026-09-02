@@ -8,9 +8,18 @@ interface HoverCardProps {
   hidden: number
   explored: boolean
   at: Point
-  onOpen: (tab: 'details' | 'trace') => void
-  onHold: () => void
-  onRelease: () => void
+  /** Absent where there is no panel to open into — the card is then peek-only. */
+  onOpen?: ((tab: 'details' | 'trace') => void) | undefined
+  onHold?: (() => void) | undefined
+  onRelease?: (() => void) | undefined
+  /**
+   * Overrides the footer line. The default reads off `hidden`, which is the
+   * explore view's question ("how much is still behind this node"). In the lab
+   * nothing is ever hidden — every node is materialised — and a click sprouts
+   * new neighbours instead, so that footer would read "nothing left to expand"
+   * on a node a click is about to grow.
+   */
+  hint?: string | undefined
 }
 
 /**
@@ -26,7 +35,8 @@ export default function HoverCard({
   at,
   onOpen,
   onHold,
-  onRelease
+  onRelease,
+  hint
 }: HoverCardProps) {
   const meta = ENTITY[node.type]
   const total = shown + hidden
@@ -82,21 +92,24 @@ export default function HoverCard({
         </div>
       </dl>
 
-      <div className="peek__actions">
-        <button type="button" onClick={() => onOpen('details')}>
-          Open details
-        </button>
-        <button type="button" onClick={() => onOpen('trace')}>
-          Trace connections
-        </button>
-      </div>
+      {onOpen && (
+        <div className="peek__actions">
+          <button type="button" onClick={() => onOpen('details')}>
+            Open details
+          </button>
+          <button type="button" onClick={() => onOpen('trace')}>
+            Trace connections
+          </button>
+        </div>
+      )}
 
       <p className="peek__hint">
-        {hidden > 0
-          ? `Click the node to pull in ${hidden} more`
-          : explored
-            ? 'Fully expanded'
-            : 'Nothing left to expand'}
+        {hint ??
+          (hidden > 0
+            ? `Click the node to pull in ${hidden} more`
+            : explored
+              ? 'Fully expanded'
+              : 'Nothing left to expand')}
       </p>
     </div>
   )

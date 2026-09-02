@@ -83,7 +83,11 @@ const edgeFor = (edge: GraphEdge) => ({
   to: edge.target,
   label: edge.label || '',
   arrows: { to: { enabled: true, scaleFactor: 0.5 } },
-  color: { color: isSelfEdge(edge) ? LOOP : EDGE, highlight: BONE, opacity: 0.9 },
+  // `hover` is the adjacency highlight's half of this: vis's
+  // `hoverConnectedEdges` (on by default) puts every edge touching the hovered
+  // node into its hover state, and without a hover colour declared that state
+  // looks identical to the resting one.
+  color: { color: isSelfEdge(edge) ? LOOP : EDGE, highlight: BONE, hover: BONE, opacity: 0.9 },
   font: {
     color: '#6B7385',
     size: 9,
@@ -110,7 +114,13 @@ const OPTIONS = {
     tooltipDelay: 1e9,
     navigationButtons: false
   },
-  edges: { smooth: { enabled: true, type: 'continuous', roundness: 0.15 }, width: 1 },
+  edges: {
+    smooth: { enabled: true, type: 'continuous', roundness: 0.15 },
+    width: 1,
+    // Colour alone is not enough to pick a 1px line out of a dense graph.
+    hoverWidth: 1.5,
+    selectionWidth: 1.5
+  },
   nodes: { shapeProperties: { interpolation: false } }
 }
 
@@ -168,6 +178,36 @@ function VisGraph({
       handlers.current?.onNodeHover(String(params.node), pointer.current)
     )
     instance.on('blurNode', () => handlers.current?.onNodeHover(null, null))
+
+    // The other direction, which vis does *not* do for itself: hovering an edge
+    // highlights the edge but says nothing about the two nodes it joins. There
+    // is no adjacency focus to switch on, so the two endpoints are put into
+    // their own hover colours by hand and put back on the way out.
+    //
+    // Two DataSet updates per hover, not a pass over the graph — `getConnectedNodes`
+    // is an index lookup, and only the two rows that changed are written.
+    let litNodes: string[] = []
+    const relight = (ids: string[]) => {
+      const set = nodes.current
+      if (!set) return
+      const off = litNodes.filter(id => !ids.includes(id))
+      litNodes = ids
+      // `borderWidth` and the border colour together, because a flagged node
+      // already carries a 3px flare border and only the colour separates them.
+      set.update(
+        off
+          .flatMap(id => {
+            const row = set.get(id)
+            return row ? [row] : []
+          })
+          .map(row => ({ id: row.id, borderWidth: row.color.border === FLARE ? 3 : 1 }))
+      )
+      set.update(ids.map(id => ({ id, borderWidth: 4 })))
+    }
+    instance.on('hoverEdge', params =>
+      relight(instance.getConnectedNodes(String(params.edge)).map(String))
+    )
+    instance.on('blurEdge', () => relight([]))
     // Dragging the canvas under a hovered node never fires blurNode, so the card
     // would be left floating over a node that has moved out from under it.
     instance.on('dragStart', () => handlers.current?.onNodeHover(null, null))

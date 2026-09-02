@@ -26,6 +26,23 @@ interface GraphView {
   getRoamTransform?(): number[]
 }
 
+/**
+ * The graph series' own view object — where its pan and zoom actually live.
+ *
+ * There is no public API that reaches it: `getModel` is internal and
+ * `convertToPixel` only knows registered coordinate systems, which a graph's
+ * view is not. Two callers need it (the ring overlay, to keep a ring on its
+ * node, and `fit`, to undo the roam), so the cast lives here once.
+ */
+function readView(instance: echarts.ECharts): GraphView | undefined {
+  const model = instance as unknown as {
+    getModel(): {
+      getSeriesByIndex(index: number): { coordinateSystem?: GraphView } | undefined
+    }
+  }
+  return model.getModel().getSeriesByIndex(0)?.coordinateSystem
+}
+
 /** One item in the graph series' `data`. Pivots carry only the geometry. */
 interface SeriesNode {
   id?: string
@@ -122,6 +139,16 @@ const RING_SCALE = 1.5
 // node symbol actually takes on. The rings have to use the same number or they
 // come away from the nodes as soon as anyone scrolls — see STEP 8.
 const NODE_SCALE_RATIO = 0.6
+
+// The resting zoom, set on the first option push and restored by `fit`.
+//
+// At zoom 1 the graph's bounding box is fitted exactly to the series rect, so
+// this is that fit with a margin around it. Named because two places need to
+// agree on it: the push in STEP 6 that establishes it, and `fit`, which has to
+// come back to *this* number rather than to 1 — targeting 1 leaves the graph
+// 11% tighter than it started, which is a fit that does not match the view the
+// pane opens on.
+const FIT_ZOOM = 0.9
 
 // How big a node's box is before its shape gets a say. Three sizes, and each
 // one means something: the root anchors the graph, a flagged node has to be
@@ -302,10 +329,56 @@ function EChartsGraph({
         panBy: (dx: number, dy: number) =>
           instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', dx, dy }),
         // No fit action exists — the series fits its own bounding box whenever
-        // an option is pushed without a roam transform, and there is no way to
-        // ask for that without a `setOption`. Resetting the roam is the closest
-        // honest equivalent.
-        fit: () => instance.dispatchAction({ type: 'graphRoam', seriesId: 'graph', zoom: 1 })
+        // an option is pushed without a roam transform, so undoing the roam
+        // *is* the fit.
+        //
+        // This used to dispatch `zoom: 1`, which does nothing at all: `zoom` in
+        // the payload is a multiplier, and multiplying by one is the identity.
+        // The button was inert on this engine. Undoing it properly means
+        // reading the current transform back — the same internal view the ring
+        // overlay in STEP 8 reads — and dispatching its inverse: zoom about the
+        // pane's centre first, then pan out the translation that is left.
+        fit: () => {
+          const box = frame.current
+            ? frame.current.getBoundingClientRect()
+            : { width: 0, height: 0 }
+          const roam = () => readView(instance)?.getRoamTransform?.()
+          // A loop rather than one dispatch, because ECharts clamps a roam step
+          // against the series' scale limits and a single large correction can
+          // land short. Three passes is the ceiling; in practice it converges
+          // on the first.
+          for (let pass = 0; pass < 3; pass++) {
+            const at = roam()
+            if (!at) return
+            const scale = Math.abs(at[0] ?? 1) || 1
+            if (Math.abs(scale - FIT_ZOOM) < 0.01) break
+            instance.dispatchAction({
+              type: 'graphRoam',
+              seriesId: 'graph',
+              zoom: FIT_ZOOM / scale,
+              originX: box.width / 2,
+              originY: box.height / 2
+            })
+          }
+          // Then the pan, read back rather than negated from the earlier
+          // reading: zooming about a point moves the translation too, so the
+          // leftover offset is only knowable once the zoom is settled.
+          //
+          // The target is not zero. `series.zoom` scales about the view's own
+          // centre, so the resting transform carries the translation that
+          // recentring costs — `(1 - FIT_ZOOM) × half the pane` on each axis.
+          // Panning to zero instead left the graph a tenth of the pane up and
+          // to the left of where it opened, which is a fit you can see is
+          // wrong by flicking between the two.
+          const left = roam()
+          if (!left) return
+          instance.dispatchAction({
+            type: 'graphRoam',
+            seriesId: 'graph',
+            dx: ((1 - FIT_ZOOM) * box.width) / 2 - (left[4] ?? 0),
+            dy: ((1 - FIT_ZOOM) * box.height) / 2 - (left[5] ?? 0)
+          })
+        }
       })
     }
 
@@ -519,7 +592,30 @@ function EChartsGraph({
         // STEP 5; it stands only for a link that somehow ships without one.
         edgeSymbolSize: [0, 9],
         label: { show: true, position: 'bottom', distance: 11, rich: RICH },
-        emphasis: { scale: 1.12, label: { show: true } },
+        // `focus: 'adjacency'` is the whole adjacency highlight, and it works
+        // in both directions for free: hover a node and its links and their
+        // far ends stay lit while everything else drops to the blur state;
+        // hover a link and its two endpoints do. `blurScope: 'coordinateSystem'`
+        // keeps the fade inside this series rather than reaching the pulse-ring
+        // overlay, which is DOM and would not fade with it anyway.
+        //
+        // This is the cheapest adjacency highlight of the eight engines by a
+        // wide margin — one option key against a dozen lines of hover handlers
+        // elsewhere — and that is worth knowing when picking between them.
+        emphasis: {
+          scale: 1.12,
+          focus: 'adjacency' as const,
+          blurScope: 'coordinateSystem' as const,
+          label: { show: true }
+        },
+        // Left at ECharts' own default the unfocused nodes vanish almost
+        // completely, which reads as the graph having been replaced rather than
+        // as one node being picked out of it.
+        blur: {
+          itemStyle: { opacity: 0.25 },
+          lineStyle: { opacity: 0.08 },
+          label: { show: false }
+        },
         data: build(),
         links: buildLinks()
       }
@@ -535,7 +631,7 @@ function EChartsGraph({
       //
       // At zoom 1 the graph's bounding box is fitted to the series rect, so
       // 0.9 is a fit with margin rather than a magnification.
-      if (!pushed.current) series.zoom = 0.9
+      if (!pushed.current) series.zoom = FIT_ZOOM
 
       return {
         backgroundColor: 'transparent',
@@ -579,15 +675,7 @@ function EChartsGraph({
     // public API for it — `convertToPixel` only knows registered coordinate
     // systems, and a graph's view is not one.
     place.current = () => {
-      // No public API reaches the graph's view — `getModel` is internal and
-      // `convertToPixel` only knows registered coordinate systems. The two
-      // members read here are all this overlay needs.
-      const model = instance as unknown as {
-        getModel(): {
-          getSeriesByIndex(index: number): { coordinateSystem?: GraphView } | undefined
-        }
-      }
-      const view = model.getModel().getSeriesByIndex(0)?.coordinateSystem
+      const view = readView(instance)
       if (!view || !layer.current) return
 
       // How much bigger than its symbol size a node is actually drawn.

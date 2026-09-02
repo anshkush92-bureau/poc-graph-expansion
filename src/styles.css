@@ -65,7 +65,7 @@ select {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  padding: 18px 24px 14px;
+  padding: 10px 24px 9px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -120,7 +120,7 @@ select {
   display: flex;
   align-items: center;
   gap: 28px;
-  padding: 9px 24px;
+  padding: 7px 24px;
   border-bottom: 1px solid var(--line);
   background: var(--slate);
 }
@@ -214,34 +214,104 @@ select {
 
 /* ---------- rig (the stress dial) ---------- */
 
+/* Collapsed by default, so the stage gets the ~40px this used to hold open. */
 .rig {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  padding: 9px 24px;
   border-bottom: 1px solid var(--line);
   background: var(--ink);
 }
 
-.dial {
+.rig__summary {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 7px 24px;
+  cursor: pointer;
+  list-style: none;
+}
+/* Safari still needs the vendor pseudo-element to drop the default triangle. */
+.rig__summary::-webkit-details-marker {
+  display: none;
+}
+
+.rig__summary::before {
+  content: '▸';
+  font-size: 10px;
+  color: var(--mute);
+}
+.rig[open] > .rig__summary::before {
+  content: '▾';
+}
+
+.rig__summary:hover .rig__title {
+  color: var(--bone);
+}
+
+.rig__title {
+  font: var(--eyebrow);
+  letter-spacing: var(--tracking);
+  text-transform: uppercase;
+  color: var(--mute);
+}
+
+/* The settings that are folded away, readable without unfolding them. */
+.rig__badge {
+  font: 400 11px/1 var(--mono);
+  color: var(--mute);
+}
+
+.rig__body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 14px 20px;
+  padding: 4px 24px 12px;
+}
+
+/* Label over the control, not beside it.
+   Side by side, the label and the slider and the number box all competed for
+   one line, so "Expand by (per click)" wrapped to two rows and the slider it
+   belonged to was left about 90px wide. Stacked, the label gets the width it
+   needs and the slider gets everything that is left.
+   Grid areas rather than a wrapper div, so `Knob` and the explore dial keep
+   their three-element markup: the label spans the top row, the slider and its
+   number box share the one below. */
+.dial {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'label label'
+    'slide value';
+  align-items: center;
+  gap: 6px 10px;
+  /* Grows to fill its row and wraps to the next one rather than shrinking
+     below a width a slider can actually be aimed at. */
+  flex: 1 1 220px;
+  min-width: 0;
 }
 .dial__label {
+  grid-area: label;
   font: var(--eyebrow);
   letter-spacing: var(--tracking);
   text-transform: uppercase;
   color: var(--mute);
 }
 .dial__slide {
-  width: clamp(90px, 16vw, 220px);
+  grid-area: slide;
+  width: 100%;
+  /* A taller box centres the same native thumb in a bigger hit area — the
+     cheap two-thirds of the win. Thickening the track itself needs the
+     `::-webkit-slider-runnable-track` / `::-moz-range-track` pair and a
+     hand-drawn thumb, which loses `accent-color` in both.
+     ponytail: hit area only, restyle the track if it still reads thin. */
+  height: 22px;
+  margin: 0;
   accent-color: var(--bone);
 }
 
 .dial__value {
-  width: 68px;
-  padding: 5px 6px;
+  grid-area: value;
+  width: 76px;
+  padding: 6px;
   border: 1px solid var(--line);
   background: var(--slate);
   color: inherit;
@@ -266,6 +336,15 @@ select {
   line-height: 1.35;
   color: var(--mute);
   text-align: right;
+}
+
+/* The reading instructions, which came off the legend. Its own row, left-set:
+   it is a sentence to read rather than a value to glance at. */
+.rig__note--wide {
+  flex-basis: 100%;
+  max-width: 100ch;
+  margin: 0;
+  text-align: left;
 }
 
 /* ---------- stage ---------- */
@@ -329,23 +408,75 @@ select {
   color: var(--bone);
   white-space: nowrap;
 }
-.pane__drop {
-  padding: 0 4px;
-  border: 0;
-  background: none;
-  color: var(--mute);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-}
-.pane__drop:hover {
-  color: var(--flare);
-}
-
 .pane__body {
   position: relative;
   flex: 1;
   min-height: 0;
+}
+
+/* Fullscreen hands the element the whole screen with a transparent backdrop,
+   which on a canvas pane means the graph over black-and-white default paint. */
+.pane__body:fullscreen {
+  background: var(--ink);
+}
+
+/* ---------- canvas controls ---------- */
+
+/* Over the graph, bottom right — the corner a radial layout leaves emptiest,
+   and the one the hover card (down-right of its node) reaches for last. */
+/* A column, not a row. Stacked, the buttons read as one instrument attached to
+   the corner of the canvas, and each is a bigger target for the same overall
+   footprint — a horizontal strip put five 26px squares across the bottom of the
+   pane, in the band where a graph's outermost nodes sit. */
+.vp {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line);
+  /* The gaps between the buttons are background, not surface: a click there is
+     a click on the graph. */
+  pointer-events: none;
+}
+
+.vp__btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: color-mix(in srgb, var(--raise) 88%, transparent);
+  color: var(--mute);
+  font: 400 17px/1 var(--ui);
+  cursor: pointer;
+  pointer-events: auto;
+  /* The zoom buttons are held to auto-repeat, and a hold anywhere else in a
+     browser is the start of a text selection. */
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.vp__btn:hover:not(:disabled) {
+  background: var(--raise);
+  color: var(--bone);
+}
+
+/* An engine with no viewport API keeps its buttons, greyed, with the reason in
+   the title — in a bake-off that absence is a result worth seeing. */
+.vp__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.vp__btn[aria-pressed='true'] {
+  color: var(--bone);
+}
+
+.vp__btn--drop:hover:not(:disabled) {
+  color: var(--flare);
 }
 .pane__wait {
   position: absolute;
@@ -361,6 +492,42 @@ select {
 .canvas {
   position: absolute;
   inset: 0;
+  /* The canvas is a thing you drag, so say so. Every one of these engines pans
+     on a background drag and none of them set a cursor for it, which left the
+     graph looking like static artwork until you tried it. `:active` covers the
+     drag itself — the pointer is down on the canvas for its whole duration. */
+  cursor: grab;
+}
+.canvas:active {
+  cursor: grabbing;
+}
+/* Nodes are clicked, not dragged-to-pan, and their own cursor has to beat the
+   canvas's. The canvas panes draw their nodes into the bitmap and have no
+   element to target, so this is the DOM engines only — which is also the only
+   place the wrong cursor was visible over a node. */
+.plumb__node,
+.canvas .react-flow__node {
+  cursor: pointer;
+}
+
+/* ---------- the adjacency highlight, DOM panes ---------- */
+
+/* Hover a node and its edges light up; hover an edge and its two nodes do.
+   Four of the eight engines can express this themselves — ECharts in one
+   option key (`emphasis.focus: 'adjacency'`), Cytoscape through a stylesheet
+   class, vis through `hoverConnectedEdges`, jsPlumb through its own
+   `hoverPaintStyle` — and the two React panes here mark the elements with
+   `is-adj` and leave the meaning to CSS. That is deliberate: rewriting an
+   element's inline style means reconstructing its resting style on the way
+   back out, and an edge stuck in the highlight colour is the bug that costs. */
+.canvas .react-flow__edge.is-adj .react-flow__edge-path {
+  stroke: var(--bone);
+  stroke-width: 2.5;
+}
+.canvas .react-flow__node.is-adj .flow-node,
+.plumb__node.is-adj {
+  border-color: var(--bone);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--bone) 45%, transparent);
 }
 /* v-network-graph mounts a Vue app in here and sizes its SVG to the host. */
 .canvas--vng,
@@ -399,7 +566,7 @@ select {
   align-items: center;
   gap: 6px 16px;
   margin: 0;
-  padding: 10px 20px;
+  padding: 6px 20px;
   border-top: 1px solid var(--line);
   background: var(--ink);
   list-style: none;
@@ -422,17 +589,6 @@ select {
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
-}
-
-.legend__rule {
-  flex-basis: 100%;
-  text-transform: none;
-  letter-spacing: 0.02em;
-  font-family: var(--ui);
-  font-size: 11px;
-}
-.legend__rule::before {
-  display: none;
 }
 
 /* ---------- hover card (peek) ---------- */
@@ -586,6 +742,19 @@ select {
   border-left: 1px solid var(--line);
   background: var(--slate);
   animation: panel-in 160ms ease-out;
+}
+
+/* The lab's panel. The explore one is a child of `.shell` and lives in its
+   second grid column; the lab is a child of the stage, several levels in, so
+   there is no column for it to take. Pinned instead — above the canvas
+   overlay's `z-index: 3` without reaching the hover card's 30. */
+.panel--float {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  box-shadow: -18px 0 44px rgb(0 0 0 / 0.45);
 }
 
 @keyframes panel-in {
@@ -1141,9 +1310,9 @@ select {
 }
 .bench__knobs {
   display: flex;
-  align-items: center;
+  align-items: end;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 14px 18px;
 }
 
 .bench__blurb {
@@ -1181,7 +1350,7 @@ select {
 /* A definite height, because `.canvas` inside a pane is absolutely positioned
    and would collapse to nothing in a flowing document. */
 .pane--bench {
-  height: 460px;
+  height: clamp(380px, 62vh, 720px);
   border: 1px solid var(--line);
 }
 
@@ -1405,12 +1574,36 @@ select {
 
 /* ---------- the controls ---------- */
 
-/* Two columns at most. Three fits on a wide screen and reads as a settings
-   page; two keeps each group's hint on the same line of sight as its dials. */
+/* Multi-column, not grid.
+   Now that the explanations are tooltips the cards are wildly uneven — "Graph"
+   has three sliders and a button, "Hover" has one slider. In a grid every card
+   in a row is as tall as the tallest, or with `align-items: start` the next row
+   still waits for it, so a five-across layout left half its area blank beside
+   the short cards. Columns flow the cards instead: they pack top to bottom and
+   spill across, which is masonry without waiting for `grid-template-rows:
+   masonry` or writing any JS. Reading order goes down each column rather than
+   across, which costs nothing here — these are six independent settings cards,
+   not a sequence. */
+/* One row of section tabs, sharing the engine tabs' look — they are the same
+   kind of control, and a second visual language for it would be noise. */
+.lab__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+}
+.lab__tabcount {
+  margin-left: 6px;
+  padding: 1px 4px;
+  background: var(--line);
+  color: var(--bone);
+  font: 700 9px/1.4 var(--mono);
+}
+
 .lab__grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-  gap: 14px;
+  columns: 300px;
+  column-gap: 12px;
 }
 
 .lab__group {
@@ -1420,6 +1613,10 @@ select {
   padding: 14px 16px;
   border: 1px solid var(--line);
   background: var(--slate);
+  /* The column flow will otherwise cut a card in half at the column boundary,
+     leaving three sliders in one column and a Build button in the next. */
+  break-inside: avoid;
+  margin-bottom: 12px;
 }
 
 .lab__group h3,
@@ -1432,11 +1629,75 @@ select {
   text-transform: uppercase;
 }
 
-.lab__controls {
+/* The card heading carries its own explanation, shown on hover or focus. */
+.lab__grouphead {
   display: flex;
   align-items: center;
+  gap: 6px;
+}
+
+/* The circle is drawn, not typed. `ⓘ` (U+24D8) is missing from enough system
+   UI fonts to come out as a `?` box, and a marker that renders as a question
+   mark is worse than no marker — it reads as the app not knowing something. */
+.lab__info {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  font: 700 9px/1 var(--mono);
+  /* The heading is uppercased; a capital I in a circle is a serif-less bar. */
+  text-transform: none;
+  color: var(--mute);
+  cursor: help;
+}
+.lab__info:hover,
+.lab__info:focus-visible {
+  border-color: var(--bone);
+  color: var(--bone);
+  outline: none;
+}
+
+/* The text itself, rather than left to `title` — which waits about a second
+   before appearing and cannot be reached from the keyboard at all. */
+.lab__tip {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: -8px;
+  z-index: 20;
+  width: 262px;
+  padding: 9px 11px;
+  background: var(--slate);
+  border: 1px solid var(--line);
+  box-shadow: 0 14px 34px rgb(0 0 0 / 0.5);
+  font: 400 11px/1.55 var(--ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--mute);
+  /* `visibility` rather than `display`, which cannot transition. */
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 90ms ease-out,
+    visibility 90ms;
+}
+.lab__info:hover .lab__tip,
+.lab__info:focus .lab__tip,
+.lab__info:focus-within .lab__tip {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* `end`, not `center`: the knobs are now two rows tall and a one-row control
+   next to them — a checkbox, a select — should line up with the row that has
+   the slider in it, not float in the middle of the label above it. */
+.lab__controls {
+  display: flex;
+  align-items: end;
   flex-wrap: wrap;
-  gap: 16px;
+  gap: 14px 16px;
 }
 /* A hint sitting among the knobs rather than under them — the running node
    count, the "no viewport here" note. Its own row, or it reads as a label for

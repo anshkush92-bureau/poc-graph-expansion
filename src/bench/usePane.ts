@@ -18,7 +18,7 @@ import { ROOT } from '../graph/data.ts'
 import { layoutRadial } from '../graph/ops.ts'
 import { nextPaint, sleep } from './probes.ts'
 import { stopWorker } from './runLayout.ts'
-import type { Graph, GraphPaneProps, Positions, ViewportHandle } from '../engine/types.ts'
+import type { Graph, GraphPaneProps, Point, Positions, ViewportHandle } from '../engine/types.ts'
 import type { BenchContext, BenchResult, EngineKey, Knobs, Scenario } from './types.ts'
 
 declare global {
@@ -52,7 +52,13 @@ export function usePane() {
   const hoverCount = useRef(0)
   const hoverDebounce = useRef(0)
   const hoverTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const [, setHoverId] = useState<string | null>(null)
+  // The hovered node, and where the pointer was when it arrived.
+  //
+  // This used to be a write-only `useState` whose value was thrown away — it
+  // existed purely to force the render the debounce is measured on. The lab now
+  // draws a real hover card off it, which is what the debounce knob has always
+  // claimed to control: the card's React update, not the engine's callback.
+  const [hovered, setHovered] = useState<{ id: string; at: Point } | null>(null)
 
   useEffect(
     () => () => {
@@ -98,14 +104,16 @@ export function usePane() {
     viewport.current = api
   }, [])
 
-  const onNodeHover = useCallback((id: string | null) => {
+  const onNodeHover = useCallback((id: string | null, at: Point | null) => {
     hoverCount.current += 1
+    // The contract allows the pair to come apart; no point means no card.
+    const next = id && at ? { id, at } : null
     if (!hoverDebounce.current) {
-      setHoverId(id)
+      setHovered(next)
       return
     }
     clearTimeout(hoverTimer.current)
-    hoverTimer.current = setTimeout(() => setHoverId(id), hoverDebounce.current)
+    hoverTimer.current = setTimeout(() => setHovered(next), hoverDebounce.current)
   }, [])
 
   const noop = useCallback(() => {}, [])
@@ -215,6 +223,7 @@ export function usePane() {
   return Object.assign(
     {
       data,
+      hovered,
       paneRef,
       paneProps,
       show,
