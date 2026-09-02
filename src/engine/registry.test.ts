@@ -7,13 +7,11 @@ import type { GraphEngine } from './types.ts'
 // is that the values are sane — an empty renderers array, a caps entry that is
 // an empty string, a Component that is not actually lazy. A blank pane is a
 // miserable way to discover any of those.
-
-test('every engine is registered under the key its own file uses', () => {
-  ENGINE_KEYS.forEach(key => {
-    assert.ok(ENGINES[key], `${key} is missing from ENGINES`)
-  })
-  assert.equal(ENGINE_KEYS.length, Object.keys(ENGINES).length)
-})
+//
+// This file owns value sanity only. The key list itself — whether an engine
+// is missing, duplicated, or reordered — is `engines.test.ts`'s job: it checks
+// ENGINE_KEYS against a hardcoded eight-name literal, so a dropped engine
+// fails there, not here.
 
 test('every engine names itself and the library it wraps', () => {
   ENGINE_KEYS.forEach(key => {
