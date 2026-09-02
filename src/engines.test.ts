@@ -13,8 +13,8 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { CAP_ROWS, ENGINES, ENGINE_KEYS } from './engines.js'
-import type { GraphEngine } from './engine/types.ts'
+import { CAP_ROWS, ENGINES, ENGINE_KEYS } from './engines.ts'
+import type { ControlKey, GraphEngine } from './engine/types.ts'
 
 // Order is load-bearing, not cosmetic: Compare and BenchView both sort their
 // result rows by `ENGINE_KEYS.indexOf(...)`, and the engine tabs render in it.
@@ -30,6 +30,7 @@ const EXPECTED: Record<Key, Omit<GraphEngine, 'Component'>> = {
     note: 'graph series · canvas · roam + drag · shape and edge pickers',
     surface: 'canvas',
     renderers: ['canvas', 'svg'],
+    controls: ['shapeSet', 'edgeStyle'],
     caps: {
       viewport: 'roam · graphRoam action',
       layout: 'force, circular — unused here',
@@ -87,7 +88,7 @@ const EXPECTED: Record<Key, Omit<GraphEngine, 'Component'>> = {
   vng: {
     name: 'v-network-graph',
     lib: 'v-network-graph 0.9 + vue 3',
-    note: 'SVG · Vue 3 only — mounted as a Vue island inside React 16',
+    note: 'SVG · Vue 3 only — mounted as a Vue island inside React 19',
     surface: 'svg',
     renderers: ['svg'],
     caps: {
@@ -130,13 +131,13 @@ const EXPECTED: Record<Key, Omit<GraphEngine, 'Component'>> = {
     }
   },
   flow: {
-    name: 'React Flow v9',
-    lib: 'react-flow-renderer 9.7',
+    name: 'React Flow',
+    lib: '@xyflow/react 12.11',
     note: 'DOM + SVG · real React components as nodes · no layout engine at all',
     surface: 'dom+svg',
     renderers: ['dom+svg'],
     caps: {
-      viewport: 'useZoomPanHelper · zoomTo / transform',
+      viewport: 'useReactFlow · setViewport / fitView',
       layout: 'none at all',
       lod: 'write it yourself in the node component',
       culling: 'onlyRenderVisibleElements — on in this pane',
@@ -167,4 +168,20 @@ test('CAP_ROWS is the six capability rows in grid order', () => {
     ['images', 'Custom glyphs / images'],
     ['routing', 'Edge routing']
   ])
+})
+
+// The pickers used to appear iff 'echarts' was among the selected panes, as a
+// literal `engines.includes('echarts')` in App. That branch is gone, replaced
+// by a union over each manifest's `controls`. This is the assertion that the
+// replacement is equivalent rather than merely plausible: if a second engine
+// ever declares shapeSet, this fails and the reviewer gets to decide whether
+// that was intended.
+test('only ECharts declares the optional controls', () => {
+  const declaring = (c: ControlKey) =>
+    ENGINE_KEYS.filter(k => {
+      const engine: GraphEngine = ENGINES[k]
+      return (engine.controls ?? []).includes(c)
+    })
+  assert.deepEqual(declaring('shapeSet'), ['echarts'])
+  assert.deepEqual(declaring('edgeStyle'), ['echarts'])
 })

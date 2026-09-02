@@ -7,7 +7,7 @@
 
 import assert from 'node:assert/strict'
 import { test } from 'vitest'
-import { ENGINE_KEYS } from './engines.js'
+import { ENGINE_KEYS } from './engines.ts'
 import { parseRoute, routeHash } from './route.ts'
 
 test('a bare page is explore', () => {

@@ -1,5 +1,5 @@
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { ENGINES, ENGINE_KEYS } from './engines.js'
+import { ENGINES, ENGINE_KEYS } from './engines.ts'
 import { ENTITY, MAX_DEPTH, ROOT } from './graph/data.ts'
 import { hiddenCounts, isSelfEdge, layoutRadial } from './graph/ops.ts'
 import { synthGraph } from './graph/synth.ts'
@@ -14,9 +14,9 @@ import { EDGE_RULES, EDGE_STYLE_ORDER, SHAPE_SETS } from './echarts/symbols.ts'
 
 // The benchmark views, lazy for the same reason the engines are: they pull in
 // d3-force and the layout worker, and the explore view needs neither.
-const BenchView = React.lazy(() => import('./bench/BenchView.jsx'))
-const Lab = React.lazy(() => import('./bench/Lab.jsx'))
-const Compare = React.lazy(() => import('./bench/Compare.jsx'))
+const BenchView = React.lazy(() => import('./bench/BenchView.tsx'))
+const Lab = React.lazy(() => import('./bench/Lab.tsx'))
+const Compare = React.lazy(() => import('./bench/Compare.tsx'))
 
 /**
  * Explore / Bench / Lab / Compare.
@@ -248,14 +248,22 @@ export default function App() {
     graph.edges.filter(e => !isSelfEdge(e) && e.source === node.id && byId.has(e.target)).length
 
   const deepest = graph.nodes.reduce((max, n) => Math.max(max, n.level), 0)
-  const showsEcharts = engines.includes('echarts')
+
+  // Which optional controls to show: the union of what the selected panes ask
+  // for. No engine is named here — an engine opts in via `controls` in its own
+  // manifest.
+  const controls = useMemo(() => {
+    const on = new Set()
+    engines.forEach(key => (ENGINES[key].controls || []).forEach(c => on.add(c)))
+    return on
+  }, [engines])
 
   if (mode !== 'explore') {
     return (
       <div className="shell">
         <header className="masthead">
           <div className="masthead__brand">
-            <p className="masthead__eyebrow">Graph rendering bake-off · React 16.14</p>
+            <p className="masthead__eyebrow">Graph rendering bake-off · React 19.2</p>
             <h1 className="masthead__title">Identity graph walker</h1>
           </div>
           <ModeTabs mode={mode} onMode={setMode} />
@@ -275,7 +283,7 @@ export default function App() {
     <div className={'shell' + (selectedNode ? ' shell--panelled' : '')}>
       <header className="masthead">
         <div className="masthead__brand">
-          <p className="masthead__eyebrow">Graph rendering bake-off · React 16.14</p>
+          <p className="masthead__eyebrow">Graph rendering bake-off · React 19.2</p>
           <h1 className="masthead__title">Identity graph walker</h1>
         </div>
 
@@ -321,37 +329,48 @@ export default function App() {
         </dl>
 
         <div className="strip__tools">
-          {/* ECharts only. The other engines take one node shape and one line
-              style, so offering these pickers alongside them would be controls
-              that do nothing to most of the screen. */}
-          {showsEcharts && (
+          {/* Only the panes that asked. The other engines take one node shape
+              and one line style, so offering these pickers alongside them would
+              be controls that do nothing to most of the screen. */}
+          {(controls.has('shapeSet') || controls.has('edgeStyle')) && (
             <React.Fragment>
-              <label className="jump">
-                <span>Nodes</span>
-                <select value={shapeSet} onChange={e => setShapeSet(e.target.value)}>
-                  {Object.keys(SHAPE_SETS).map(key => (
-                    <option key={key} value={key}>
-                      {SHAPE_SETS[key].label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="jump">
-                <span>Edges</span>
-                <select value={edgeStyle} onChange={e => setEdgeStyle(e.target.value)}>
-                  {Object.keys(EDGE_RULES).map(key => (
-                    <option key={key} value={key}>
-                      {EDGE_RULES[key].label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {/* Only worth a control once there is something to clear — an
-                  always-visible button that usually does nothing is noise. */}
-              {edgeOverrides.size > 0 && (
-                <button type="button" className="btn" onClick={() => setEdgeOverrides(new Map())}>
-                  Clear {edgeOverrides.size} edge {edgeOverrides.size === 1 ? 'style' : 'styles'}
-                </button>
+              {controls.has('shapeSet') && (
+                <label className="jump">
+                  <span>Nodes</span>
+                  <select value={shapeSet} onChange={e => setShapeSet(e.target.value)}>
+                    {Object.keys(SHAPE_SETS).map(key => (
+                      <option key={key} value={key}>
+                        {SHAPE_SETS[key].label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              {controls.has('edgeStyle') && (
+                <React.Fragment>
+                  <label className="jump">
+                    <span>Edges</span>
+                    <select value={edgeStyle} onChange={e => setEdgeStyle(e.target.value)}>
+                      {Object.keys(EDGE_RULES).map(key => (
+                        <option key={key} value={key}>
+                          {EDGE_RULES[key].label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  {/* Only worth a control once there is something to clear — an
+                      always-visible button that usually does nothing is noise. */}
+                  {edgeOverrides.size > 0 && (
+                    <button
+                      type="button"
+                      className="btn"
+                      onClick={() => setEdgeOverrides(new Map())}
+                    >
+                      Clear {edgeOverrides.size} edge{' '}
+                      {edgeOverrides.size === 1 ? 'style' : 'styles'}
+                    </button>
+                  )}
+                </React.Fragment>
               )}
             </React.Fragment>
           )}
@@ -465,8 +484,8 @@ export default function App() {
           ))}
           <li className="legend__rule">
             Bright = links still hidden. Click a node to expand a level
-            {showsEcharts && ', or an edge to restyle just that edge'}. Every pane draws the same
-            graph at the same coordinates — only the drawing differs.
+            {controls.has('edgeStyle') && ', or an edge to restyle just that edge'}. Every pane
+            draws the same graph at the same coordinates — only the drawing differs.
           </li>
         </ul>
       </main>
